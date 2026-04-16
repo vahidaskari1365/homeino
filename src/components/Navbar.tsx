@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, Menu, X, User, ShoppingBag, Heart } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { label: "خانه", href: "#" },
@@ -36,6 +37,7 @@ const Navbar = () => {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <button className="text-cream/70 hover:text-gold transition-colors">
             <Search size={20} />
           </button>
