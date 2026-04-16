@@ -15,7 +15,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 bg-charcoal/95 backdrop-blur-md border-b border-gold/10">
+    <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2">
@@ -28,7 +28,7 @@ const Navbar = () => {
             <a
               key={link.label}
               href={link.href}
-              className="text-cream/80 hover:text-gold transition-colors duration-300 text-sm font-medium"
+              className="text-muted-foreground hover:text-gold transition-colors duration-300 text-sm font-medium"
             >
               {link.label}
             </a>
@@ -38,19 +38,19 @@ const Navbar = () => {
         {/* Icons */}
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <button className="text-cream/70 hover:text-gold transition-colors">
+          <button className="text-muted-foreground hover:text-gold transition-colors">
             <Search size={20} />
           </button>
-          <button className="text-cream/70 hover:text-gold transition-colors hidden sm:block">
+          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
             <Heart size={20} />
           </button>
-          <button className="text-cream/70 hover:text-gold transition-colors hidden sm:block">
+          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
             <ShoppingBag size={20} />
           </button>
-          <button className="text-cream/70 hover:text-gold transition-colors hidden sm:block">
+          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
             <User size={20} />
           </button>
-          <button className="lg:hidden text-cream/70" onClick={() => setIsOpen(!isOpen)}>
+          <button className="lg:hidden text-muted-foreground" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -58,12 +58,12 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="lg:hidden bg-charcoal border-t border-gold/10 py-6 px-6">
+        <div className="lg:hidden bg-background border-t border-border py-6 px-6">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="block py-3 text-cream/80 hover:text-gold transition-colors text-base"
+              className="block py-3 text-muted-foreground hover:text-gold transition-colors text-base"
               onClick={() => setIsOpen(false)}
             >
               {link.label}
