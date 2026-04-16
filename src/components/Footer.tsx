@@ -13,7 +13,7 @@ const Footer = () => {
             </p>
             <div className="flex gap-3">
               <a href="#" className="w-10 h-10 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 flex items-center justify-center text-cream/50 hover:text-gold hover:border-gold/30 transition-all">
-                <Instagram size={18} />
+                <Globe size={18} />
               </a>
               <a href="#" className="w-10 h-10 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 flex items-center justify-center text-cream/50 hover:text-gold hover:border-gold/30 transition-all">
                 <Phone size={18} />
