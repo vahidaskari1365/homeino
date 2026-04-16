@@ -1,0 +1,74 @@
+import { Search, Sparkles } from "lucide-react";
+import heroImg from "@/assets/hero-living.jpg";
+
+const HeroSection = () => {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src={heroImg}
+          alt="دکوراسیون لوکس"
+          className="w-full h-full object-cover"
+          width={1920}
+          height={1080}
+        />
+        <div className="absolute inset-0 gradient-hero" />
+        <div className="absolute inset-0 bg-charcoal/40" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-6 text-center max-w-4xl">
+        <div className="animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 bg-gold/15 border border-gold/30 rounded-full px-5 py-2 mb-8">
+            <Sparkles size={16} className="text-gold" />
+            <span className="text-gold text-sm font-medium">مرجع تخصصی دکوراسیون و لوازم خانه</span>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-tight mb-6">
+            خانه رویایی‌تان را
+            <br />
+            <span className="text-gold">طراحی کنید</span>
+          </h1>
+
+          <p className="text-lg md:text-xl text-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+            از الهام گرفتن تا خرید، از طراحی با هوش مصنوعی تا تجهیز کامل خانه.
+            همه چیز در یک پلتفرم.
+          </p>
+
+          {/* Search Bar */}
+          <div className="relative max-w-2xl mx-auto">
+            <div className="flex items-center bg-primary-foreground/10 backdrop-blur-xl border border-primary-foreground/20 rounded-2xl overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/40">
+              <input
+                type="text"
+                placeholder="نام کالا یا سبک دکوراسیون مورد نظر خود را جستجو کنید..."
+                className="flex-1 bg-transparent text-primary-foreground placeholder:text-cream/40 px-6 py-5 text-base outline-none"
+              />
+              <button className="gradient-gold text-primary-foreground px-8 py-5 flex items-center gap-2 font-medium hover:opacity-90 transition-opacity">
+                <Search size={20} />
+                <span className="hidden sm:inline">جستجو</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="flex flex-wrap justify-center gap-3 mt-8">
+            {["مبلمان", "فرش و قالی", "لوستر", "پرده", "دکور چوبی"].map((tag) => (
+              <span
+                key={tag}
+                className="px-4 py-2 rounded-full border border-cream/15 text-cream/60 text-sm hover:border-gold/40 hover:text-gold cursor-pointer transition-all duration-300"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+    </section>
+  );
+};
+
+export default HeroSection;
