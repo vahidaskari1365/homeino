@@ -6,111 +6,143 @@
 
 @layer base {
   :root {
-    --background: 30 25% 97%;
-    --foreground: 30 10% 12%;
+    /* Light theme - Warm cream & deep gold */
+    --background: 36 33% 97%;
+    --foreground: 30 15% 12%;
 
-    --card: 30 20% 95%;
-    --card-foreground: 30 10% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 10% 12%;
+    --popover-foreground: 30 15% 12%;
 
-    --primary: 38 70% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 36 65% 42%;
+    --primary-foreground: 36 33% 98%;
 
-    --secondary: 160 30% 25%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 165 35% 22%;
+    --secondary-foreground: 36 33% 98%;
 
-    --muted: 30 15% 90%;
-    --muted-foreground: 30 8% 50%;
+    --muted: 36 20% 92%;
+    --muted-foreground: 30 8% 42%;
 
-    --accent: 38 50% 88%;
-    --accent-foreground: 30 10% 12%;
+    --accent: 36 45% 90%;
+    --accent-foreground: 30 15% 12%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 38 70% 45%;
+    --border: 36 20% 86%;
+    --input: 36 20% 86%;
+    --ring: 36 65% 42%;
 
     --radius: 0.75rem;
 
-    --gold: 38 70% 45%;
-    --gold-light: 38 60% 70%;
-    --gold-dark: 38 80% 30%;
-    --emerald: 160 50% 28%;
-    --emerald-light: 160 40% 45%;
-    --cream: 30 25% 97%;
-    --cream-dark: 30 20% 90%;
-    --charcoal: 30 10% 15%;
+    /* Brand tokens */
+    --gold: 36 70% 45%;
+    --gold-light: 40 75% 62%;
+    --gold-dark: 36 80% 32%;
+    --emerald: 165 45% 25%;
+    --emerald-light: 165 35% 42%;
+    --cream: 36 33% 97%;
+    --cream-dark: 36 25% 92%;
+    --charcoal: 30 15% 12%;
     --warm-gray: 30 8% 50%;
 
-    --gradient-gold: linear-gradient(135deg, hsl(38 70% 45%), hsl(45 80% 60%));
-    --gradient-dark: linear-gradient(180deg, hsl(30 10% 12%), hsl(30 15% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(30 10% 12% / 0.85), hsl(160 50% 28% / 0.6));
-    --shadow-luxury: 0 20px 60px -15px hsl(38 70% 45% / 0.15);
-    --shadow-card: 0 4px 24px -4px hsl(30 10% 12% / 0.08);
+    /* Sectional surfaces (theme-aware) */
+    --section-alt: 36 25% 93%;          /* alternating light section */
+    --surface-dark: 30 18% 14%;         /* dark hero/AI section */
+    --surface-dark-foreground: 36 33% 96%;
+    --surface-emerald: 165 45% 22%;     /* services section */
+    --surface-emerald-foreground: 36 33% 96%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --gradient-gold: linear-gradient(135deg, hsl(36 70% 42%), hsl(42 80% 58%));
+    --gradient-dark: linear-gradient(180deg, hsl(30 18% 14%), hsl(30 20% 8%));
+    --gradient-hero: linear-gradient(135deg, hsl(30 18% 12% / 0.85), hsl(165 45% 22% / 0.55));
+    --shadow-luxury: 0 20px 60px -15px hsl(36 70% 45% / 0.18);
+    --shadow-card: 0 4px 24px -4px hsl(30 15% 12% / 0.08);
+
+    --sidebar-background: 36 33% 97%;
+    --sidebar-foreground: 30 15% 20%;
+    --sidebar-primary: 36 65% 42%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 36 25% 92%;
+    --sidebar-accent-foreground: 30 15% 12%;
+    --sidebar-border: 36 20% 86%;
+    --sidebar-ring: 36 65% 42%;
   }
 
   .dark {
-    --background: 30 10% 8%;
-    --foreground: 30 15% 95%;
+    /* Dark theme - Deep charcoal & warm gold */
+    --background: 30 14% 7%;
+    --foreground: 36 25% 94%;
 
-    --card: 30 10% 12%;
-    --card-foreground: 30 15% 95%;
+    --card: 30 14% 11%;
+    --card-foreground: 36 25% 94%;
 
-    --popover: 30 10% 8%;
-    --popover-foreground: 30 15% 95%;
+    --popover: 30 14% 9%;
+    --popover-foreground: 36 25% 94%;
 
-    --primary: 38 70% 55%;
-    --primary-foreground: 30 10% 8%;
+    --primary: 40 78% 58%;
+    --primary-foreground: 30 14% 7%;
 
-    --secondary: 160 30% 35%;
-    --secondary-foreground: 30 15% 95%;
+    --secondary: 165 30% 32%;
+    --secondary-foreground: 36 25% 94%;
 
-    --muted: 30 10% 18%;
-    --muted-foreground: 30 10% 65%;
+    --muted: 30 12% 16%;
+    --muted-foreground: 36 12% 65%;
 
-    --accent: 38 40% 20%;
-    --accent-foreground: 30 15% 95%;
+    --accent: 36 30% 18%;
+    --accent-foreground: 36 25% 94%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 65% 45%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 10% 20%;
-    --input: 30 10% 20%;
-    --ring: 38 70% 55%;
+    --border: 30 12% 20%;
+    --input: 30 12% 20%;
+    --ring: 40 78% 58%;
 
-    --gradient-gold: linear-gradient(135deg, hsl(38 70% 55%), hsl(45 80% 70%));
-    --gradient-dark: linear-gradient(180deg, hsl(30 10% 12%), hsl(30 10% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(30 10% 12% / 0.95), hsl(160 40% 25% / 0.7));
-    --shadow-luxury: 0 20px 60px -15px hsl(38 70% 55% / 0.2);
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+    /* Brand tokens (dark) */
+    --gold: 40 78% 58%;
+    --gold-light: 42 80% 70%;
+    --gold-dark: 36 70% 40%;
+    --emerald: 165 40% 38%;
+    --emerald-light: 165 35% 50%;
+    --cream: 30 14% 11%;
+    --cream-dark: 30 14% 9%;
+    --charcoal: 30 14% 7%;
+    --warm-gray: 36 12% 65%;
 
-    --sidebar-background: 30 10% 10%;
-    --sidebar-foreground: 30 15% 95%;
-    --sidebar-primary: 38 70% 55%;
-    --sidebar-primary-foreground: 30 10% 8%;
-    --sidebar-accent: 30 10% 18%;
-    --sidebar-accent-foreground: 30 15% 95%;
-    --sidebar-border: 30 10% 20%;
-    --sidebar-ring: 38 70% 55%;
+    /* Sectional surfaces (dark variant) */
+    --section-alt: 30 14% 10%;
+    --surface-dark: 30 18% 5%;
+    --surface-dark-foreground: 36 25% 94%;
+    --surface-emerald: 165 35% 18%;
+    --surface-emerald-foreground: 36 25% 94%;
+
+    --gradient-gold: linear-gradient(135deg, hsl(40 78% 50%), hsl(42 80% 65%));
+    --gradient-dark: linear-gradient(180deg, hsl(30 14% 11%), hsl(30 14% 5%));
+    --gradient-hero: linear-gradient(135deg, hsl(30 18% 5% / 0.92), hsl(165 40% 18% / 0.7));
+    --shadow-luxury: 0 20px 60px -15px hsl(40 78% 58% / 0.25);
+    --shadow-card: 0 8px 28px -6px hsl(0 0% 0% / 0.5);
+
+    --sidebar-background: 30 14% 9%;
+    --sidebar-foreground: 36 25% 94%;
+    --sidebar-primary: 40 78% 58%;
+    --sidebar-primary-foreground: 30 14% 7%;
+    --sidebar-accent: 30 12% 16%;
+    --sidebar-accent-foreground: 36 25% 94%;
+    --sidebar-border: 30 12% 20%;
+    --sidebar-ring: 40 78% 58%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html {
+    @apply transition-colors duration-300;
   }
 
   body {
@@ -138,22 +170,31 @@
     background-color: hsl(var(--gold));
   }
   .bg-emerald-brand {
-    background-color: hsl(var(--emerald));
+    background-color: hsl(var(--surface-emerald));
+    color: hsl(var(--surface-emerald-foreground));
   }
   .text-emerald-brand {
     color: hsl(var(--emerald));
   }
   .bg-charcoal {
-    background-color: hsl(var(--charcoal));
+    background-color: hsl(var(--surface-dark));
+    color: hsl(var(--surface-dark-foreground));
   }
   .text-charcoal {
-    color: hsl(var(--charcoal));
+    color: hsl(var(--foreground));
   }
   .bg-cream {
-    background-color: hsl(var(--cream));
+    background-color: hsl(var(--background));
   }
   .bg-cream-dark {
-    background-color: hsl(var(--cream-dark));
+    background-color: hsl(var(--section-alt));
+  }
+  .bg-section-alt {
+    background-color: hsl(var(--section-alt));
+  }
+  .bg-surface-dark {
+    background-color: hsl(var(--surface-dark));
+    color: hsl(var(--surface-dark-foreground));
   }
   .gradient-gold {
     background: var(--gradient-gold);
@@ -195,7 +236,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, hsl(38 70% 45% / 0.1) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--gold) / 0.1) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmer 3s infinite;
 }
