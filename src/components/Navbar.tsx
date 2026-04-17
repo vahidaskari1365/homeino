@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, ShoppingBag, Heart, LogOut } from "lucide-react";
+import { Search, Menu, X, User, ShoppingBag, Heart, LogOut, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -62,13 +62,23 @@ const Navbar = () => {
             <ShoppingBag size={20} />
           </button>
           {session ? (
-            <button
-              onClick={handleSignOut}
-              className="text-muted-foreground hover:text-gold transition-colors hidden sm:block"
-              title="خروج"
-            >
-              <LogOut size={20} />
-            </button>
+            <>
+              <Link
+                to="/dashboard"
+                className="text-muted-foreground hover:text-gold transition-colors hidden sm:flex items-center gap-2 text-sm"
+                title="داشبورد"
+              >
+                <LayoutDashboard size={20} />
+                <span className="hidden md:inline">داشبورد</span>
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-muted-foreground hover:text-gold transition-colors hidden sm:block"
+                title="خروج"
+              >
+                <LogOut size={20} />
+              </button>
+            </>
           ) : (
             <Link
               to="/auth"
