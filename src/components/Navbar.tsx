@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { Search, Menu, X, User, ShoppingBag, Heart } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Menu, X, User, ShoppingBag, Heart, LogOut } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 const navLinks = [
   { label: "خانه", href: "#" },
@@ -13,6 +16,17 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -47,9 +61,23 @@ const Navbar = () => {
           <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
             <ShoppingBag size={20} />
           </button>
-          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
-            <User size={20} />
-          </button>
+          {session ? (
+            <button
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-gold transition-colors hidden sm:block"
+              title="خروج"
+            >
+              <LogOut size={20} />
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              className="text-muted-foreground hover:text-gold transition-colors hidden sm:flex items-center gap-2 text-sm"
+            >
+              <User size={20} />
+              <span>ورود</span>
+            </Link>
+          )}
           <button className="lg:hidden text-muted-foreground" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
