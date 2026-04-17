@@ -14,7 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      producer_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      profile_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          profile_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          profile_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "producer_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_categories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          brand_name: string
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          brand_name: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          brand_name?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
