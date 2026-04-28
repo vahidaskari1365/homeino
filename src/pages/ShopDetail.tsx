@@ -45,7 +45,7 @@ const ShopDetail = () => {
       const [profRes, prodRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, address, phone, website, contact_name, profile_categories(producer_categories(id, name))")
+          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, profile_categories(producer_categories(id, name))")
           .eq("id", id)
           .maybeSingle(),
         supabase
