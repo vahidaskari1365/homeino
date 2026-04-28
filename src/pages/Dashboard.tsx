@@ -18,7 +18,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
-  Package, ImageIcon, Save,
+  Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
 } from "lucide-react";
 
 interface Category { id: string; name: string; slug: string; }
@@ -26,6 +26,7 @@ interface Profile {
   id: string; brand_name: string; contact_name: string | null;
   phone: string | null; city: string | null; address: string | null;
   description: string | null; website: string | null;
+  contact_published: boolean; contact_published_at: string | null;
 }
 interface Product {
   id: string; name: string; description: string | null;
