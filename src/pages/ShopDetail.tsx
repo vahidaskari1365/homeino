@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail, BadgeCheck, Lock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,7 @@ type Profile = {
   phone: string | null;
   website: string | null;
   contact_name: string | null;
+  contact_published: boolean;
   profile_categories: { producer_categories: { id: string; name: string } | null }[];
 };
 
@@ -44,7 +45,7 @@ const ShopDetail = () => {
       const [profRes, prodRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, address, phone, website, contact_name, profile_categories(producer_categories(id, name))")
+          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, profile_categories(producer_categories(id, name))")
           .eq("id", id)
           .maybeSingle(),
         supabase
@@ -86,7 +87,14 @@ const ShopDetail = () => {
           <>
             {/* Header */}
             <header className="mb-10 p-6 md:p-8 rounded-xl border border-border bg-card">
-              <h1 className="text-3xl md:text-4xl font-display text-gold font-bold mb-3">{profile.brand_name}</h1>
+              <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
+                <h1 className="text-3xl md:text-4xl font-display text-gold font-bold">{profile.brand_name}</h1>
+                {profile.contact_published && (
+                  <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                    <BadgeCheck size={14} /> اطلاعات تأیید شده
+                  </span>
+                )}
+              </div>
               {profile.description && (
                 <p className="text-muted-foreground leading-relaxed mb-4 max-w-3xl">{profile.description}</p>
               )}
@@ -99,34 +107,40 @@ const ShopDetail = () => {
                   ) : null
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                {profile.contact_name && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User size={16} className="text-gold" /> {profile.contact_name}
-                  </div>
-                )}
-                {profile.phone && (
-                  <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-gold">
-                    <Phone size={16} className="text-gold" /> {profile.phone}
-                  </a>
-                )}
-                {profile.city && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin size={16} className="text-gold" /> {profile.city}
-                  </div>
-                )}
-                {profile.address && (
-                  <div className="flex items-start gap-2 text-muted-foreground md:col-span-2">
-                    <MapPin size={16} className="text-gold mt-0.5" /> {profile.address}
-                  </div>
-                )}
-                {profile.website && (
-                  <a href={profile.website} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-gold md:col-span-2">
-                    <Globe size={16} className="text-gold" /> {profile.website}
-                  </a>
-                )}
-              </div>
+              {profile.contact_published ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {profile.contact_name && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <User size={16} className="text-gold" /> {profile.contact_name}
+                    </div>
+                  )}
+                  {profile.phone && (
+                    <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-gold">
+                      <Phone size={16} className="text-gold" /> {profile.phone}
+                    </a>
+                  )}
+                  {profile.city && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin size={16} className="text-gold" /> {profile.city}
+                    </div>
+                  )}
+                  {profile.address && (
+                    <div className="flex items-start gap-2 text-muted-foreground md:col-span-2">
+                      <MapPin size={16} className="text-gold mt-0.5" /> {profile.address}
+                    </div>
+                  )}
+                  {profile.website && (
+                    <a href={profile.website} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-gold md:col-span-2">
+                      <Globe size={16} className="text-gold" /> {profile.website}
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-md border border-dashed border-border bg-muted/30">
+                  <Lock size={14} /> اطلاعات تماس این فروشگاه هنوز توسط تولیدکننده منتشر نشده است.
+                </div>
+              )}
             </header>
 
             {/* Products */}

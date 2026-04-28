@@ -131,6 +131,8 @@ export type Database = {
           brand_name: string
           city: string | null
           contact_name: string | null
+          contact_published: boolean
+          contact_published_at: string | null
           created_at: string
           description: string | null
           id: string
@@ -144,6 +146,8 @@ export type Database = {
           brand_name: string
           city?: string | null
           contact_name?: string | null
+          contact_published?: boolean
+          contact_published_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -157,6 +161,8 @@ export type Database = {
           brand_name?: string
           city?: string | null
           contact_name?: string | null
+          contact_published?: boolean
+          contact_published_at?: string | null
           created_at?: string
           description?: string | null
           id?: string

@@ -18,7 +18,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
-  Package, ImageIcon, Save,
+  Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
 } from "lucide-react";
 
 interface Category { id: string; name: string; slug: string; }
@@ -26,6 +26,7 @@ interface Profile {
   id: string; brand_name: string; contact_name: string | null;
   phone: string | null; city: string | null; address: string | null;
   description: string | null; website: string | null;
+  contact_published: boolean; contact_published_at: string | null;
 }
 interface Product {
   id: string; name: string; description: string | null;
@@ -160,7 +161,52 @@ const Dashboard = () => {
     else toast({ title: "ذخیره شد", description: "اطلاعات پروفایل به‌روزرسانی شد" });
   };
 
-  // ---- product helpers ----
+  // ---- contact info completeness & publish ----
+  const contactFields = profile
+    ? [
+        { key: "phone", label: "شماره تماس", value: profile.phone },
+        { key: "city", label: "شهر", value: profile.city },
+        { key: "address", label: "آدرس", value: profile.address },
+        { key: "website", label: "وب‌سایت", value: profile.website },
+      ]
+    : [];
+  const filledCount = contactFields.filter((f) => f.value && f.value.trim().length > 0).length;
+  const isContactComplete = filledCount === contactFields.length;
+
+  const togglePublish = async (publish: boolean) => {
+    if (!profile) return;
+    if (publish && !isContactComplete) {
+      toast({
+        title: "اطلاعات ناقص است",
+        description: "برای انتشار، تمام فیلدهای تماس را تکمیل و ذخیره کنید.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        contact_published: publish,
+        contact_published_at: publish ? new Date().toISOString() : null,
+      })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setProfile({
+      ...profile,
+      contact_published: publish,
+      contact_published_at: publish ? new Date().toISOString() : null,
+    });
+    toast({
+      title: publish ? "اطلاعات منتشر شد" : "انتشار لغو شد",
+      description: publish ? "اطلاعات تماس شما اکنون در سایت نمایش داده می‌شود" : "اطلاعات تماس از سایت حذف شد",
+    });
+  };
+
   const resetProductForm = () => {
     setEditing(null); setPName(""); setPDesc(""); setPPrice("");
     setPStock("0"); setPCat("none"); setPActive(true);
@@ -365,11 +411,62 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={saving}
-                  className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                  ذخیره تغییرات
-                </Button>
+                {/* Contact info status & publish */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label className="text-base">وضعیت اطلاعات تماس</Label>
+                    {profile.contact_published ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                        <CheckCircle2 size={14} /> منتشر شده
+                      </span>
+                    ) : isContactComplete ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
+                        <CheckCircle2 size={14} /> آماده انتشار
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-destructive/15 text-destructive border border-destructive/30">
+                        <AlertCircle size={14} /> ناقص ({filledCount}/{contactFields.length})
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {contactFields.map((f) => {
+                      const ok = !!(f.value && f.value.trim());
+                      return (
+                        <div key={f.key}
+                          className={`flex items-center gap-1.5 p-2 rounded-md border ${
+                            ok ? "border-emerald-brand/30 bg-emerald-brand/5 text-foreground"
+                               : "border-border bg-muted/30 text-muted-foreground"
+                          }`}>
+                          {ok ? <CheckCircle2 size={12} className="text-emerald-brand" />
+                              : <AlertCircle size={12} />}
+                          <span>{f.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    اطلاعات تماس فقط بعد از تأیید و انتشار، در صفحه عمومی فروشگاه شما نمایش داده می‌شود.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button type="submit" disabled={saving}
+                    className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
+                    {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    ذخیره تغییرات
+                  </Button>
+                  {profile.contact_published ? (
+                    <Button type="button" variant="outline" disabled={saving} onClick={() => togglePublish(false)} className="gap-2">
+                      <EyeOff size={16} /> لغو انتشار
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" disabled={saving || !isContactComplete}
+                      onClick={() => togglePublish(true)} className="gap-2 border-gold/40 text-gold hover:bg-gold/10">
+                      <Send size={16} /> تأیید و انتشار اطلاعات
+                    </Button>
+                  )}
+                </div>
               </form>
             </Card>
           </TabsContent>
