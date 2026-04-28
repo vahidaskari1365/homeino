@@ -21,6 +21,7 @@ type Profile = {
   phone: string | null;
   website: string | null;
   contact_name: string | null;
+  contact_published: boolean;
   profile_categories: { category_id: string }[];
 };
 
