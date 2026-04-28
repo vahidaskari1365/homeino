@@ -163,7 +163,15 @@ const Shops = () => {
                   <Link to={`/shops/${p.id}`} key={p.id} className="block">
                     <Card className="hover:border-gold/50 transition-colors h-full">
                       <CardHeader>
-                        <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
+                          {p.contact_published && (
+                            <span title="اطلاعات تأیید شده"
+                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30 shrink-0">
+                              <BadgeCheck size={12} /> تأیید شده
+                            </span>
+                          )}
+                        </div>
                         {p.description && (
                           <CardDescription className="line-clamp-2">{p.description}</CardDescription>
                         )}
@@ -175,13 +183,17 @@ const Shops = () => {
                             return name ? <Badge key={pc.category_id} variant="secondary">{name}</Badge> : null;
                           })}
                         </div>
-                        <div className="space-y-1.5 text-sm text-muted-foreground">
-                          {p.city && <div className="flex items-center gap-2"><MapPin size={14} />{p.city}</div>}
-                          {p.phone && <div className="flex items-center gap-2"><Phone size={14} />{p.phone}</div>}
-                          {p.website && (
-                            <div className="flex items-center gap-2"><Globe size={14} />{p.website}</div>
-                          )}
-                        </div>
+                        {p.contact_published ? (
+                          <div className="space-y-1.5 text-sm text-muted-foreground">
+                            {p.city && <div className="flex items-center gap-2"><MapPin size={14} />{p.city}</div>}
+                            {p.phone && <div className="flex items-center gap-2"><Phone size={14} />{p.phone}</div>}
+                            {p.website && (
+                              <div className="flex items-center gap-2"><Globe size={14} />{p.website}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">اطلاعات تماس هنوز منتشر نشده</p>
+                        )}
                       </CardContent>
                     </Card>
                   </Link>
