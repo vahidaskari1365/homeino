@@ -59,7 +59,7 @@ const Shops = () => {
         supabase.from("producer_categories").select("id, name, slug").order("name"),
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, phone, website, contact_name, profile_categories(category_id)")
+          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, profile_categories(category_id)")
           .order("brand_name"),
         supabase
           .from("products")
