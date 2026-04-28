@@ -22,6 +22,7 @@ type Profile = {
   website: string | null;
   contact_name: string | null;
   contact_published: boolean;
+  contact_published_at: string | null;
   profile_categories: { category_id: string }[];
 };
 
@@ -59,7 +60,7 @@ const Shops = () => {
         supabase.from("producer_categories").select("id, name, slug").order("name"),
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, profile_categories(category_id)")
+          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, contact_published_at, profile_categories(category_id)")
           .order("brand_name"),
         supabase
           .from("products")

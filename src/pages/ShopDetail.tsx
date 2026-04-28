@@ -19,6 +19,7 @@ type Profile = {
   website: string | null;
   contact_name: string | null;
   contact_published: boolean;
+  contact_published_at: string | null;
   profile_categories: { producer_categories: { id: string; name: string } | null }[];
 };
 
@@ -45,7 +46,7 @@ const ShopDetail = () => {
       const [profRes, prodRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, profile_categories(producer_categories(id, name))")
+          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, contact_published_at, profile_categories(producer_categories(id, name))")
           .eq("id", id)
           .maybeSingle(),
         supabase
