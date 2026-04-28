@@ -159,32 +159,31 @@ const Shops = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProfiles.map((p) => (
-                  <Card key={p.id} className="hover:border-gold/50 transition-colors">
-                    <CardHeader>
-                      <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
-                      {p.description && (
-                        <CardDescription className="line-clamp-2">{p.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex flex-wrap gap-1.5">
-                        {p.profile_categories.map((pc) => {
-                          const name = categoryName(pc.category_id);
-                          return name ? <Badge key={pc.category_id} variant="secondary">{name}</Badge> : null;
-                        })}
-                      </div>
-                      <div className="space-y-1.5 text-sm text-muted-foreground">
-                        {p.city && <div className="flex items-center gap-2"><MapPin size={14} />{p.city}</div>}
-                        {p.phone && <div className="flex items-center gap-2"><Phone size={14} />{p.phone}</div>}
-                        {p.website && (
-                          <a href={p.website} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 hover:text-gold transition-colors">
-                            <Globe size={14} />{p.website}
-                          </a>
+                  <Link to={`/shops/${p.id}`} key={p.id} className="block">
+                    <Card className="hover:border-gold/50 transition-colors h-full">
+                      <CardHeader>
+                        <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
+                        {p.description && (
+                          <CardDescription className="line-clamp-2">{p.description}</CardDescription>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {p.profile_categories.map((pc) => {
+                            const name = categoryName(pc.category_id);
+                            return name ? <Badge key={pc.category_id} variant="secondary">{name}</Badge> : null;
+                          })}
+                        </div>
+                        <div className="space-y-1.5 text-sm text-muted-foreground">
+                          {p.city && <div className="flex items-center gap-2"><MapPin size={14} />{p.city}</div>}
+                          {p.phone && <div className="flex items-center gap-2"><Phone size={14} />{p.phone}</div>}
+                          {p.website && (
+                            <div className="flex items-center gap-2"><Globe size={14} />{p.website}</div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             )}
@@ -200,32 +199,34 @@ const Shops = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredProducts.map((p) => (
-                  <Card key={p.id} className="overflow-hidden hover:border-gold/50 transition-colors">
-                    <div className="aspect-square bg-muted overflow-hidden">
-                      {p.image_url ? (
-                        <img src={p.image_url} alt={p.name} loading="lazy"
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <Package size={40} />
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-4 space-y-2">
-                      <h3 className="font-semibold line-clamp-1">{p.name}</h3>
-                      <p className="text-xs text-muted-foreground">{p.profiles?.brand_name}</p>
-                      {p.price && (
-                        <p className="text-gold font-bold">
-                          {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
-                        </p>
-                      )}
-                      {p.profiles?.city && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin size={12} />{p.profiles.city}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Link to={`/shops/${p.profile_id}`} key={p.id} className="block">
+                    <Card className="overflow-hidden hover:border-gold/50 transition-colors h-full">
+                      <div className="aspect-square bg-muted overflow-hidden">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} loading="lazy"
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <Package size={40} />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-semibold line-clamp-1">{p.name}</h3>
+                        <p className="text-xs text-muted-foreground">{p.profiles?.brand_name}</p>
+                        {p.price && (
+                          <p className="text-gold font-bold">
+                            {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                          </p>
+                        )}
+                        {p.profiles?.city && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin size={12} />{p.profiles.city}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             )}
