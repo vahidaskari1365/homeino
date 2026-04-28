@@ -411,11 +411,62 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={saving}
-                  className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                  ذخیره تغییرات
-                </Button>
+                {/* Contact info status & publish */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label className="text-base">وضعیت اطلاعات تماس</Label>
+                    {profile.contact_published ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                        <CheckCircle2 size={14} /> منتشر شده
+                      </span>
+                    ) : isContactComplete ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
+                        <CheckCircle2 size={14} /> آماده انتشار
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-destructive/15 text-destructive border border-destructive/30">
+                        <AlertCircle size={14} /> ناقص ({filledCount}/{contactFields.length})
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {contactFields.map((f) => {
+                      const ok = !!(f.value && f.value.trim());
+                      return (
+                        <div key={f.key}
+                          className={`flex items-center gap-1.5 p-2 rounded-md border ${
+                            ok ? "border-emerald-brand/30 bg-emerald-brand/5 text-foreground"
+                               : "border-border bg-muted/30 text-muted-foreground"
+                          }`}>
+                          {ok ? <CheckCircle2 size={12} className="text-emerald-brand" />
+                              : <AlertCircle size={12} />}
+                          <span>{f.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    اطلاعات تماس فقط بعد از تأیید و انتشار، در صفحه عمومی فروشگاه شما نمایش داده می‌شود.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button type="submit" disabled={saving}
+                    className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
+                    {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    ذخیره تغییرات
+                  </Button>
+                  {profile.contact_published ? (
+                    <Button type="button" variant="outline" disabled={saving} onClick={() => togglePublish(false)} className="gap-2">
+                      <EyeOff size={16} /> لغو انتشار
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" disabled={saving || !isContactComplete}
+                      onClick={() => togglePublish(true)} className="gap-2 border-gold/40 text-gold hover:bg-gold/10">
+                      <Send size={16} /> تأیید و انتشار اطلاعات
+                    </Button>
+                  )}
+                </div>
               </form>
             </Card>
           </TabsContent>
