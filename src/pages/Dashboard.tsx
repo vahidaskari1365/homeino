@@ -161,7 +161,52 @@ const Dashboard = () => {
     else toast({ title: "ذخیره شد", description: "اطلاعات پروفایل به‌روزرسانی شد" });
   };
 
-  // ---- product helpers ----
+  // ---- contact info completeness & publish ----
+  const contactFields = profile
+    ? [
+        { key: "phone", label: "شماره تماس", value: profile.phone },
+        { key: "city", label: "شهر", value: profile.city },
+        { key: "address", label: "آدرس", value: profile.address },
+        { key: "website", label: "وب‌سایت", value: profile.website },
+      ]
+    : [];
+  const filledCount = contactFields.filter((f) => f.value && f.value.trim().length > 0).length;
+  const isContactComplete = filledCount === contactFields.length;
+
+  const togglePublish = async (publish: boolean) => {
+    if (!profile) return;
+    if (publish && !isContactComplete) {
+      toast({
+        title: "اطلاعات ناقص است",
+        description: "برای انتشار، تمام فیلدهای تماس را تکمیل و ذخیره کنید.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        contact_published: publish,
+        contact_published_at: publish ? new Date().toISOString() : null,
+      })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setProfile({
+      ...profile,
+      contact_published: publish,
+      contact_published_at: publish ? new Date().toISOString() : null,
+    });
+    toast({
+      title: publish ? "اطلاعات منتشر شد" : "انتشار لغو شد",
+      description: publish ? "اطلاعات تماس شما اکنون در سایت نمایش داده می‌شود" : "اطلاعات تماس از سایت حذف شد",
+    });
+  };
+
   const resetProductForm = () => {
     setEditing(null); setPName(""); setPDesc(""); setPPrice("");
     setPStock("0"); setPCat("none"); setPActive(true);
