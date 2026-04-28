@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Phone, Globe, Package, Store, BadgeCheck } from "lucide-react";
+import { MapPin, Phone, Globe, Package, Store, BadgeCheck, CalendarCheck } from "lucide-react";
+import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,6 +23,7 @@ type Profile = {
   website: string | null;
   contact_name: string | null;
   contact_published: boolean;
+  contact_published_at: string | null;
   profile_categories: { category_id: string }[];
 };
 
@@ -59,7 +61,7 @@ const Shops = () => {
         supabase.from("producer_categories").select("id, name, slug").order("name"),
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, profile_categories(category_id)")
+          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, contact_published_at, profile_categories(category_id)")
           .order("brand_name"),
         supabase
           .from("products")
@@ -166,10 +168,17 @@ const Shops = () => {
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
                           {p.contact_published && (
-                            <span title="اطلاعات تأیید شده"
-                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30 shrink-0">
-                              <BadgeCheck size={12} /> تأیید شده
-                            </span>
+                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                              <span title="اطلاعات تأیید شده"
+                                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                                <BadgeCheck size={12} /> تأیید شده
+                              </span>
+                              {p.contact_published_at && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <CalendarCheck size={10} /> {formatPersianDate(p.contact_published_at)}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                         {p.description && (

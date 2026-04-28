@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail, BadgeCheck, Lock } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail, BadgeCheck, Lock, CalendarCheck } from "lucide-react";
+import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ type Profile = {
   website: string | null;
   contact_name: string | null;
   contact_published: boolean;
+  contact_published_at: string | null;
   profile_categories: { producer_categories: { id: string; name: string } | null }[];
 };
 
@@ -45,7 +47,7 @@ const ShopDetail = () => {
       const [profRes, prodRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, profile_categories(producer_categories(id, name))")
+          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, contact_published_at, profile_categories(producer_categories(id, name))")
           .eq("id", id)
           .maybeSingle(),
         supabase
@@ -90,9 +92,16 @@ const ShopDetail = () => {
               <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
                 <h1 className="text-3xl md:text-4xl font-display text-gold font-bold">{profile.brand_name}</h1>
                 {profile.contact_published && (
-                  <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
-                    <BadgeCheck size={14} /> اطلاعات تأیید شده
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                      <BadgeCheck size={14} /> اطلاعات تأیید شده
+                    </span>
+                    {profile.contact_published_at && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalendarCheck size={12} /> آخرین تأیید: {formatPersianDate(profile.contact_published_at)}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
               {profile.description && (
