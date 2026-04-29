@@ -72,67 +72,68 @@
   }
 
   .dark {
-    /* Dark theme - Deep charcoal & warm gold */
-    --background: 30 14% 7%;
-    --foreground: 36 25% 94%;
+    /* Dark theme - Charcoal & Rose Gold (Minimal Luxury) */
+    --background: 20 8% 9%;
+    --foreground: 20 15% 92%;
 
-    --card: 30 14% 11%;
-    --card-foreground: 36 25% 94%;
+    --card: 20 8% 12%;
+    --card-foreground: 20 15% 92%;
 
-    --popover: 30 14% 9%;
-    --popover-foreground: 36 25% 94%;
+    --popover: 20 8% 11%;
+    --popover-foreground: 20 15% 92%;
 
-    --primary: 40 78% 58%;
-    --primary-foreground: 30 14% 7%;
+    /* Rose gold primary */
+    --primary: 14 55% 68%;
+    --primary-foreground: 20 10% 10%;
 
-    --secondary: 165 30% 32%;
-    --secondary-foreground: 36 25% 94%;
+    --secondary: 20 6% 18%;
+    --secondary-foreground: 20 15% 92%;
 
-    --muted: 30 12% 16%;
-    --muted-foreground: 36 12% 65%;
+    --muted: 20 6% 15%;
+    --muted-foreground: 20 8% 62%;
 
-    --accent: 36 30% 18%;
-    --accent-foreground: 36 25% 94%;
+    --accent: 14 30% 22%;
+    --accent-foreground: 14 50% 85%;
 
-    --destructive: 0 65% 45%;
+    --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 12% 20%;
-    --input: 30 12% 20%;
-    --ring: 40 78% 58%;
+    --border: 20 6% 18%;
+    --input: 20 6% 18%;
+    --ring: 14 55% 68%;
 
-    /* Brand tokens (dark) */
-    --gold: 40 78% 58%;
-    --gold-light: 42 80% 70%;
-    --gold-dark: 36 70% 40%;
-    --emerald: 165 40% 38%;
-    --emerald-light: 165 35% 50%;
-    --cream: 30 14% 11%;
-    --cream-dark: 30 14% 9%;
-    --charcoal: 30 14% 7%;
-    --warm-gray: 36 12% 65%;
+    /* Brand tokens (dark - rose gold palette) */
+    --gold: 14 55% 68%;
+    --gold-light: 18 65% 78%;
+    --gold-dark: 12 45% 52%;
+    --emerald: 165 25% 50%;
+    --emerald-light: 165 25% 60%;
+    --cream: 20 8% 12%;
+    --cream-dark: 20 8% 10%;
+    --charcoal: 20 8% 9%;
+    --warm-gray: 20 8% 62%;
 
     /* Sectional surfaces (dark variant) */
-    --section-alt: 30 14% 10%;
-    --surface-dark: 30 18% 5%;
-    --surface-dark-foreground: 36 25% 94%;
-    --surface-emerald: 165 35% 18%;
-    --surface-emerald-foreground: 36 25% 94%;
+    --section-alt: 20 8% 11%;
+    --surface-dark: 20 10% 6%;
+    --surface-dark-foreground: 20 15% 92%;
+    --surface-emerald: 165 20% 14%;
+    --surface-emerald-foreground: 20 15% 92%;
 
-    --gradient-gold: linear-gradient(135deg, hsl(40 78% 50%), hsl(42 80% 65%));
-    --gradient-dark: linear-gradient(180deg, hsl(30 14% 11%), hsl(30 14% 5%));
-    --gradient-hero: linear-gradient(135deg, hsl(30 18% 5% / 0.92), hsl(165 40% 18% / 0.7));
-    --shadow-luxury: 0 20px 60px -15px hsl(40 78% 58% / 0.25);
-    --shadow-card: 0 8px 28px -6px hsl(0 0% 0% / 0.5);
+    --gradient-gold: linear-gradient(135deg, hsl(14 55% 60%), hsl(18 65% 75%));
+    --gradient-dark: linear-gradient(180deg, hsl(20 8% 10%), hsl(20 10% 5%));
+    --gradient-hero: linear-gradient(135deg, hsl(20 10% 6% / 0.94), hsl(14 30% 16% / 0.65));
+    --shadow-luxury: 0 30px 80px -25px hsl(14 55% 68% / 0.18);
+    --shadow-card: 0 1px 0 0 hsl(20 6% 22% / 0.6), 0 12px 40px -12px hsl(0 0% 0% / 0.55);
 
-    --sidebar-background: 30 14% 9%;
-    --sidebar-foreground: 36 25% 94%;
-    --sidebar-primary: 40 78% 58%;
-    --sidebar-primary-foreground: 30 14% 7%;
-    --sidebar-accent: 30 12% 16%;
-    --sidebar-accent-foreground: 36 25% 94%;
-    --sidebar-border: 30 12% 20%;
-    --sidebar-ring: 40 78% 58%;
+    --sidebar-background: 20 8% 10%;
+    --sidebar-foreground: 20 15% 92%;
+    --sidebar-primary: 14 55% 68%;
+    --sidebar-primary-foreground: 20 10% 10%;
+    --sidebar-accent: 20 6% 15%;
+    --sidebar-accent-foreground: 20 15% 92%;
+    --sidebar-border: 20 6% 18%;
+    --sidebar-ring: 14 55% 68%;
   }
 }
 
@@ -142,17 +143,27 @@
   }
 
   html {
-    @apply transition-colors duration-300;
+    @apply transition-colors duration-500;
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
     direction: rtl;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: 0.005em;
   }
 
+  /* Headings: Persian via Vazirmatn, Latin chars fall back to Playfair for luxury serif feel */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Vazirmatn', 'Playfair Display', serif;
-    font-weight: 700;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Subtle minimal scrollbar */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.25);
+    color: hsl(var(--foreground));
   }
 }
 
