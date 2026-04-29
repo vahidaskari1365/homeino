@@ -82,30 +82,30 @@
     --popover: 20 8% 11%;
     --popover-foreground: 20 15% 92%;
 
-    /* Rose gold primary */
-    --primary: 14 55% 68%;
-    --primary-foreground: 20 10% 10%;
+    /* Champagne gold primary */
+    --primary: 40 55% 62%;
+    --primary-foreground: 20 10% 8%;
 
-    --secondary: 20 6% 18%;
-    --secondary-foreground: 20 15% 92%;
+    --secondary: 30 6% 18%;
+    --secondary-foreground: 38 25% 92%;
 
-    --muted: 20 6% 15%;
-    --muted-foreground: 20 8% 62%;
+    --muted: 30 6% 15%;
+    --muted-foreground: 38 10% 65%;
 
-    --accent: 14 30% 22%;
-    --accent-foreground: 14 50% 85%;
+    --accent: 40 25% 22%;
+    --accent-foreground: 42 55% 85%;
 
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 20 6% 18%;
-    --input: 20 6% 18%;
-    --ring: 14 55% 68%;
+    --border: 30 6% 20%;
+    --input: 30 6% 18%;
+    --ring: 40 55% 62%;
 
-    /* Brand tokens (dark - rose gold palette) */
-    --gold: 14 55% 68%;
-    --gold-light: 18 65% 78%;
-    --gold-dark: 12 45% 52%;
+    /* Brand tokens (dark - champagne gold palette) */
+    --gold: 40 55% 62%;
+    --gold-light: 44 65% 75%;
+    --gold-dark: 36 60% 45%;
     --emerald: 165 25% 50%;
     --emerald-light: 165 25% 60%;
     --cream: 20 8% 12%;
@@ -120,16 +120,16 @@
     --surface-emerald: 165 20% 14%;
     --surface-emerald-foreground: 20 15% 92%;
 
-    --gradient-gold: linear-gradient(135deg, hsl(14 55% 60%), hsl(18 65% 75%));
+    --gradient-gold: linear-gradient(135deg, hsl(40 55% 55%), hsl(44 65% 72%));
     --gradient-dark: linear-gradient(180deg, hsl(20 8% 10%), hsl(20 10% 5%));
-    --gradient-hero: linear-gradient(135deg, hsl(20 10% 6% / 0.94), hsl(14 30% 16% / 0.65));
-    --shadow-luxury: 0 30px 80px -25px hsl(14 55% 68% / 0.18);
-    --shadow-card: 0 1px 0 0 hsl(20 6% 22% / 0.6), 0 12px 40px -12px hsl(0 0% 0% / 0.55);
+    --gradient-hero: linear-gradient(135deg, hsl(20 10% 6% / 0.94), hsl(40 25% 14% / 0.6));
+    --shadow-luxury: 0 30px 80px -25px hsl(40 55% 62% / 0.18);
+    --shadow-card: 0 1px 0 0 hsl(30 6% 22% / 0.6), 0 12px 40px -12px hsl(0 0% 0% / 0.55);
 
     --sidebar-background: 20 8% 10%;
-    --sidebar-foreground: 20 15% 92%;
-    --sidebar-primary: 14 55% 68%;
-    --sidebar-primary-foreground: 20 10% 10%;
+    --sidebar-foreground: 38 20% 92%;
+    --sidebar-primary: 40 55% 62%;
+    --sidebar-primary-foreground: 20 10% 8%;
     --sidebar-accent: 20 6% 15%;
     --sidebar-accent-foreground: 20 15% 92%;
     --sidebar-border: 20 6% 18%;
