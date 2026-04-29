@@ -158,19 +158,39 @@
     direction: rtl;
     font-feature-settings: "ss01", "cv11";
     letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Headings: Persian via Vazirmatn, Latin chars fall back to Playfair for luxury serif feel */
+  /* Headings: Persian via Vazirmatn, Latin chars fall back to Playfair */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Vazirmatn', 'Playfair Display', serif;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    color: hsl(var(--foreground));
   }
 
-  /* Subtle minimal scrollbar */
+  /* Soft selection — sage tinted */
   ::selection {
-    background-color: hsl(var(--primary) / 0.25);
+    background-color: hsl(var(--primary) / 0.22);
     color: hsl(var(--foreground));
+  }
+
+  /* Quiet, minimal scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 8px;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
   }
 }
 
