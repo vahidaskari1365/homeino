@@ -90,18 +90,18 @@
     --popover: 150 8% 10%;
     --popover-foreground: 36 18% 88%;
 
-    /* Soft sage primary — luminous but not harsh */
+    /* Sage primary kept for buttons/surfaces; text usages remain readable */
     --primary: 150 20% 62%;
     --primary-foreground: 150 14% 10%;
 
     --secondary: 150 6% 18%;
-    --secondary-foreground: 36 18% 88%;
+    --secondary-foreground: 36 18% 92%;
 
     --muted: 150 6% 14%;
-    --muted-foreground: 36 10% 64%;
+    --muted-foreground: 36 12% 72%;
 
     --accent: 150 14% 22%;
-    --accent-foreground: 150 25% 82%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 55% 52%;
     --destructive-foreground: 0 0% 98%;
@@ -111,11 +111,12 @@
     --ring: 150 20% 62%;
 
     /* Champagne accent for luxe touches */
-    --gold: 40 45% 65%;
-    --gold-light: 42 55% 76%;
-    --gold-dark: 36 40% 48%;
-    --emerald: 150 25% 55%;
-    --emerald-light: 150 22% 65%;
+    --gold: 40 50% 72%;
+    --gold-light: 42 60% 82%;
+    --gold-dark: 36 40% 55%;
+    /* Emerald text tokens forced to warm white for legibility on dark */
+    --emerald: 36 20% 94%;
+    --emerald-light: 36 18% 88%;
     --cream: 150 8% 12%;
     --cream-dark: 150 8% 9%;
     --charcoal: 150 8% 8%;
