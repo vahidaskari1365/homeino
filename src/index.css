@@ -82,30 +82,30 @@
     --popover: 20 8% 11%;
     --popover-foreground: 20 15% 92%;
 
-    /* Rose gold primary */
-    --primary: 14 55% 68%;
-    --primary-foreground: 20 10% 10%;
+    /* Champagne gold primary */
+    --primary: 40 55% 62%;
+    --primary-foreground: 20 10% 8%;
 
-    --secondary: 20 6% 18%;
-    --secondary-foreground: 20 15% 92%;
+    --secondary: 30 6% 18%;
+    --secondary-foreground: 38 25% 92%;
 
-    --muted: 20 6% 15%;
-    --muted-foreground: 20 8% 62%;
+    --muted: 30 6% 15%;
+    --muted-foreground: 38 10% 65%;
 
-    --accent: 14 30% 22%;
-    --accent-foreground: 14 50% 85%;
+    --accent: 40 25% 22%;
+    --accent-foreground: 42 55% 85%;
 
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 20 6% 18%;
-    --input: 20 6% 18%;
-    --ring: 14 55% 68%;
+    --border: 30 6% 20%;
+    --input: 30 6% 18%;
+    --ring: 40 55% 62%;
 
-    /* Brand tokens (dark - rose gold palette) */
-    --gold: 14 55% 68%;
-    --gold-light: 18 65% 78%;
-    --gold-dark: 12 45% 52%;
+    /* Brand tokens (dark - champagne gold palette) */
+    --gold: 40 55% 62%;
+    --gold-light: 44 65% 75%;
+    --gold-dark: 36 60% 45%;
     --emerald: 165 25% 50%;
     --emerald-light: 165 25% 60%;
     --cream: 20 8% 12%;
