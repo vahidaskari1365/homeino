@@ -255,6 +255,18 @@
   }
 }
 
+/* Dark mode legibility: keep sage for surfaces/buttons,
+   but force colored text utilities to warm white. */
+.dark .text-primary {
+  color: hsl(36 20% 94%) !important;
+}
+.dark .text-emerald-brand {
+  color: hsl(36 20% 94%) !important;
+}
+.dark .text-secondary {
+  color: hsl(36 18% 88%) !important;
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
