@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 type Category = { id: string; name: string; slug: string };
@@ -49,6 +51,7 @@ const Shops = () => {
   const [city, setCity] = useState<string>(ALL);
   const [category, setCategory] = useState<string>(ALL);
   const [search, setSearch] = useState("");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   useEffect(() => {
     document.title = "فروشگاه‌ها و تولیدکنندگان | خانه‌زیبا";
@@ -86,21 +89,28 @@ const Shops = () => {
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
+      if (verifiedOnly && !p.contact_published) return false;
       if (city !== ALL && p.city !== city) return false;
       if (category !== ALL && !p.profile_categories.some((c) => c.category_id === category)) return false;
       if (search && !p.brand_name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [profiles, city, category, search]);
+  }, [profiles, city, category, search, verifiedOnly]);
+
+  const verifiedProfileIds = useMemo(
+    () => new Set(profiles.filter((p) => p.contact_published).map((p) => p.id)),
+    [profiles],
+  );
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      if (verifiedOnly && !verifiedProfileIds.has(p.profile_id)) return false;
       if (city !== ALL && p.profiles?.city !== city) return false;
       if (category !== ALL && p.category_id !== category) return false;
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [products, city, category, search]);
+  }, [products, city, category, search, verifiedOnly, verifiedProfileIds]);
 
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name;
 
@@ -116,30 +126,49 @@ const Shops = () => {
         </header>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 rounded-lg border border-border bg-card">
-          <Input
-            placeholder="جستجو بر اساس نام..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Select value={city} onValueChange={setCity}>
-            <SelectTrigger><SelectValue placeholder="شهر" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>همه شهرها</SelectItem>
-              {cities.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger><SelectValue placeholder="دسته فعالیت" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>همه دسته‌ها</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="mb-8 p-4 rounded-lg border border-border bg-card space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              placeholder="جستجو بر اساس نام..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Select value={city} onValueChange={setCity}>
+              <SelectTrigger><SelectValue placeholder="شهر" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>همه شهرها</SelectItem>
+                {cities.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue placeholder="دسته فعالیت" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>همه دسته‌ها</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Switch id="verified-only" checked={verifiedOnly} onCheckedChange={setVerifiedOnly} />
+              <Label htmlFor="verified-only" className="cursor-pointer flex items-center gap-1.5">
+                <BadgeCheck size={14} className="text-emerald-brand" />
+                فقط تولیدکنندگان با اطلاعات تماس تأیید‌شده
+              </Label>
+            </div>
+            {(city !== ALL || category !== ALL || search || verifiedOnly) && (
+              <button
+                onClick={() => { setCity(ALL); setCategory(ALL); setSearch(""); setVerifiedOnly(false); }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                پاک کردن فیلترها
+              </button>
+            )}
+          </div>
         </div>
 
         <Tabs defaultValue="producers" className="w-full">
