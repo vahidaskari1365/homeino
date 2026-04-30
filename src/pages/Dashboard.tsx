@@ -19,7 +19,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
   Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
+  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check,
 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { formatPersianDate } from "@/lib/date";
 
 interface Category { id: string; name: string; slug: string; }
 interface Profile {
@@ -33,6 +36,36 @@ interface Product {
   price: number | null; stock: number; image_url: string | null;
   is_active: boolean; category_id: string | null;
 }
+
+type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+interface OrderItem {
+  id: string; product_name: string; unit_price: number; quantity: number;
+}
+interface Order {
+  id: string; recipient_name: string; phone: string; city: string | null;
+  address: string; note: string | null; status: OrderStatus;
+  total_amount: number; created_at: string; order_items: OrderItem[];
+}
+interface Inquiry {
+  id: string; name: string; phone: string; message: string;
+  is_read: boolean; created_at: string; product_id: string | null;
+}
+interface DailyView { day: string; views: number; }
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "در انتظار",
+  confirmed: "تأیید شده",
+  shipped: "ارسال شده",
+  delivered: "تحویل داده شده",
+  cancelled: "لغو شده",
+};
+const STATUS_COLOR: Record<OrderStatus, string> = {
+  pending: "bg-gold/15 text-gold border-gold/30",
+  confirmed: "bg-primary/15 text-primary border-primary/30",
+  shipped: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  delivered: "bg-emerald-brand/15 text-emerald-brand border-emerald-brand/30",
+  cancelled: "bg-destructive/15 text-destructive border-destructive/30",
+};
 
 const profileSchema = z.object({
   brand_name: z.string().trim().min(1, "نام برند الزامی است").max(120),
@@ -62,6 +95,10 @@ const Dashboard = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
+  const [productViews, setProductViews] = useState<Record<string, number>>({});
 
   // product dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -108,7 +145,64 @@ const Dashboard = () => {
       ]);
       if (pc) setSelectedCats(pc.map((r) => r.category_id));
       if (prods) setProducts(prods as Product[]);
+      await loadSellerData(prof.id);
     }
+  };
+
+  const loadSellerData = async (profileId: string) => {
+    const [ordersRes, inqRes, dailyRes, totalsRes] = await Promise.all([
+      supabase.from("orders")
+        .select("id, recipient_name, phone, city, address, note, status, total_amount, created_at, order_items(id, product_name, unit_price, quantity)")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false }),
+      supabase.from("inquiries")
+        .select("*").eq("profile_id", profileId).order("created_at", { ascending: false }),
+      supabase.from("product_daily_views")
+        .select("day, views").eq("profile_id", profileId).order("day", { ascending: true }),
+      supabase.from("product_views")
+        .select("product_id").eq("profile_id", profileId),
+    ]);
+
+    if (ordersRes.data) setOrders(ordersRes.data as unknown as Order[]);
+    if (inqRes.data) setInquiries(inqRes.data as Inquiry[]);
+
+    if (dailyRes.data) {
+      // Aggregate across products per day
+      const map = new Map<string, number>();
+      for (const r of dailyRes.data as { day: string; views: number }[]) {
+        map.set(r.day, (map.get(r.day) ?? 0) + r.views);
+      }
+      const arr = [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, views]) => ({ day, views }));
+      setDailyViews(arr);
+    }
+
+    if (totalsRes.data) {
+      const counts: Record<string, number> = {};
+      for (const r of totalsRes.data as { product_id: string }[]) {
+        counts[r.product_id] = (counts[r.product_id] ?? 0) + 1;
+      }
+      setProductViews(counts);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    toast({ title: "وضعیت به‌روز شد" });
+  };
+
+  const markInquiryRead = async (id: string, is_read: boolean) => {
+    const { error } = await supabase.from("inquiries").update({ is_read }).eq("id", id);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, is_read } : i));
   };
 
   const handleSignOut = async () => {
@@ -344,9 +438,18 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-2 max-w-md mb-6">
-            <TabsTrigger value="profile">پروفایل و دسته‌بندی‌ها</TabsTrigger>
-            <TabsTrigger value="products">محصولات ({products.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 md:max-w-3xl mb-6 h-auto">
+            <TabsTrigger value="profile" className="text-xs md:text-sm">پروفایل</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs md:text-sm">محصولات ({products.length})</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm gap-1">
+              <ShoppingCart size={14} />سفارش‌ها ({orders.filter((o) => o.status === "pending").length})
+            </TabsTrigger>
+            <TabsTrigger value="inquiries" className="text-xs md:text-sm gap-1">
+              <MessageSquare size={14} />درخواست‌ها ({inquiries.filter((i) => !i.is_read).length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm gap-1">
+              <BarChart3 size={14} />آمار
+            </TabsTrigger>
           </TabsList>
 
           {/* PROFILE TAB */}
@@ -529,6 +632,198 @@ const Dashboard = () => {
                       </div>
                     </Card>
                   ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* ORDERS TAB */}
+          <TabsContent value="orders">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
+                <ShoppingCart size={20} className="text-gold" /> سفارش‌ها ({orders.length})
+              </h2>
+              {orders.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                  <ShoppingCart size={40} className="mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">هنوز سفارشی ثبت نشده است</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((o) => (
+                    <Card key={o.id} className="p-4 bg-background border-border">
+                      <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
+                        <div>
+                          <p className="font-bold text-foreground">{o.recipient_name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                            <span className="flex items-center gap-1"><Phone size={12} /> {o.phone}</span>
+                            <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(o.created_at)}</span>
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLOR[o.status]}`}>
+                          {STATUS_LABEL[o.status]}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-start gap-1 mb-3">
+                        <MapPin size={12} className="mt-0.5 flex-shrink-0" />
+                        <span>{o.city ? `${o.city} — ` : ""}{o.address}</span>
+                      </div>
+                      {o.note && <p className="text-xs text-muted-foreground italic mb-3">یادداشت: {o.note}</p>}
+                      <div className="border-t border-border pt-3 space-y-1.5">
+                        {o.order_items.map((it) => (
+                          <div key={it.id} className="flex justify-between text-sm">
+                            <span className="text-foreground">{it.product_name} × {it.quantity}</span>
+                            <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("fa-IR")} ت</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-border">
+                        <span className="text-sm font-bold">جمع کل:</span>
+                        <span className="text-gold font-bold">{o.total_amount.toLocaleString("fa-IR")} تومان</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-border items-center">
+                        <Label className="text-xs text-muted-foreground">تغییر وضعیت:</Label>
+                        <Select value={o.status} onValueChange={(v) => updateOrderStatus(o.id, v as OrderStatus)}>
+                          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(STATUS_LABEL) as OrderStatus[]).map((s) => (
+                              <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* INQUIRIES TAB */}
+          <TabsContent value="inquiries">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
+                <MessageSquare size={20} className="text-gold" /> درخواست‌های مشتری ({inquiries.length})
+              </h2>
+              {inquiries.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                  <MessageSquare size={40} className="mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">درخواستی از مشتری‌ها دریافت نکرده‌اید</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {inquiries.map((inq) => {
+                    const product = inq.product_id ? products.find((p) => p.id === inq.product_id) : null;
+                    return (
+                      <Card key={inq.id} className={`p-4 bg-background border ${inq.is_read ? "border-border" : "border-gold/50 bg-gold/5"}`}>
+                        <div className="flex items-start justify-between flex-wrap gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-bold text-foreground">{inq.name}</p>
+                              {!inq.is_read && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">جدید</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
+                              <a href={`tel:${inq.phone}`} className="flex items-center gap-1 hover:text-gold"><Phone size={12} /> {inq.phone}</a>
+                              <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(inq.created_at)}</span>
+                            </p>
+                            {product && (
+                              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                                <Package size={12} /> درباره: {product.name}
+                              </p>
+                            )}
+                            <p className="text-sm text-foreground whitespace-pre-wrap">{inq.message}</p>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => markInquiryRead(inq.id, !inq.is_read)} className="gap-1">
+                            <Check size={14} /> {inq.is_read ? "علامت ناخوانده" : "خوانده شد"}
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* ANALYTICS TAB */}
+          <TabsContent value="analytics">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">کل بازدیدها (۳۰ روز)</span>
+                  <Eye size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {dailyViews.reduce((s, d) => s + d.views, 0).toLocaleString("fa-IR")}
+                </p>
+              </Card>
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">کل سفارش‌ها</span>
+                  <ShoppingCart size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">{orders.length.toLocaleString("fa-IR")}</p>
+              </Card>
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">درخواست‌های خوانده‌نشده</span>
+                  <MessageSquare size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {inquiries.filter((i) => !i.is_read).length.toLocaleString("fa-IR")}
+                </p>
+              </Card>
+            </div>
+
+            <Card className="p-6 shadow-luxury bg-card border-border mb-6">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 size={18} className="text-gold" /> بازدید روزانه محصولات (۳۰ روز اخیر)
+              </h3>
+              {dailyViews.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">هنوز بازدیدی ثبت نشده است</p>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyViews} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11}
+                        tickFormatter={(v) => v.slice(5)} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Line type="monotone" dataKey="views" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-6 shadow-luxury bg-card border-border">
+              <h3 className="font-bold text-foreground mb-4">بازدید تک‌تک محصولات</h3>
+              {products.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">محصولی ندارید</p>
+              ) : (
+                <div className="space-y-2">
+                  {[...products]
+                    .map((p) => ({ p, v: productViews[p.id] ?? 0 }))
+                    .sort((a, b) => b.v - a.v)
+                    .map(({ p, v }) => (
+                      <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+                        <span className="text-foreground text-sm line-clamp-1">{p.name}</span>
+                        <span className="text-sm font-bold text-gold flex items-center gap-1">
+                          <Eye size={14} /> {v.toLocaleString("fa-IR")}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               )}
             </Card>

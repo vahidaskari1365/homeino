@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail, BadgeCheck, Lock, CalendarCheck } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InquiryDialog from "@/components/InquiryDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 type Profile = {
@@ -39,6 +42,38 @@ const ShopDetail = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const { addItem, setOpen } = useCart();
+
+  const logView = async (product_id: string, profile_id: string) => {
+    const key = `viewed:${product_id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("product_views").insert({ product_id, profile_id, viewer_id: user?.id ?? null });
+  };
+
+  const handleAddToCart = (p: Product) => {
+    if (!profile) return;
+    if (!p.price) {
+      toast({ title: "قیمت ثبت نشده", description: "برای این محصول استعلام بفرستید", variant: "destructive" });
+      return;
+    }
+    const res = addItem({
+      product_id: p.id,
+      profile_id: profile.id,
+      name: p.name,
+      price: p.price,
+      image_url: p.image_url,
+      stock: p.stock,
+    });
+    if (!res.ok) {
+      toast({ title: "توجه", description: res.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "اضافه شد", description: `${p.name} به سبد خرید اضافه شد` });
+    void logView(p.id, profile.id);
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -59,11 +94,22 @@ const ShopDetail = () => {
       ]);
       const prof = profRes.data as unknown as Profile | null;
       setProfile(prof);
-      setProducts((prodRes.data as Product[]) ?? []);
+      const prodList = (prodRes.data as Product[]) ?? [];
+      setProducts(prodList);
       if (prof) {
         document.title = `${prof.brand_name} | خانه‌زیبا`;
         const meta = document.querySelector('meta[name="description"]');
         if (meta) meta.setAttribute("content", prof.description?.slice(0, 155) ?? `محصولات ${prof.brand_name}`);
+        // Fire-and-forget view logging: one per product per browser session
+        void (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          const toLog = prodList.filter((p) => !sessionStorage.getItem(`viewed:${p.id}`));
+          if (toLog.length === 0) return;
+          toLog.forEach((p) => sessionStorage.setItem(`viewed:${p.id}`, "1"));
+          await supabase.from("product_views").insert(
+            toLog.map((p) => ({ product_id: p.id, profile_id: prof.id, viewer_id: user?.id ?? null }))
+          );
+        })();
       }
       setLoading(false);
     };
@@ -150,6 +196,9 @@ const ShopDetail = () => {
                   <Lock size={14} /> اطلاعات تماس این فروشگاه هنوز توسط تولیدکننده منتشر نشده است.
                 </div>
               )}
+              <div className="mt-5 pt-5 border-t border-border">
+                <InquiryDialog profile_id={profile.id} label="ارسال درخواست به فروشگاه" />
+              </div>
             </header>
 
             {/* Products */}
@@ -186,6 +235,17 @@ const ShopDetail = () => {
                         <p className="text-xs text-muted-foreground">
                           {p.stock > 0 ? `موجود: ${p.stock}` : "ناموجود"}
                         </p>
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 gradient-gold text-primary-foreground gap-1"
+                            disabled={p.stock <= 0 || !p.price}
+                            onClick={() => handleAddToCart(p)}
+                          >
+                            <ShoppingBag size={14} /> افزودن
+                          </Button>
+                          <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}

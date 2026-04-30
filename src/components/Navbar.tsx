@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, ShoppingBag, Heart, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 
@@ -58,9 +59,7 @@ const Navbar = () => {
           <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
             <Heart size={20} />
           </button>
-          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
-            <ShoppingBag size={20} />
-          </button>
+          <CartButton />
           {session ? (
             <>
               <Link
