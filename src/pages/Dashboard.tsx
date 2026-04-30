@@ -95,6 +95,10 @@ const Dashboard = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
+  const [productViews, setProductViews] = useState<Record<string, number>>({});
 
   // product dialog
   const [dialogOpen, setDialogOpen] = useState(false);
