@@ -94,11 +94,22 @@ const ShopDetail = () => {
       ]);
       const prof = profRes.data as unknown as Profile | null;
       setProfile(prof);
-      setProducts((prodRes.data as Product[]) ?? []);
+      const prodList = (prodRes.data as Product[]) ?? [];
+      setProducts(prodList);
       if (prof) {
         document.title = `${prof.brand_name} | خانه‌زیبا`;
         const meta = document.querySelector('meta[name="description"]');
         if (meta) meta.setAttribute("content", prof.description?.slice(0, 155) ?? `محصولات ${prof.brand_name}`);
+        // Fire-and-forget view logging: one per product per browser session
+        void (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          const toLog = prodList.filter((p) => !sessionStorage.getItem(`viewed:${p.id}`));
+          if (toLog.length === 0) return;
+          toLog.forEach((p) => sessionStorage.setItem(`viewed:${p.id}`, "1"));
+          await supabase.from("product_views").insert(
+            toLog.map((p) => ({ product_id: p.id, profile_id: prof.id, viewer_id: user?.id ?? null }))
+          );
+        })();
       }
       setLoading(false);
     };
