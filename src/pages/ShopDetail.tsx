@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MapPin, Phone, Globe, User, Package, Mail, BadgeCheck, Lock, CalendarCheck } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InquiryDialog from "@/components/InquiryDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 type Profile = {
