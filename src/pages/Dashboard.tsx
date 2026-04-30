@@ -438,9 +438,18 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-2 max-w-md mb-6">
-            <TabsTrigger value="profile">پروفایل و دسته‌بندی‌ها</TabsTrigger>
-            <TabsTrigger value="products">محصولات ({products.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 md:max-w-3xl mb-6 h-auto">
+            <TabsTrigger value="profile" className="text-xs md:text-sm">پروفایل</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs md:text-sm">محصولات ({products.length})</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm gap-1">
+              <ShoppingCart size={14} />سفارش‌ها ({orders.filter((o) => o.status === "pending").length})
+            </TabsTrigger>
+            <TabsTrigger value="inquiries" className="text-xs md:text-sm gap-1">
+              <MessageSquare size={14} />درخواست‌ها ({inquiries.filter((i) => !i.is_read).length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm gap-1">
+              <BarChart3 size={14} />آمار
+            </TabsTrigger>
           </TabsList>
 
           {/* PROFILE TAB */}
