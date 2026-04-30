@@ -19,7 +19,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
   Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
+  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check,
 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { formatPersianDate } from "@/lib/date";
 
 interface Category { id: string; name: string; slug: string; }
 interface Profile {
