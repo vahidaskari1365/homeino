@@ -42,6 +42,29 @@ const ShopDetail = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const { addItem, setOpen } = useCart();
+
+  const handleAddToCart = (p: Product) => {
+    if (!profile) return;
+    if (!p.price) {
+      toast({ title: "قیمت ثبت نشده", description: "برای این محصول استعلام بفرستید", variant: "destructive" });
+      return;
+    }
+    const res = addItem({
+      product_id: p.id,
+      profile_id: profile.id,
+      name: p.name,
+      price: p.price,
+      image_url: p.image_url,
+      stock: p.stock,
+    });
+    if (!res.ok) {
+      toast({ title: "توجه", description: res.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "اضافه شد", description: `${p.name} به سبد خرید اضافه شد` });
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!id) return;
