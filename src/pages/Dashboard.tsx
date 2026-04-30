@@ -145,7 +145,64 @@ const Dashboard = () => {
       ]);
       if (pc) setSelectedCats(pc.map((r) => r.category_id));
       if (prods) setProducts(prods as Product[]);
+      await loadSellerData(prof.id);
     }
+  };
+
+  const loadSellerData = async (profileId: string) => {
+    const [ordersRes, inqRes, dailyRes, totalsRes] = await Promise.all([
+      supabase.from("orders")
+        .select("id, recipient_name, phone, city, address, note, status, total_amount, created_at, order_items(id, product_name, unit_price, quantity)")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false }),
+      supabase.from("inquiries")
+        .select("*").eq("profile_id", profileId).order("created_at", { ascending: false }),
+      supabase.from("product_daily_views")
+        .select("day, views").eq("profile_id", profileId).order("day", { ascending: true }),
+      supabase.from("product_views")
+        .select("product_id").eq("profile_id", profileId),
+    ]);
+
+    if (ordersRes.data) setOrders(ordersRes.data as unknown as Order[]);
+    if (inqRes.data) setInquiries(inqRes.data as Inquiry[]);
+
+    if (dailyRes.data) {
+      // Aggregate across products per day
+      const map = new Map<string, number>();
+      for (const r of dailyRes.data as { day: string; views: number }[]) {
+        map.set(r.day, (map.get(r.day) ?? 0) + r.views);
+      }
+      const arr = [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, views]) => ({ day, views }));
+      setDailyViews(arr);
+    }
+
+    if (totalsRes.data) {
+      const counts: Record<string, number> = {};
+      for (const r of totalsRes.data as { product_id: string }[]) {
+        counts[r.product_id] = (counts[r.product_id] ?? 0) + 1;
+      }
+      setProductViews(counts);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    toast({ title: "وضعیت به‌روز شد" });
+  };
+
+  const markInquiryRead = async (id: string, is_read: boolean) => {
+    const { error } = await supabase.from("inquiries").update({ is_read }).eq("id", id);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, is_read } : i));
   };
 
   const handleSignOut = async () => {
