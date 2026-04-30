@@ -176,6 +176,9 @@ const ShopDetail = () => {
                   <Lock size={14} /> اطلاعات تماس این فروشگاه هنوز توسط تولیدکننده منتشر نشده است.
                 </div>
               )}
+              <div className="mt-5 pt-5 border-t border-border">
+                <InquiryDialog profile_id={profile.id} label="ارسال درخواست به فروشگاه" />
+              </div>
             </header>
 
             {/* Products */}
@@ -212,6 +215,17 @@ const ShopDetail = () => {
                         <p className="text-xs text-muted-foreground">
                           {p.stock > 0 ? `موجود: ${p.stock}` : "ناموجود"}
                         </p>
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 gradient-gold text-primary-foreground gap-1"
+                            disabled={p.stock <= 0 || !p.price}
+                            onClick={() => handleAddToCart(p)}
+                          >
+                            <ShoppingBag size={14} /> افزودن
+                          </Button>
+                          <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
