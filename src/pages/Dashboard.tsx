@@ -37,6 +37,36 @@ interface Product {
   is_active: boolean; category_id: string | null;
 }
 
+type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+interface OrderItem {
+  id: string; product_name: string; unit_price: number; quantity: number;
+}
+interface Order {
+  id: string; recipient_name: string; phone: string; city: string | null;
+  address: string; note: string | null; status: OrderStatus;
+  total_amount: number; created_at: string; order_items: OrderItem[];
+}
+interface Inquiry {
+  id: string; name: string; phone: string; message: string;
+  is_read: boolean; created_at: string; product_id: string | null;
+}
+interface DailyView { day: string; views: number; }
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "در انتظار",
+  confirmed: "تأیید شده",
+  shipped: "ارسال شده",
+  delivered: "تحویل داده شده",
+  cancelled: "لغو شده",
+};
+const STATUS_COLOR: Record<OrderStatus, string> = {
+  pending: "bg-gold/15 text-gold border-gold/30",
+  confirmed: "bg-primary/15 text-primary border-primary/30",
+  shipped: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  delivered: "bg-emerald-brand/15 text-emerald-brand border-emerald-brand/30",
+  cancelled: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
 const profileSchema = z.object({
   brand_name: z.string().trim().min(1, "نام برند الزامی است").max(120),
   contact_name: z.string().trim().max(120).optional().or(z.literal("")),
