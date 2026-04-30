@@ -44,6 +44,14 @@ const ShopDetail = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const { addItem, setOpen } = useCart();
 
+  const logView = async (product_id: string, profile_id: string) => {
+    const key = `viewed:${product_id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("product_views").insert({ product_id, profile_id, viewer_id: user?.id ?? null });
+  };
+
   const handleAddToCart = (p: Product) => {
     if (!profile) return;
     if (!p.price) {
@@ -63,6 +71,7 @@ const ShopDetail = () => {
       return;
     }
     toast({ title: "اضافه شد", description: `${p.name} به سبد خرید اضافه شد` });
+    void logView(p.id, profile.id);
     setOpen(true);
   };
 
