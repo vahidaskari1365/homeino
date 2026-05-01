@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
 
 const navLinks = [
@@ -18,6 +19,7 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const { isModerator } = useAdminRole();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -62,6 +64,16 @@ const Navbar = () => {
           <CartButton />
           {session ? (
             <>
+              {isModerator && (
+                <Link
+                  to="/admin"
+                  className="text-gold hover:text-gold/80 transition-colors hidden sm:flex items-center gap-2 text-sm"
+                  title="پنل مدیریت"
+                >
+                  <ShieldCheck size={20} />
+                  <span className="hidden md:inline">مدیریت</span>
+                </Link>
+              )}
               <Link
                 to="/dashboard"
                 className="text-muted-foreground hover:text-gold transition-colors hidden sm:flex items-center gap-2 text-sm"

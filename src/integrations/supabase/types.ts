@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          click_count: number
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_url: string | null
+          placement: string
+          start_date: string | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          click_count?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          placement?: string
+          start_date?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          click_count?: number
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          placement?: string
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           created_at: string
@@ -132,6 +180,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          id: string
+          method: string
+          order_id: string
+          paid_at: string | null
+          profile_id: string
+          reference_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          method?: string
+          order_id: string
+          paid_at?: string | null
+          profile_id: string
+          reference_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          method?: string
+          order_id?: string
+          paid_at?: string | null
+          profile_id?: string
+          reference_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       producer_categories: {
         Row: {
@@ -271,6 +369,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          approval_status: string
           brand_name: string
           city: string | null
           contact_name: string | null
@@ -279,13 +378,17 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_blocked: boolean
+          is_visible: boolean
           phone: string | null
+          rejection_reason: string | null
           updated_at: string
           user_id: string
           website: string | null
         }
         Insert: {
           address?: string | null
+          approval_status?: string
           brand_name: string
           city?: string | null
           contact_name?: string | null
@@ -294,13 +397,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_blocked?: boolean
+          is_visible?: boolean
           phone?: string | null
+          rejection_reason?: string | null
           updated_at?: string
           user_id: string
           website?: string | null
         }
         Update: {
           address?: string | null
+          approval_status?: string
           brand_name?: string
           city?: string | null
           contact_name?: string | null
@@ -309,10 +416,121 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_blocked?: boolean
+          is_visible?: boolean
           phone?: string | null
+          rejection_reason?: string | null
           updated_at?: string
           user_id?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+          target_id: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      second_hand_listings: {
+        Row: {
+          approval_status: string
+          city: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          phone: string | null
+          price: number | null
+          rejection_reason: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_status?: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          phone?: string | null
+          price?: number | null
+          rejection_reason?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_status?: string
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          phone?: string | null
+          price?: number | null
+          rejection_reason?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -329,9 +547,17 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       order_status:
         | "pending"
         | "confirmed"
@@ -465,6 +691,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       order_status: [
         "pending",
         "confirmed",
