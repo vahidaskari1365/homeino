@@ -64,6 +64,16 @@ const Navbar = () => {
           <CartButton />
           {session ? (
             <>
+              {isModerator && (
+                <Link
+                  to="/admin"
+                  className="text-gold hover:text-gold/80 transition-colors hidden sm:flex items-center gap-2 text-sm"
+                  title="پنل مدیریت"
+                >
+                  <ShieldCheck size={20} />
+                  <span className="hidden md:inline">مدیریت</span>
+                </Link>
+              )}
               <Link
                 to="/dashboard"
                 className="text-muted-foreground hover:text-gold transition-colors hidden sm:flex items-center gap-2 text-sm"
