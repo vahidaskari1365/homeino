@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
 
 const navLinks = [
