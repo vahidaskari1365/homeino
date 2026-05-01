@@ -19,6 +19,7 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const { isModerator } = useAdminRole();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
