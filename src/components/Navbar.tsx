@@ -6,6 +6,7 @@ import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
+import logo from "@/assets/homeino-logo.jpg";
 
 const navLinks = [
   { label: "خانه", href: "#" },
@@ -36,7 +37,8 @@ const Navbar = () => {
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2">
-          <span className="text-2xl font-display text-gold font-bold tracking-wide">خانه‌زیبا</span>
+          <img src={logo} alt="Homeino" className="h-10 w-10 rounded-lg object-cover" />
+          <span className="text-2xl font-display text-gold font-bold tracking-wide">هومینو</span>
         </a>
 
         {/* Desktop Nav */}

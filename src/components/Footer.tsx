@@ -1,4 +1,5 @@
 import { Phone, Mail, MapPin, Globe } from "lucide-react";
+import logo from "@/assets/homeino-logo.jpg";
 
 const Footer = () => {
   return (
@@ -7,7 +8,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-display text-gold font-bold mb-4">خانه‌زیبا</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <img src={logo} alt="Homeino" className="h-12 w-12 rounded-lg object-cover" />
+              <h3 className="text-2xl font-display text-gold font-bold">هومینو</h3>
+            </div>
             <p className="text-cream/50 text-sm leading-relaxed mb-6">
               مرجع تخصصی دکوراسیون و لوازم خانه. از الهام گرفتن تا خرید و تجهیز کامل خانه.
             </p>
@@ -53,7 +57,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center gap-3 text-cream/50 text-sm">
                 <Mail size={16} className="text-gold" />
-                info@khaneziba.ir
+                info@homeino.ir
               </div>
               <div className="flex items-start gap-3 text-cream/50 text-sm">
                 <MapPin size={16} className="text-gold mt-1 shrink-0" />
@@ -65,7 +69,7 @@ const Footer = () => {
 
         <div className="border-t border-primary-foreground/10 pt-8 text-center">
           <p className="text-cream/30 text-sm">
-            © ۱۴۰۴ خانه‌زیبا. تمامی حقوق محفوظ است.
+            © ۱۴۰۴ هومینو (Homeino). تمامی حقوق محفوظ است.
           </p>
         </div>
       </div>
