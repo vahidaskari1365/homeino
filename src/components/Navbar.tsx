@@ -60,9 +60,9 @@ const Navbar = () => {
           <button className="text-muted-foreground hover:text-gold transition-colors">
             <Search size={20} />
           </button>
-          <button className="text-muted-foreground hover:text-gold transition-colors hidden sm:block">
+          <Link to="/wishlist" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="علاقه‌مندی‌ها">
             <Heart size={20} />
-          </button>
+          </Link>
           <CartButton />
           {session ? (
             <>

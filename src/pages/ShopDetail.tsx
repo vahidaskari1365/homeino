@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import WishlistButton from "@/components/WishlistButton";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -212,7 +213,7 @@ const ShopDetail = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {products.map((p) => (
                     <Card key={p.id} className="overflow-hidden hover:border-gold/50 transition-colors">
-                      <div className="aspect-square bg-muted overflow-hidden">
+                      <div className="aspect-square bg-muted overflow-hidden relative">
                         {p.image_url ? (
                           <img src={p.image_url} alt={p.name} loading="lazy"
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
@@ -221,6 +222,17 @@ const ShopDetail = () => {
                             <Package size={40} />
                           </div>
                         )}
+                        <div className="absolute top-2 left-2">
+                          <WishlistButton item={{
+                            item_type: "product",
+                            item_id: p.id,
+                            title: p.name,
+                            description: p.description,
+                            image_url: p.image_url,
+                            price: p.price,
+                            metadata: { profile_id: profile.id, brand_name: profile.brand_name },
+                          }} />
+                        </div>
                       </div>
                       <CardContent className="p-4 space-y-2">
                         <h3 className="font-semibold line-clamp-1">{p.name}</h3>
