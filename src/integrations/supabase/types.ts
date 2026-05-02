@@ -534,6 +534,45 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          item_id: string
+          item_type: Database["public"]["Enums"]["wishlist_item_type"]
+          metadata: Json | null
+          price: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          item_id: string
+          item_type: Database["public"]["Enums"]["wishlist_item_type"]
+          metadata?: Json | null
+          price?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          item_id?: string
+          item_type?: Database["public"]["Enums"]["wishlist_item_type"]
+          metadata?: Json | null
+          price?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       product_daily_views: {
@@ -564,6 +603,7 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      wishlist_item_type: "product" | "set" | "ai_design"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -699,6 +739,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      wishlist_item_type: ["product", "set", "ai_design"],
     },
   },
 } as const
