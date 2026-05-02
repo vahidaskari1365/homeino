@@ -72,8 +72,8 @@ export const useWishlist = () => {
         toast({ title: "وارد شوید", description: "برای ذخیره علاقه‌مندی ابتدا وارد شوید.", variant: "destructive" });
         return false;
       }
-      const { data, error } = await supabase
-        .from("wishlists")
+      const { data, error } = await (supabase
+        .from("wishlists") as any)
         .insert({
           user_id: userId,
           item_type: input.item_type,
