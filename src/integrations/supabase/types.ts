@@ -471,6 +471,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          profile_id: string
+          rating: number
+          target_id: string
+          target_type: Database["public"]["Enums"]["review_target"]
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          profile_id: string
+          rating: number
+          target_id: string
+          target_type: Database["public"]["Enums"]["review_target"]
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          profile_id?: string
+          rating?: number
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["review_target"]
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       second_hand_listings: {
         Row: {
           approval_status: string
@@ -609,6 +648,7 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      review_target: "product" | "shop"
       wishlist_item_type: "product" | "set" | "ai_design"
     }
     CompositeTypes: {
@@ -745,6 +785,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      review_target: ["product", "shop"],
       wishlist_item_type: ["product", "set", "ai_design"],
     },
   },
