@@ -273,12 +273,17 @@ const ShopDetail = () => {
                           </Button>
                           <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
                         </div>
+                        <div className="pt-1">
+                          <ProductReviewsDialog productId={p.id} profileId={profile.id} productName={p.name} />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               )}
             </section>
+
+            <ReviewSection targetType="shop" targetId={profile.id} profileId={profile.id} />
           </>
         )}
       </main>
