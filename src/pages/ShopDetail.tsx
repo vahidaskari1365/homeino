@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import WishlistButton from "@/components/WishlistButton";
 import CompareButton from "@/components/CompareButton";
+import ReviewSection from "@/components/ReviewSection";
+import ProductReviewsDialog from "@/components/ProductReviewsDialog";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
