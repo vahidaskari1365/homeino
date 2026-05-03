@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import WishlistButton from "@/components/WishlistButton";
+import CompareButton from "@/components/CompareButton";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,8 @@ type Product = {
   image_url: string | null;
   stock: number;
   category_id: string | null;
+  attributes?: Record<string, any>;
+  rating?: number;
 };
 
 const ShopDetail = () => {
@@ -88,7 +91,7 @@ const ShopDetail = () => {
           .maybeSingle(),
         supabase
           .from("products")
-          .select("id, name, description, price, image_url, stock, category_id")
+          .select("id, name, description, price, image_url, stock, category_id, attributes, rating")
           .eq("profile_id", id)
           .eq("is_active", true)
           .order("created_at", { ascending: false }),
@@ -222,7 +225,7 @@ const ShopDetail = () => {
                             <Package size={40} />
                           </div>
                         )}
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-2 left-2 flex flex-col gap-2">
                           <WishlistButton item={{
                             item_type: "product",
                             item_id: p.id,
@@ -231,6 +234,16 @@ const ShopDetail = () => {
                             image_url: p.image_url,
                             price: p.price,
                             metadata: { profile_id: profile.id, brand_name: profile.brand_name },
+                          }} />
+                          <CompareButton item={{
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            image_url: p.image_url,
+                            rating: Number(p.rating || 0),
+                            attributes: p.attributes || {},
+                            shop_id: profile.id,
+                            shop_name: profile.brand_name,
                           }} />
                         </div>
                       </div>
