@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import WishlistButton from "@/components/WishlistButton";
 import CompareButton from "@/components/CompareButton";
+import ReviewSection from "@/components/ReviewSection";
+import ProductReviewsDialog from "@/components/ProductReviewsDialog";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -271,12 +273,17 @@ const ShopDetail = () => {
                           </Button>
                           <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
                         </div>
+                        <div className="pt-1">
+                          <ProductReviewsDialog productId={p.id} profileId={profile.id} productName={p.name} />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               )}
             </section>
+
+            <ReviewSection targetType="shop" targetId={profile.id} profileId={profile.id} />
           </>
         )}
       </main>
