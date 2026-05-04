@@ -231,6 +231,78 @@ export type Database = {
           },
         ]
       }
+      price_quotes: {
+        Row: {
+          answered_at: string | null
+          budget_max: number | null
+          budget_min: number | null
+          city: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description: string | null
+          id: string
+          items: Json
+          product_id: string | null
+          profile_id: string
+          quoted_price: number | null
+          request_type: Database["public"]["Enums"]["quote_request_type"]
+          seller_note: string | null
+          set_id: string | null
+          status: Database["public"]["Enums"]["quote_status"]
+          title: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description?: string | null
+          id?: string
+          items?: Json
+          product_id?: string | null
+          profile_id: string
+          quoted_price?: number | null
+          request_type?: Database["public"]["Enums"]["quote_request_type"]
+          seller_note?: string | null
+          set_id?: string | null
+          status?: Database["public"]["Enums"]["quote_status"]
+          title: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          product_id?: string | null
+          profile_id?: string
+          quoted_price?: number | null
+          request_type?: Database["public"]["Enums"]["quote_request_type"]
+          seller_note?: string | null
+          set_id?: string | null
+          status?: Database["public"]["Enums"]["quote_status"]
+          title?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       producer_categories: {
         Row: {
           created_at: string
@@ -648,6 +720,8 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      quote_request_type: "product" | "set" | "custom"
+      quote_status: "pending" | "answered" | "accepted" | "rejected" | "expired"
       review_target: "product" | "shop"
       wishlist_item_type: "product" | "set" | "ai_design"
     }
@@ -785,6 +859,8 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      quote_request_type: ["product", "set", "custom"],
+      quote_status: ["pending", "answered", "accepted", "rejected", "expired"],
       review_target: ["product", "shop"],
       wishlist_item_type: ["product", "set", "ai_design"],
     },
