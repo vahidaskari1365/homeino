@@ -62,6 +62,163 @@ export type Database = {
         }
         Relationships: []
       }
+      consultation_messages: {
+        Row: {
+          attachments: Json
+          body: string
+          consultation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          attachments?: Json
+          body: string
+          consultation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          consultation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_messages_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultations: {
+        Row: {
+          attachments: Json
+          budget_max: number | null
+          budget_min: number | null
+          city: string | null
+          completed_at: string | null
+          consultation_type: Database["public"]["Enums"]["consultation_type"]
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description: string | null
+          designer_id: string | null
+          designer_note: string | null
+          final_price: number | null
+          id: string
+          room_type: string | null
+          status: Database["public"]["Enums"]["consultation_status"]
+          style_preference: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          completed_at?: string | null
+          consultation_type?: Database["public"]["Enums"]["consultation_type"]
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description?: string | null
+          designer_id?: string | null
+          designer_note?: string | null
+          final_price?: number | null
+          id?: string
+          room_type?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"]
+          style_preference?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          budget_max?: number | null
+          budget_min?: number | null
+          city?: string | null
+          completed_at?: string | null
+          consultation_type?: Database["public"]["Enums"]["consultation_type"]
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          description?: string | null
+          designer_id?: string | null
+          designer_note?: string | null
+          final_price?: number | null
+          id?: string
+          room_type?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"]
+          style_preference?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_designer_id_fkey"
+            columns: ["designer_id"]
+            isOneToOne: false
+            referencedRelation: "designers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      designers: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          hourly_rate: number | null
+          id: string
+          is_active: boolean
+          rating: number
+          specialties: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          rating?: number
+          specialties?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean
+          rating?: number
+          specialties?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           created_at: string
@@ -714,6 +871,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      consultation_status:
+        | "pending"
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      consultation_type: "advice" | "chat" | "custom_design"
       order_status:
         | "pending"
         | "confirmed"
@@ -852,6 +1016,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      consultation_status: [
+        "pending",
+        "assigned",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      consultation_type: ["advice", "chat", "custom_design"],
       order_status: [
         "pending",
         "confirmed",
