@@ -13,6 +13,7 @@ import WishlistButton from "@/components/WishlistButton";
 import CompareButton from "@/components/CompareButton";
 import ReviewSection from "@/components/ReviewSection";
 import ProductReviewsDialog from "@/components/ProductReviewsDialog";
+import PriceQuoteDialog from "@/components/PriceQuoteDialog";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -202,8 +203,14 @@ const ShopDetail = () => {
                   <Lock size={14} /> اطلاعات تماس این فروشگاه هنوز توسط تولیدکننده منتشر نشده است.
                 </div>
               )}
-              <div className="mt-5 pt-5 border-t border-border">
+              <div className="mt-5 pt-5 border-t border-border flex flex-wrap gap-2">
                 <InquiryDialog profile_id={profile.id} label="ارسال درخواست به فروشگاه" />
+                <PriceQuoteDialog
+                  profile_id={profile.id}
+                  request_type="custom"
+                  title={`درخواست قیمت سفارشی از ${profile.brand_name}`}
+                  label="درخواست قیمت سفارشی"
+                />
               </div>
             </header>
 
@@ -273,6 +280,16 @@ const ShopDetail = () => {
                           </Button>
                           <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
                         </div>
+                        <PriceQuoteDialog
+                          profile_id={profile.id}
+                          request_type="product"
+                          product_id={p.id}
+                          title={p.name}
+                          label="درخواست قیمت"
+                          variant="secondary"
+                          size="sm"
+                          fullWidth
+                        />
                         <div className="pt-1">
                           <ProductReviewsDialog productId={p.id} profileId={profile.id} productName={p.name} />
                         </div>
