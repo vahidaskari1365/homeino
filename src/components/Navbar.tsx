@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +68,9 @@ const Navbar = () => {
           </Link>
           <Link to="/consultations" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="مشاوره دکوراسیون">
             <Sparkles size={20} />
+          </Link>
+          <Link to="/site-visits" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="رزرو بازدید حضوری">
+            <CalendarCheck size={20} />
           </Link>
           <CartButton />
           {session ? (

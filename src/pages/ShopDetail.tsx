@@ -14,6 +14,7 @@ import CompareButton from "@/components/CompareButton";
 import ReviewSection from "@/components/ReviewSection";
 import ProductReviewsDialog from "@/components/ProductReviewsDialog";
 import PriceQuoteDialog from "@/components/PriceQuoteDialog";
+import SiteVisitDialog from "@/components/SiteVisitDialog";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -211,6 +212,7 @@ const ShopDetail = () => {
                   title={`درخواست قیمت سفارشی از ${profile.brand_name}`}
                   label="درخواست قیمت سفارشی"
                 />
+                <SiteVisitDialog profile_id={profile.id} />
               </div>
             </header>
 
