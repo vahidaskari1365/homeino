@@ -787,6 +787,63 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          address: string | null
+          city: string | null
+          confirmed_at: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description: string | null
+          id: string
+          preferred_date: string | null
+          preferred_time_range: string | null
+          profile_id: string
+          purpose: Database["public"]["Enums"]["visit_purpose"]
+          seller_note: string | null
+          status: Database["public"]["Enums"]["visit_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description?: string | null
+          id?: string
+          preferred_date?: string | null
+          preferred_time_range?: string | null
+          profile_id: string
+          purpose?: Database["public"]["Enums"]["visit_purpose"]
+          seller_note?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          description?: string | null
+          id?: string
+          preferred_date?: string | null
+          preferred_time_range?: string | null
+          profile_id?: string
+          purpose?: Database["public"]["Enums"]["visit_purpose"]
+          seller_note?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -887,6 +944,17 @@ export type Database = {
       quote_request_type: "product" | "set" | "custom"
       quote_status: "pending" | "answered" | "accepted" | "rejected" | "expired"
       review_target: "product" | "shop"
+      visit_purpose:
+        | "renovation"
+        | "interior_design"
+        | "bulk_purchase"
+        | "other"
+      visit_status:
+        | "pending"
+        | "confirmed"
+        | "rejected"
+        | "completed"
+        | "cancelled"
       wishlist_item_type: "product" | "set" | "ai_design"
     }
     CompositeTypes: {
@@ -1034,6 +1102,19 @@ export const Constants = {
       quote_request_type: ["product", "set", "custom"],
       quote_status: ["pending", "answered", "accepted", "rejected", "expired"],
       review_target: ["product", "shop"],
+      visit_purpose: [
+        "renovation",
+        "interior_design",
+        "bulk_purchase",
+        "other",
+      ],
+      visit_status: [
+        "pending",
+        "confirmed",
+        "rejected",
+        "completed",
+        "cancelled",
+      ],
       wishlist_item_type: ["product", "set", "ai_design"],
     },
   },
