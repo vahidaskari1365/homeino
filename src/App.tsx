@@ -19,6 +19,7 @@ import Compare from "./pages/Compare.tsx";
 import Quotes from "./pages/Quotes.tsx";
 import Consultations from "./pages/Consultations.tsx";
 import SiteVisits from "./pages/SiteVisits.tsx";
+import Installers from "./pages/Installers.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="/quotes" element={<Quotes />} />
                 <Route path="/consultations" element={<Consultations />} />
                 <Route path="/site-visits" element={<SiteVisits />} />
+                <Route path="/installers" element={<Installers />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
