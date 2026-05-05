@@ -255,6 +255,111 @@ export type Database = {
         }
         Relationships: []
       }
+      installer_bookings: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description: string | null
+          final_price: number | null
+          id: string
+          installer_id: string
+          installer_note: string | null
+          preferred_date: string | null
+          preferred_time_range: string | null
+          specialty: Database["public"]["Enums"]["installer_specialty"]
+          status: Database["public"]["Enums"]["booking_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          installer_id: string
+          installer_note?: string | null
+          preferred_date?: string | null
+          preferred_time_range?: string | null
+          specialty: Database["public"]["Enums"]["installer_specialty"]
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          customer_phone?: string
+          description?: string | null
+          final_price?: number | null
+          id?: string
+          installer_id?: string
+          installer_note?: string | null
+          preferred_date?: string | null
+          preferred_time_range?: string | null
+          specialty?: Database["public"]["Enums"]["installer_specialty"]
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      installers: {
+        Row: {
+          avatar_url: string | null
+          base_rate: number | null
+          bio: string | null
+          city: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          rating: number
+          specialties: Database["public"]["Enums"]["installer_specialty"][]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          base_rate?: number | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          rating?: number
+          specialties?: Database["public"]["Enums"]["installer_specialty"][]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          base_rate?: number | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          rating?: number
+          specialties?: Database["public"]["Enums"]["installer_specialty"][]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -928,6 +1033,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "rejected"
+        | "cancelled"
       consultation_status:
         | "pending"
         | "assigned"
@@ -935,6 +1046,14 @@ export type Database = {
         | "completed"
         | "cancelled"
       consultation_type: "advice" | "chat" | "custom_design"
+      installer_specialty:
+        | "curtain"
+        | "chandelier"
+        | "cabinet"
+        | "wallpaper"
+        | "flooring"
+        | "painting"
+        | "other"
       order_status:
         | "pending"
         | "confirmed"
@@ -1084,6 +1203,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      booking_status: [
+        "pending",
+        "confirmed",
+        "completed",
+        "rejected",
+        "cancelled",
+      ],
       consultation_status: [
         "pending",
         "assigned",
@@ -1092,6 +1218,15 @@ export const Constants = {
         "cancelled",
       ],
       consultation_type: ["advice", "chat", "custom_design"],
+      installer_specialty: [
+        "curtain",
+        "chandelier",
+        "cabinet",
+        "wallpaper",
+        "flooring",
+        "painting",
+        "other",
+      ],
       order_status: [
         "pending",
         "confirmed",
