@@ -46,7 +46,11 @@ const PromoteListingDialog = ({ listingId, userId, trigger, onDone }: Props) => 
     });
     if (pErr) { setLoading(false); toast({ title: "خطا", description: pErr.message, variant: "destructive" }); return; }
 
-    const update: Record<string, any> = {};
+    const update: {
+      is_urgent?: boolean; urgent_until?: string;
+      is_featured?: boolean; featured_until?: string;
+      bumped_at?: string;
+    } = {};
     if (selected === "urgent") { update.is_urgent = true; update.urgent_until = expires.toISOString(); }
     if (selected === "featured") { update.is_featured = true; update.featured_until = expires.toISOString(); }
     if (selected === "bump") { update.bumped_at = now.toISOString(); }
