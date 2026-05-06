@@ -407,6 +407,56 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_promotions: {
+        Row: {
+          amount: number
+          created_at: string
+          duration_days: number
+          expires_at: string | null
+          id: string
+          listing_id: string
+          promotion_type: Database["public"]["Enums"]["promotion_type"]
+          starts_at: string
+          status: Database["public"]["Enums"]["promotion_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          duration_days?: number
+          expires_at?: string | null
+          id?: string
+          listing_id: string
+          promotion_type: Database["public"]["Enums"]["promotion_type"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          duration_days?: number
+          expires_at?: string | null
+          id?: string
+          listing_id?: string
+          promotion_type?: Database["public"]["Enums"]["promotion_type"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_promotions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "second_hand_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -894,47 +944,62 @@ export type Database = {
       second_hand_listings: {
         Row: {
           approval_status: string
+          bumped_at: string | null
           city: string | null
           created_at: string
           description: string | null
+          featured_until: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          is_featured: boolean
+          is_urgent: boolean
           phone: string | null
           price: number | null
           rejection_reason: string | null
           title: string
           updated_at: string
+          urgent_until: string | null
           user_id: string
         }
         Insert: {
           approval_status?: string
+          bumped_at?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          featured_until?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean
+          is_urgent?: boolean
           phone?: string | null
           price?: number | null
           rejection_reason?: string | null
           title: string
           updated_at?: string
+          urgent_until?: string | null
           user_id: string
         }
         Update: {
           approval_status?: string
+          bumped_at?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          featured_until?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean
+          is_urgent?: boolean
           phone?: string | null
           price?: number | null
           rejection_reason?: string | null
           title?: string
           updated_at?: string
+          urgent_until?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1107,6 +1172,8 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      promotion_status: "pending" | "active" | "expired" | "cancelled"
+      promotion_type: "urgent" | "featured" | "bump"
       quote_request_type: "product" | "set" | "custom"
       quote_status: "pending" | "answered" | "accepted" | "rejected" | "expired"
       review_target: "product" | "shop"
@@ -1281,6 +1348,8 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      promotion_status: ["pending", "active", "expired", "cancelled"],
+      promotion_type: ["urgent", "featured", "bump"],
       quote_request_type: ["product", "set", "custom"],
       quote_status: ["pending", "answered", "accepted", "rejected", "expired"],
       review_target: ["product", "shop"],
