@@ -177,6 +177,53 @@ export type Database = {
           },
         ]
       }
+      designer_portfolio: {
+        Row: {
+          created_at: string
+          description: string | null
+          designer_id: string
+          id: string
+          image_url: string | null
+          location: string | null
+          project_type: string | null
+          title: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          designer_id: string
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          project_type?: string | null
+          title: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          designer_id?: string
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          project_type?: string | null
+          title?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "designer_portfolio_designer_id_fkey"
+            columns: ["designer_id"]
+            isOneToOne: false
+            referencedRelation: "designers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       designers: {
         Row: {
           avatar_url: string | null
