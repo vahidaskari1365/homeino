@@ -25,13 +25,13 @@ const HeroSection = () => {
             <span className="text-gold text-sm font-medium">مرجع تخصصی دکوراسیون و لوازم خانه</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-tight mb-6">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
             خانه رویایی‌تان را
             <br />
             <span className="text-gold">طراحی کنید</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
             از الهام گرفتن تا خرید، از طراحی با هوش مصنوعی تا تجهیز کامل خانه.
             همه چیز در یک پلتفرم.
           </p>
