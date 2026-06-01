@@ -56,7 +56,7 @@ const HeroSection = () => {
             {["مبلمان", "فرش و قالی", "لوستر", "پرده", "دکور چوبی"].map((tag) => (
               <span
                 key={tag}
-                className="px-4 py-2 rounded-full border border-cream/15 text-cream/60 text-sm hover:border-gold/40 hover:text-gold cursor-pointer transition-all duration-300"
+                className="px-4 py-2 rounded-full border border-white/20 text-white/75 text-sm hover:border-gold/40 hover:text-gold cursor-pointer transition-all duration-300"
               >
                 {tag}
               </span>
