@@ -38,13 +38,13 @@ const HeroSection = () => {
 
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto">
-            <div className="flex items-center bg-primary-foreground/10 backdrop-blur-xl border border-primary-foreground/20 rounded-2xl overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/40">
+            <div className="flex items-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/40">
               <input
                 type="text"
                 placeholder="نام کالا یا سبک دکوراسیون مورد نظر خود را جستجو کنید..."
-                className="flex-1 bg-transparent text-primary-foreground placeholder:text-cream/40 px-6 py-5 text-base outline-none"
+                className="flex-1 bg-transparent text-white placeholder:text-white/50 px-6 py-5 text-base outline-none"
               />
-              <button className="gradient-gold text-primary-foreground px-8 py-5 flex items-center gap-2 font-medium hover:opacity-90 transition-opacity">
+              <button className="gradient-gold text-charcoal px-8 py-5 flex items-center gap-2 font-medium hover:opacity-90 transition-opacity">
                 <Search size={20} />
                 <span className="hidden sm:inline">جستجو</span>
               </button>
