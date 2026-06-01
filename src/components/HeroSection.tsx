@@ -25,26 +25,26 @@ const HeroSection = () => {
             <span className="text-gold text-sm font-medium">مرجع تخصصی دکوراسیون و لوازم خانه</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-tight mb-6">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
             خانه رویایی‌تان را
             <br />
             <span className="text-gold">طراحی کنید</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
             از الهام گرفتن تا خرید، از طراحی با هوش مصنوعی تا تجهیز کامل خانه.
             همه چیز در یک پلتفرم.
           </p>
 
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto">
-            <div className="flex items-center bg-primary-foreground/10 backdrop-blur-xl border border-primary-foreground/20 rounded-2xl overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/40">
+            <div className="flex items-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/40">
               <input
                 type="text"
                 placeholder="نام کالا یا سبک دکوراسیون مورد نظر خود را جستجو کنید..."
-                className="flex-1 bg-transparent text-primary-foreground placeholder:text-cream/40 px-6 py-5 text-base outline-none"
+                className="flex-1 bg-transparent text-white placeholder:text-white/50 px-6 py-5 text-base outline-none"
               />
-              <button className="gradient-gold text-primary-foreground px-8 py-5 flex items-center gap-2 font-medium hover:opacity-90 transition-opacity">
+              <button className="gradient-gold text-charcoal px-8 py-5 flex items-center gap-2 font-medium hover:opacity-90 transition-opacity">
                 <Search size={20} />
                 <span className="hidden sm:inline">جستجو</span>
               </button>
@@ -56,7 +56,7 @@ const HeroSection = () => {
             {["مبلمان", "فرش و قالی", "لوستر", "پرده", "دکور چوبی"].map((tag) => (
               <span
                 key={tag}
-                className="px-4 py-2 rounded-full border border-cream/15 text-cream/60 text-sm hover:border-gold/40 hover:text-gold cursor-pointer transition-all duration-300"
+                className="px-4 py-2 rounded-full border border-white/20 text-white/75 text-sm hover:border-gold/40 hover:text-gold cursor-pointer transition-all duration-300"
               >
                 {tag}
               </span>
