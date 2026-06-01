@@ -78,70 +78,67 @@
   }
 
   .dark {
-    /* Dark theme - Deep forest charcoal, soft sage & champagne
-       Low blue-light, warm undertone, gentle contrast for long viewing. */
+    /* Dark theme - Neutral warm charcoal (no green tint) with champagne accents,
+       so sage/green text and accents read clearly against the background. */
 
-    --background: 150 8% 8%;
-    --foreground: 36 18% 88%;
+    --background: 30 8% 9%;
+    --foreground: 36 20% 92%;
 
-    --card: 150 8% 11%;
-    --card-foreground: 36 18% 88%;
+    --card: 30 8% 12%;
+    --card-foreground: 36 20% 92%;
 
-    --popover: 150 8% 10%;
-    --popover-foreground: 36 18% 88%;
+    --popover: 30 8% 11%;
+    --popover-foreground: 36 20% 92%;
 
-    /* Sage primary kept for buttons/surfaces; text usages remain readable */
-    --primary: 150 20% 62%;
-    --primary-foreground: 150 14% 10%;
+    --primary: 40 50% 72%;
+    --primary-foreground: 30 12% 12%;
 
-    --secondary: 150 6% 18%;
-    --secondary-foreground: 36 18% 92%;
+    --secondary: 30 6% 18%;
+    --secondary-foreground: 36 20% 94%;
 
-    --muted: 150 6% 14%;
-    --muted-foreground: 36 12% 72%;
+    --muted: 30 6% 15%;
+    --muted-foreground: 36 14% 75%;
 
-    --accent: 150 14% 22%;
+    --accent: 30 8% 22%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 55% 52%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 150 6% 18%;
-    --input: 150 6% 18%;
-    --ring: 150 20% 62%;
+    --border: 30 6% 20%;
+    --input: 30 6% 20%;
+    --ring: 40 50% 72%;
 
-    /* Champagne accent for luxe touches */
-    --gold: 40 50% 72%;
+    --gold: 40 55% 70%;
     --gold-light: 42 60% 82%;
     --gold-dark: 36 40% 55%;
-    /* Emerald text tokens forced to warm white for legibility on dark */
     --emerald: 36 20% 94%;
     --emerald-light: 36 18% 88%;
-    --cream: 150 8% 12%;
-    --cream-dark: 150 8% 9%;
-    --charcoal: 150 8% 8%;
-    --warm-gray: 36 10% 64%;
+    --cream: 30 8% 13%;
+    --cream-dark: 30 8% 10%;
+    --charcoal: 30 8% 9%;
+    --warm-gray: 36 10% 65%;
 
-    --section-alt: 150 8% 11%;
-    --surface-dark: 150 10% 6%;
-    --surface-dark-foreground: 36 18% 88%;
-    --surface-emerald: 150 14% 13%;
-    --surface-emerald-foreground: 36 18% 88%;
+    --section-alt: 30 8% 12%;
+    --surface-dark: 30 10% 6%;
+    --surface-dark-foreground: 36 20% 92%;
+    --surface-emerald: 30 10% 14%;
+    --surface-emerald-foreground: 36 20% 92%;
 
     --gradient-gold: linear-gradient(135deg, hsl(40 45% 58%), hsl(42 55% 72%));
-    --gradient-dark: linear-gradient(180deg, hsl(150 8% 10%), hsl(150 10% 5%));
-    --gradient-hero: linear-gradient(135deg, hsl(150 10% 6% / 0.92), hsl(150 14% 14% / 0.6));
-    --shadow-luxury: 0 30px 80px -28px hsl(150 14% 4% / 0.6);
-    --shadow-card: 0 1px 0 0 hsl(150 6% 22% / 0.5), 0 12px 36px -16px hsl(0 0% 0% / 0.55);
+    --gradient-dark: linear-gradient(180deg, hsl(30 10% 10%), hsl(30 10% 5%));
+    --gradient-hero: linear-gradient(135deg, hsl(30 10% 6% / 0.92), hsl(30 12% 14% / 0.6));
+    --shadow-luxury: 0 30px 80px -28px hsl(0 0% 0% / 0.6);
+    --shadow-card: 0 1px 0 0 hsl(30 6% 24% / 0.5), 0 12px 36px -16px hsl(0 0% 0% / 0.55);
 
-    --sidebar-background: 150 8% 9%;
-    --sidebar-foreground: 36 18% 88%;
-    --sidebar-primary: 150 20% 62%;
-    --sidebar-primary-foreground: 150 14% 10%;
-    --sidebar-accent: 150 6% 14%;
-    --sidebar-accent-foreground: 36 18% 88%;
-    --sidebar-border: 150 6% 18%;
-    --sidebar-ring: 150 20% 62%;
+    --sidebar-background: 30 8% 10%;
+    --sidebar-foreground: 36 20% 92%;
+    --sidebar-primary: 40 50% 72%;
+    --sidebar-primary-foreground: 30 12% 12%;
+    --sidebar-accent: 30 6% 15%;
+    --sidebar-accent-foreground: 36 20% 92%;
+    --sidebar-border: 30 6% 20%;
+    --sidebar-ring: 40 50% 72%;
   }
 }
 
