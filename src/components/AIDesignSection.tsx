@@ -1,4 +1,5 @@
 import { Upload, Wand2, ShoppingCart, Save, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const steps = [
   {
@@ -71,10 +72,13 @@ const AIDesignSection = () => {
         </div>
 
         <div className="text-center">
-          <button className="gradient-gold text-primary-foreground px-10 py-4 rounded-xl font-medium text-lg shadow-luxury hover:opacity-90 transition-all inline-flex items-center gap-3">
+          <Link
+            to="/ai-design"
+            className="gradient-gold text-primary-foreground px-10 py-4 rounded-xl font-medium text-lg shadow-luxury hover:opacity-90 transition-all inline-flex items-center gap-3"
+          >
             شروع طراحی
             <ArrowLeft size={20} />
-          </button>
+          </Link>
         </div>
       </div>
     </section>
