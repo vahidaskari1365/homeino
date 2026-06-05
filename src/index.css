@@ -152,10 +152,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Headings: Persian via Vazirmatn, Latin chars fall back to Playfair */
+  /* Headings: Persian via Vazirmatn, Latin fallback Space Grotesk */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Vazirmatn', 'Playfair Display', serif;
-    font-weight: 600;
+    font-family: 'Vazirmatn', 'Space Grotesk', sans-serif;
+    font-weight: 700;
     letter-spacing: -0.015em;
     color: hsl(var(--foreground));
   }
