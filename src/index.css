@@ -244,20 +244,11 @@
   }
 }
 
-/* Dark mode legibility: keep sage for surfaces/buttons,
-   but force ALL green/sage text utilities to warm white. */
-.dark .text-primary,
+/* Dark mode legibility: ensure primary/emerald text utilities remain readable on navy bg. */
 .dark .text-emerald-brand,
 .dark .text-emerald,
-.dark .text-emerald-light,
-.dark .text-sage,
-.dark .text-secondary {
-  color: hsl(36 20% 94%) !important;
-}
-
-/* Also catch inline sage-colored text via primary token on arbitrary elements */
-.dark [class*="text-primary/"] {
-  color: hsl(36 20% 94% / 0.85) !important;
+.dark .text-emerald-light {
+  color: hsl(var(--foreground)) !important;
 }
 
 @keyframes fadeInUp {
