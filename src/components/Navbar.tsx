@@ -12,7 +12,7 @@ const navLinks = [
   { label: "خانه", href: "#" },
   { label: "دسته‌بندی‌ها", href: "#categories" },
   { label: "الهام دکوراسیون", href: "#inspiration" },
-  { label: "طراحی با هوش مصنوعی", href: "#ai-design" },
+  { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
   { label: "فروشگاه‌ها", href: "/shops" },
   { label: "آگهی دست دوم", href: "#secondhand" },
 ];

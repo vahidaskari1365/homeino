@@ -1,1 +1,4 @@
 project_id = "nkxvkemsjajwvzxweucj"
+
+[functions.ai-redesign]
+verify_jwt = false
