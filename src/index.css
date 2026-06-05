@@ -186,10 +186,10 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Space Grotesk', 'Vazirmatn', sans-serif;
   }
   .font-body {
-    font-family: 'Vazirmatn', sans-serif;
+    font-family: 'DM Sans', 'Vazirmatn', sans-serif;
   }
   .text-gold {
     color: hsl(var(--gold));
