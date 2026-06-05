@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Playfair Display", "serif"],
-        body: ["Vazirmatn", "sans-serif"],
+        display: ["Space Grotesk", "Vazirmatn", "sans-serif"],
+        body: ["DM Sans", "Vazirmatn", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
