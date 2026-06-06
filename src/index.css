@@ -244,12 +244,7 @@
   }
 }
 
-/* Dark mode legibility: ensure primary/emerald text utilities remain readable on navy bg. */
-.dark .text-emerald-brand,
-.dark .text-emerald,
-.dark .text-emerald-light {
-  color: hsl(var(--foreground)) !important;
-}
+/* Theme matches logo emerald green — no forced overrides needed */
 
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
