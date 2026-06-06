@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
+
 import CartButton from "./CartButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -56,7 +56,7 @@ const Navbar = () => {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          
           <button className="text-muted-foreground hover:text-gold transition-colors">
             <Search size={20} />
           </button>
