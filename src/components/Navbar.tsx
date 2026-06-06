@@ -56,7 +56,7 @@ const Navbar = () => {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          
           <button className="text-muted-foreground hover:text-gold transition-colors">
             <Search size={20} />
           </button>
