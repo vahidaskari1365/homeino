@@ -663,6 +663,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_categories: {
@@ -694,6 +701,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_categories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,6 +1038,63 @@ export type Database = {
           product_id: string | null
           profile_id: string | null
           views: number | null
+        }
+        Relationships: []
+      }
+      public_profiles: {
+        Row: {
+          address: string | null
+          approval_status: string | null
+          brand_name: string | null
+          city: string | null
+          contact_name: string | null
+          contact_published: boolean | null
+          contact_published_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_blocked: boolean | null
+          is_visible: boolean | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: never
+          approval_status?: string | null
+          brand_name?: string | null
+          city?: string | null
+          contact_name?: never
+          contact_published?: boolean | null
+          contact_published_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_blocked?: boolean | null
+          is_visible?: boolean | null
+          phone?: never
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: never
+          approval_status?: string | null
+          brand_name?: string | null
+          city?: string | null
+          contact_name?: never
+          contact_published?: boolean | null
+          contact_published_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_blocked?: boolean | null
+          is_visible?: boolean | null
+          phone?: never
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
