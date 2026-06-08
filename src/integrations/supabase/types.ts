@@ -347,6 +347,13 @@ export type Database = {
             foreignKeyName: "listing_promotions_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "public_second_hand_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_promotions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "second_hand_listings"
             referencedColumns: ["id"]
           },
@@ -1095,6 +1102,63 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      public_second_hand_listings: {
+        Row: {
+          approval_status: string | null
+          bumped_at: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          featured_until: string | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          is_urgent: boolean | null
+          price: number | null
+          title: string | null
+          updated_at: string | null
+          urgent_until: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          bumped_at?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured_until?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_urgent?: boolean | null
+          price?: number | null
+          title?: string | null
+          updated_at?: string | null
+          urgent_until?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          bumped_at?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured_until?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          is_urgent?: boolean | null
+          price?: number | null
+          title?: string | null
+          updated_at?: string | null
+          urgent_until?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

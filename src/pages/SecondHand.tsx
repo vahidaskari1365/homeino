@@ -23,7 +23,7 @@ type Listing = {
   price: number | null;
   image_url: string | null;
   city: string | null;
-  phone: string | null;
+  phone?: string | null;
   approval_status: string;
   is_active: boolean;
   is_urgent: boolean;
@@ -66,12 +66,11 @@ const SecondHand = () => {
   }, []);
 
   const load = async (uid?: string | null) => {
+    // Public list uses the safe view (no phone exposed to anonymous visitors)
     const { data: pub } = await supabase
-      .from("second_hand_listings")
-      .select("*")
-      .eq("approval_status", "approved")
-      .eq("is_active", true);
-    setList(sortListings((pub as Listing[]) ?? []));
+      .from("public_second_hand_listings")
+      .select("*");
+    setList(sortListings(((pub as unknown) as Listing[]) ?? []));
     if (uid) {
       const { data: my } = await supabase
         .from("second_hand_listings")
