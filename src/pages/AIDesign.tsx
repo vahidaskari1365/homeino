@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,15 +7,39 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const STYLES = [
-  { id: "modern", label: "مدرن", desc: "خطوط ساده، رنگ‌های خنثی" },
-  { id: "classic", label: "کلاسیک", desc: "اشرافی، چوبی، طلایی" },
-  { id: "minimalist", label: "مینیمال", desc: "ساده، روشن، خلوت" },
-  { id: "industrial", label: "صنعتی", desc: "بتن، فلز، چوب خام" },
-  { id: "scandinavian", label: "اسکاندیناوی", desc: "روشن، چوب طبیعی" },
-  { id: "luxury", label: "لوکس", desc: "مخمل، طلا، مرمر" },
-  { id: "bohemian", label: "بوهمی", desc: "رنگارنگ، گیاهان، بافت" },
-  { id: "japanese", label: "ژاپنی", desc: "زن، چوب، خطوط نرم" },
+  { id: "modern", label: "مدرن" },
+  { id: "classic", label: "کلاسیک" },
+  { id: "minimalist", label: "مینیمال" },
+  { id: "industrial", label: "صنعتی" },
+  { id: "scandinavian", label: "اسکاندیناوی" },
+  { id: "luxury", label: "لوکس" },
+  { id: "bohemian", label: "بوهمی" },
+  { id: "japanese", label: "ژاپنی" },
 ];
+
+// Map UI categories to producer_categories slugs in DB
+const CATEGORIES: { slug: string; label: string; icon: string }[] = [
+  { slug: "furniture", label: "مبلمان", icon: "🛋️" },
+  { slug: "curtain", label: "پرده", icon: "🪟" },
+  { slug: "carpet", label: "فرش", icon: "🟫" },
+  { slug: "lighting", label: "لوستر", icon: "💡" },
+  { slug: "bedding", label: "تخت و خواب", icon: "🛏️" },
+  { slug: "plants", label: "گل و گیاه", icon: "🪴" },
+  { slug: "art", label: "تابلو", icon: "🖼️" },
+  { slug: "wood-decor", label: "دکور چوبی", icon: "🪵" },
+  { slug: "accessories", label: "اکسسوری", icon: "🎀" },
+];
+
+type Product = {
+  id: string;
+  name: string;
+  price: number | null;
+  image_url: string | null;
+  category_id: string | null;
+};
+
+const fmt = (n: number | null | undefined) =>
+  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 const AIDesign = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -23,17 +47,42 @@ const AIDesign = () => {
   const [style, setStyle] = useState("modern");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeCat, setActiveCat] = useState<string>(CATEGORIES[0].slug);
+  const [catMap, setCatMap] = useState<Record<string, string>>({}); // slug -> id
+  const [products, setProducts] = useState<Record<string, Product[]>>({}); // slug -> products
+  const [selected, setSelected] = useState<Record<string, Product>>({}); // productId -> product
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Load categories ids + products per category
+  useEffect(() => {
+    (async () => {
+      const { data: cats } = await supabase
+        .from("producer_categories")
+        .select("id, slug");
+      const map: Record<string, string> = {};
+      (cats || []).forEach((c: any) => { map[c.slug] = c.id; });
+      setCatMap(map);
+
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, category_id")
+        .eq("is_active", true)
+        .not("image_url", "is", null)
+        .limit(500);
+
+      const byCat: Record<string, Product[]> = {};
+      (prods || []).forEach((p: any) => {
+        const slug = Object.keys(map).find((s) => map[s] === p.category_id);
+        if (!slug) return;
+        (byCat[slug] = byCat[slug] || []).push(p);
+      });
+      setProducts(byCat);
+    })();
+  }, []);
+
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("لطفاً یک تصویر انتخاب کنید");
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("حجم تصویر باید کمتر از ۸ مگابایت باشد");
-      return;
-    }
+    if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر انتخاب کنید");
+    if (file.size > 8 * 1024 * 1024) return toast.error("حجم تصویر باید کمتر از ۸ مگابایت باشد");
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);
@@ -42,19 +91,34 @@ const AIDesign = () => {
     reader.readAsDataURL(file);
   };
 
+  const toggleProduct = (p: Product) => {
+    setSelected((prev) => {
+      const next = { ...prev };
+      if (next[p.id]) delete next[p.id];
+      else next[p.id] = p;
+      return next;
+    });
+  };
+
+  const selectedList = useMemo(() => Object.values(selected), [selected]);
+  const total = selectedList.reduce((s, p) => s + (Number(p.price) || 0), 0);
+
   const generate = async () => {
-    if (!imageBase64) {
-      toast.error("ابتدا یک تصویر آپلود کنید");
-      return;
-    }
+    if (!imageBase64) return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
     setLoading(true);
     setResultImage(null);
     try {
+      const payloadProducts = selectedList.map((p) => {
+        const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
+        const cat = CATEGORIES.find((c) => c.slug === slug)?.label;
+        return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
+      });
       const { data, error } = await supabase.functions.invoke("ai-redesign", {
         body: {
           imageBase64,
           style,
-          prompt: prompt.trim() || "بازطراحی کامل و حرفه‌ای فضا",
+          prompt: prompt.trim(),
+          products: payloadProducts,
         },
       });
       if (error) throw error;
@@ -79,6 +143,8 @@ const AIDesign = () => {
     a.click();
   };
 
+  const currentProducts = products[activeCat] || [];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -94,23 +160,20 @@ const AIDesign = () => {
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3">طراحی اتاق با هوش مصنوعی</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            عکس فضای خود را آپلود کنید، سبک دلخواه را انتخاب کنید و چیدمان جدید را در چند ثانیه ببینید.
+            عکس خانه‌ات را آپلود کن، مبل، پرده، فرش، تخت و هر چیزی که می‌خواهی را از محصولات سایت انتخاب کن — هوش مصنوعی آن‌ها را داخل عکس خانه‌ات می‌چیند.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Input column */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="font-bold mb-3 text-lg">۱. عکس فضا را آپلود کنید</h2>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* LEFT: upload + style + products */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Step 1: Upload */}
+            <section>
+              <h2 className="font-bold mb-3 text-lg">۱. عکس فضای خانه</h2>
               <div
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const f = e.dataTransfer.files?.[0];
-                  if (f) handleFile(f);
-                }}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
                 className="relative cursor-pointer border-2 border-dashed border-border rounded-2xl aspect-video flex items-center justify-center bg-card hover:border-accent transition-colors overflow-hidden"
               >
                 {imageBase64 ? (
@@ -122,106 +185,162 @@ const AIDesign = () => {
                     <p className="text-xs text-muted-foreground/70 mt-1">JPG/PNG تا ۸ مگابایت</p>
                   </div>
                 )}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                />
+                <input ref={inputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
               </div>
-            </div>
+            </section>
 
-            <div>
+            {/* Step 2: Style */}
+            <section>
               <h2 className="font-bold mb-3 text-lg">۲. سبک دکوراسیون</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {STYLES.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setStyle(s.id)}
-                    className={`p-3 rounded-xl border text-right transition-all ${
-                      style === s.id
-                        ? "border-accent bg-accent/10 text-foreground"
-                        : "border-border bg-card hover:border-accent/50"
-                    }`}
-                  >
-                    <div className="font-bold text-sm">{s.label}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{s.desc}</div>
+                  <button key={s.id} onClick={() => setStyle(s.id)}
+                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                      style === s.id ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                    }`}>
+                    {s.label}
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div>
-              <h2 className="font-bold mb-3 text-lg">۳. توضیحات تکمیلی (اختیاری)</h2>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="مثلاً: یک مبل سبز مخمل، فرش طرح‌دار، لوستر طلایی، گیاه آپارتمانی..."
-                className="w-full bg-card border border-border rounded-xl p-4 text-sm min-h-[100px] outline-none focus:border-accent transition-colors resize-none"
-              />
-            </div>
+            {/* Step 3: Choose products by category */}
+            <section>
+              <h2 className="font-bold mb-3 text-lg">۳. وسایلی که می‌خوای داخل خونه قرار بگیره</h2>
 
-            <button
-              onClick={generate}
-              disabled={loading || !imageBase64}
-              className="w-full bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  در حال طراحی...
-                </>
-              ) : (
-                <>
-                  <Wand2 size={20} />
-                  تولید طراحی جدید
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Output column */}
-          <div>
-            <h2 className="font-bold mb-3 text-lg">نتیجه</h2>
-            <div className="relative bg-card border border-border rounded-2xl aspect-video overflow-hidden flex items-center justify-center">
-              {loading && (
-                <div className="text-center">
-                  <Loader2 className="animate-spin text-accent mx-auto mb-3" size={40} />
-                  <p className="text-sm text-muted-foreground">هوش مصنوعی در حال خلق طراحی شماست...</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">معمولاً ۱۵ تا ۴۰ ثانیه طول می‌کشد</p>
-                </div>
-              )}
-              {!loading && resultImage && (
-                <img src={resultImage} alt="طراحی جدید" className="w-full h-full object-cover" />
-              )}
-              {!loading && !resultImage && (
-                <div className="text-center p-6">
-                  <Wand2 className="mx-auto mb-3 text-muted-foreground" size={36} />
-                  <p className="text-sm text-muted-foreground">طراحی جدید اینجا نمایش داده می‌شود</p>
-                </div>
-              )}
-            </div>
-
-            {resultImage && !loading && (
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={download}
-                  className="flex-1 bg-card border border-border hover:border-accent text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
-                >
-                  <Download size={18} />
-                  دانلود تصویر
-                </button>
-                <button
-                  onClick={generate}
-                  className="flex-1 bg-card border border-border hover:border-accent text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
-                >
-                  <RefreshCw size={18} />
-                  طراحی مجدد
-                </button>
+              {/* Category tabs */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {CATEGORIES.map((c) => {
+                  const count = (products[c.slug] || []).length;
+                  const sel = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
+                  return (
+                    <button key={c.slug} onClick={() => setActiveCat(c.slug)}
+                      className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition-all ${
+                        activeCat === c.slug ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                      }`}>
+                      <span>{c.icon}</span>
+                      <span>{c.label}</span>
+                      <span className="text-xs opacity-70">({count})</span>
+                      {sel > 0 && <span className="text-xs bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">{sel}</span>}
+                    </button>
+                  );
+                })}
               </div>
-            )}
+
+              {/* Products grid */}
+              {currentProducts.length === 0 ? (
+                <div className="text-center py-10 bg-card border border-border rounded-2xl text-muted-foreground text-sm">
+                  هنوز محصولی در این دسته ثبت نشده. می‌توانی بدون انتخاب محصول هم طراحی بزنی — هوش مصنوعی خودش سبک را پیاده می‌کند.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {currentProducts.map((p) => {
+                    const isSel = !!selected[p.id];
+                    return (
+                      <button key={p.id} onClick={() => toggleProduct(p)}
+                        className={`relative text-right rounded-xl border overflow-hidden transition-all bg-card ${
+                          isSel ? "border-accent ring-2 ring-accent/40" : "border-border hover:border-accent/50"
+                        }`}>
+                        <div className="aspect-square bg-muted overflow-hidden">
+                          {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="p-2">
+                          <div className="text-xs font-medium line-clamp-1">{p.name}</div>
+                          <div className="text-xs text-accent mt-0.5">{fmt(p.price)}</div>
+                        </div>
+                        {isSel && (
+                          <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+                            <Check size={14} />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* Step 4: Optional prompt */}
+            <section>
+              <h2 className="font-bold mb-3 text-lg">۴. توضیحات تکمیلی (اختیاری)</h2>
+              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
+                placeholder="مثلاً: مبل سمت پنجره، فرش روشن، لوستر طلایی..."
+                className="w-full bg-card border border-border rounded-xl p-4 text-sm min-h-[90px] outline-none focus:border-accent transition-colors resize-none" />
+            </section>
           </div>
+
+          {/* RIGHT: sticky summary + generate + result */}
+          <aside className="space-y-4 lg:sticky lg:top-24 self-start">
+            {/* Selected products */}
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} /> انتخاب شده ({selectedList.length})</h3>
+                {selectedList.length > 0 && (
+                  <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">پاک کردن</button>
+                )}
+              </div>
+              {selectedList.length === 0 ? (
+                <p className="text-xs text-muted-foreground">هنوز محصولی انتخاب نشده. می‌تونی بدون محصول هم طراحی بزنی.</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {selectedList.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2 text-xs">
+                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                        {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="line-clamp-1 font-medium">{p.name}</div>
+                        <div className="text-accent">{fmt(p.price)}</div>
+                      </div>
+                      <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selectedList.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">مجموع</span>
+                  <span className="font-bold text-accent">{fmt(total)}</span>
+                </div>
+              )}
+            </div>
+
+            <button onClick={generate} disabled={loading || !imageBase64}
+              className="w-full bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+              {loading ? (<><Loader2 className="animate-spin" size={20} /> در حال طراحی...</>) : (<><Wand2 size={20} /> تولید طراحی جدید</>)}
+            </button>
+
+            {/* Result */}
+            <div>
+              <h3 className="font-bold mb-2 text-sm">نتیجه</h3>
+              <div className="relative bg-card border border-border rounded-2xl aspect-video overflow-hidden flex items-center justify-center">
+                {loading && (
+                  <div className="text-center p-4">
+                    <Loader2 className="animate-spin text-accent mx-auto mb-2" size={32} />
+                    <p className="text-xs text-muted-foreground">۱۵ تا ۴۰ ثانیه طول می‌کشد...</p>
+                  </div>
+                )}
+                {!loading && resultImage && <img src={resultImage} alt="طراحی جدید" className="w-full h-full object-cover" />}
+                {!loading && !resultImage && (
+                  <div className="text-center p-4">
+                    <Wand2 className="mx-auto mb-2 text-muted-foreground" size={28} />
+                    <p className="text-xs text-muted-foreground">طراحی جدید اینجا نمایش داده می‌شود</p>
+                  </div>
+                )}
+              </div>
+              {resultImage && !loading && (
+                <div className="flex gap-2 mt-2">
+                  <button onClick={download} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                    <Download size={16} /> دانلود
+                  </button>
+                  <button onClick={generate} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                    <RefreshCw size={16} /> طراحی مجدد
+                  </button>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       </main>
       <Footer />
