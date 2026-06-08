@@ -66,11 +66,10 @@ const SecondHand = () => {
   }, []);
 
   const load = async (uid?: string | null) => {
+    // Public list uses the safe view (no phone exposed to anonymous visitors)
     const { data: pub } = await supabase
-      .from("second_hand_listings")
-      .select("*")
-      .eq("approval_status", "approved")
-      .eq("is_active", true);
+      .from("public_second_hand_listings")
+      .select("*");
     setList(sortListings((pub as Listing[]) ?? []));
     if (uid) {
       const { data: my } = await supabase
