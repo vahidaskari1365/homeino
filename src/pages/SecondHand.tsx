@@ -23,7 +23,7 @@ type Listing = {
   price: number | null;
   image_url: string | null;
   city: string | null;
-  phone: string | null;
+  phone?: string | null;
   approval_status: string;
   is_active: boolean;
   is_urgent: boolean;
