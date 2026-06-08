@@ -70,7 +70,7 @@ const SecondHand = () => {
     const { data: pub } = await supabase
       .from("public_second_hand_listings")
       .select("*");
-    setList(sortListings((pub as Listing[]) ?? []));
+    setList(sortListings(((pub as unknown) as Listing[]) ?? []));
     if (uid) {
       const { data: my } = await supabase
         .from("second_hand_listings")
