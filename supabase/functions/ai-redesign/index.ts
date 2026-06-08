@@ -1,48 +1,94 @@
-// AI Room Redesign - uses Lovable AI Gateway (Gemini image editing)
+// AI Room Redesign — accepts a room photo + a list of selected products
+// and asks Gemini image-edit to place those exact items into the room.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+type SelectedProduct = {
+  name: string;
+  category?: string;
+  imageUrl?: string;
+  price?: number;
+};
+
+async function urlToDataUrl(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const ct = r.headers.get("content-type") || "image/jpeg";
+    const buf = new Uint8Array(await r.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return `data:${ct};base64,${btoa(bin)}`;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageBase64, prompt, style } = await req.json();
-    if (!imageBase64 || !prompt) {
-      return new Response(JSON.stringify({ error: "imageBase64 و prompt الزامی است" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const body = await req.json();
+    const imageBase64: string | undefined = body.imageBase64;
+    const prompt: string = (body.prompt || "").toString();
+    const style: string = (body.style || "modern").toString();
+    const products: SelectedProduct[] = Array.isArray(body.products) ? body.products : [];
+
+    if (!imageBase64) {
+      return new Response(JSON.stringify({ error: "imageBase64 الزامی است" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const fullPrompt = `Redesign this interior space in a ${style || "modern"} style. ${prompt}. Keep the same room structure, walls, windows and viewpoint. Replace and rearrange furniture, lighting, colors, textures, decor and accessories to match the requested style. Photorealistic, high quality interior photography, natural lighting.`;
+    const productList = products
+      .filter((p) => p && p.name)
+      .map((p, i) => `${i + 1}. ${p.category ? `[${p.category}] ` : ""}${p.name}`)
+      .join("\n");
 
-    const dataUrl = imageBase64.startsWith("data:")
+    const fullPrompt = [
+      `Redesign this interior space in a ${style} style.`,
+      productList
+        ? `Place the EXACT following furniture/decor items (provided as reference images) into the room, matching their look, color, material and shape as closely as possible:\n${productList}`
+        : "",
+      prompt?.trim() ? `Additional request: ${prompt.trim()}` : "",
+      "Keep the same room structure, walls, windows, floor and viewpoint. Replace existing furniture only where the new items belong. Photorealistic interior photography, natural lighting, high quality, cohesive composition.",
+    ].filter(Boolean).join("\n\n");
+
+    const roomDataUrl = imageBase64.startsWith("data:")
       ? imageBase64
       : `data:image/png;base64,${imageBase64}`;
 
+    // Build content: text + room image + each product image
+    const content: any[] = [
+      { type: "text", text: fullPrompt },
+      { type: "image_url", image_url: { url: roomDataUrl } },
+    ];
+
+    for (const p of products) {
+      if (!p?.imageUrl) continue;
+      // Try direct URL first (gateway will fetch). If it's already a data URL pass as-is.
+      let url = p.imageUrl;
+      if (!url.startsWith("data:") && !/^https?:\/\//i.test(url)) continue;
+      // For maximum reliability convert remote URL to data URL.
+      if (/^https?:\/\//i.test(url)) {
+        const d = await urlToDataUrl(url);
+        if (d) url = d;
+      }
+      content.push({ type: "image_url", image_url: { url } });
+    }
+
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: fullPrompt },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
+        messages: [{ role: "user", content }],
         modalities: ["image", "text"],
       }),
     });
