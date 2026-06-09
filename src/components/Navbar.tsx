@@ -21,6 +21,7 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const { isModerator } = useAdminRole();
 
