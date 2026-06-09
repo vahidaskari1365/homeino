@@ -1,11 +1,20 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag } from "lucide-react";
+import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag, Lightbulb } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+
+const PROGRESS_MESSAGES = [
+  "در حال تحلیل ابعاد اتاق...",
+  "بررسی نورپردازی و زوایا...",
+  "چیدمان هوشمند محصولات...",
+  "اعمال سبک دکوراسیون...",
+  "بهینه‌سازی نهایی تصویر...",
+];
 
 const STYLES = [
   { id: "modern", label: "مدرن" },
@@ -50,6 +59,9 @@ const AIDesign = () => {
   const [style, setStyle] = useState("modern");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [progressIndex, setProgressIndex] = useState(0);
+  const [roomTip, setRoomTip] = useState<string | null>(null);
+  const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
   const [activeCat, setActiveCat] = useState<string>(CATEGORIES[0].slug);
   const [catMap, setCatMap] = useState<Record<string, string>>({}); // slug -> id
   const [products, setProducts] = useState<Record<string, Product[]>>({}); // slug -> products
@@ -141,13 +153,20 @@ const AIDesign = () => {
     if (!imageBase64) return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
     setLoading(true);
     setResultImage(null);
+    setRoomTip(null);
+    setProgressIndex(0);
+    
+    const progressInterval = setInterval(() => {
+      setProgressIndex((prev) => (prev + 1) % PROGRESS_MESSAGES.length);
+    }, 5000);
+
     try {
       const payloadProducts = selectedList.map((p) => {
         const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
         const cat = CATEGORIES.find((c) => c.slug === slug)?.label;
         return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
       });
-      const { data, error } = await supabase.functions.invoke<{ image?: string; error?: string }>("ai-redesign", {
+      const { data, error } = await supabase.functions.invoke<{ image?: string; tip?: string; error?: string }>("ai-redesign", {
         body: {
           imageBase64,
           style,
@@ -157,15 +176,23 @@ const AIDesign = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      
       const img = data?.image;
       if (!img) throw new Error("تصویری دریافت نشد");
+      
       setResultImage(img);
+      if (data?.tip) setRoomTip(data.tip);
+      
+      // Store products that were used for "Buy the Look" post-generation
+      setGeneratedProducts([...selectedList]);
+      
       toast.success("طراحی جدید آماده شد");
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
     } finally {
       setLoading(false);
+      clearInterval(progressInterval);
     }
   };
 
@@ -354,31 +381,83 @@ const AIDesign = () => {
             </button>
 
             {/* Result */}
-            <div>
-              <h3 className="font-bold mb-2 text-sm">نتیجه</h3>
-              <div className="relative bg-card border border-border rounded-2xl aspect-video overflow-hidden flex items-center justify-center">
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg">نتیجه طراحی</h3>
+              <div className="relative bg-card border border-border rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px]">
                 {loading && (
-                  <div className="text-center p-4">
-                    <Loader2 className="animate-spin text-accent mx-auto mb-2" size={32} />
-                    <p className="text-xs text-muted-foreground">۱۵ تا ۴۰ ثانیه طول می‌کشد...</p>
+                  <div className="text-center p-8 z-10 bg-card/80 backdrop-blur-sm w-full h-full absolute inset-0 flex flex-col items-center justify-center">
+                    <Loader2 className="animate-spin text-accent mx-auto mb-4" size={48} />
+                    <p className="text-lg font-bold text-foreground mb-2">{PROGRESS_MESSAGES[progressIndex]}</p>
+                    <p className="text-sm text-muted-foreground">۱۵ تا ۴۰ ثانیه طول می‌کشد...</p>
                   </div>
                 )}
-                {!loading && resultImage && <img src={resultImage} alt="طراحی جدید" className="w-full h-full object-cover" />}
-                {!loading && !resultImage && (
-                  <div className="text-center p-4">
-                    <Wand2 className="mx-auto mb-2 text-muted-foreground" size={28} />
-                    <p className="text-xs text-muted-foreground">طراحی جدید اینجا نمایش داده می‌شود</p>
+                
+                {resultImage && !loading ? (
+                  <BeforeAfterSlider beforeImage={imageBase64!} afterImage={resultImage} />
+                ) : !loading && (
+                  <div className="text-center p-12">
+                    <Wand2 className="mx-auto mb-4 text-muted-foreground" size={48} />
+                    <p className="text-muted-foreground">طراحی جدید پس از کلیک بر روی دکمه تولید، اینجا نمایش داده می‌شود</p>
                   </div>
                 )}
               </div>
+
+              {roomTip && (
+                <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 flex gap-3 items-start animate-in fade-in slide-in-from-bottom-2">
+                  <Lightbulb className="text-accent shrink-0" size={20} />
+                  <div>
+                    <div className="text-xs font-bold text-accent mb-1">تحلیل فضا:</div>
+                    <p className="text-sm text-foreground leading-relaxed">{roomTip}</p>
+                  </div>
+                </div>
+              )}
+
               {resultImage && !loading && (
-                <div className="flex gap-2 mt-2">
-                  <button onClick={download} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm">
-                    <Download size={16} /> دانلود
+                <div className="flex gap-3">
+                  <button onClick={download} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                    <Download size={18} /> دانلود تصویر
                   </button>
-                  <button onClick={generate} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm">
-                    <RefreshCw size={16} /> طراحی مجدد
+                  <button onClick={generate} className="flex-1 bg-accent text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all hover:bg-accent/90">
+                    <RefreshCw size={18} /> طراحی مجدد
                   </button>
+                </div>
+              )}
+
+              {/* Buy the Look - Post Generation */}
+              {resultImage && !loading && generatedProducts.length > 0 && (
+                <div className="mt-8 pt-8 border-t border-border">
+                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+                    <ShoppingBag className="text-accent" /> خرید وسایل استفاده شده در این طرح
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {generatedProducts.map((p) => (
+                      <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden group">
+                        <div className="aspect-square relative overflow-hidden">
+                          {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />}
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-bold text-sm mb-1 line-clamp-1">{p.name}</h4>
+                          <div className="text-accent font-bold text-sm mb-3">{fmt(p.price)}</div>
+                          <button 
+                            onClick={() => {
+                              addItem({
+                                product_id: p.id,
+                                profile_id: p.profile_id || "",
+                                name: p.name,
+                                price: p.price || 0,
+                                image_url: p.image_url,
+                                stock: p.stock || 10,
+                              });
+                              toast.success("به سبد خرید اضافه شد");
+                            }}
+                            className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <ShoppingCart size={14} /> افزودن به سبد خرید
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
         : "",
       prompt?.trim() ? `Additional request: ${prompt.trim()}` : "",
       "Keep the same room structure, walls, windows, floor and viewpoint. Replace existing furniture only where the new items belong. Photorealistic interior photography, natural lighting, high quality, cohesive composition.",
+      "IMPORTANT: Also provide a very brief interior design tip (15 words max) in PERSIAN based on the room's characteristics (light, space, potential). Format your response as a JSON object with 'image' (base64) and 'tip' (string) fields. But actually, since I need the image as a modality, just output the text tip separately if possible, or I will parse it from the text response.",
     ].filter(Boolean).join("\n\n");
 
     const roomDataUrl = imageBase64.startsWith("data:")
@@ -65,7 +66,10 @@ Deno.serve(async (req) => {
       : `data:image/png;base64,${imageBase64}`;
 
     // Build content: text + room image + each product image
-    const content: any[] = [
+    const content: (
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } }
+    )[] = [
       { type: "text", text: fullPrompt },
       { type: "image_url", image_url: { url: roomDataUrl } },
     ];
@@ -113,6 +117,8 @@ Deno.serve(async (req) => {
 
     const data = await upstream.json();
     const b64 = data?.data?.[0]?.b64_json;
+    const tip = data?.choices?.[0]?.message?.content || data?.data?.[0]?.text || "";
+
     if (!b64) {
       console.error("No image in response:", JSON.stringify(data).slice(0, 500));
       return new Response(JSON.stringify({ error: "تصویری دریافت نشد. دوباره تلاش کنید." }), {
@@ -121,7 +127,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ image: `data:image/png;base64,${b64}` }),
+      JSON.stringify({ image: `data:image/png;base64,${b64}`, tip }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
