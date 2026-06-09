@@ -60,7 +60,7 @@ const Navbar = () => {
         {/* Icons */}
         <div className="flex items-center gap-4">
           
-          <button className="text-muted-foreground hover:text-gold transition-colors">
+          <button onClick={() => setSearchOpen(true)} className="text-muted-foreground hover:text-gold transition-colors" title="جستجو">
             <Search size={20} />
           </button>
           <Link to="/wishlist" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="علاقه‌مندی‌ها">
