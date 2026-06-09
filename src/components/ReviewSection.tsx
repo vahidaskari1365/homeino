@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { formatPersianDate } from "@/lib/date";
 import StarRating from "@/components/StarRating";
-import { Trash2, MessageSquare } from "lucide-react";
+import { Trash2, MessageSquare, Check } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 
 interface Props {
@@ -25,6 +25,7 @@ type Review = {
   title: string | null;
   body: string | null;
   created_at: string;
+  is_verified_purchase?: boolean;
 };
 
 const schema = z.object({
@@ -40,6 +41,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -47,10 +49,40 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const checkVerification = useCallback(async (uid: string) => {
+    try {
+      if (targetType === "product") {
+        const { data } = await supabase
+          .from("order_items")
+          .select("id, orders!inner(customer_id, status)")
+          .eq("product_id", targetId)
+          .eq("orders.customer_id", uid)
+          .limit(1);
+        return !!data?.length;
+      } else {
+        const { data } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("profile_id", targetId)
+          .eq("customer_id", uid)
+          .limit(1);
+        return !!data?.length;
+      }
+    } catch {
+      return false;
+    }
+  }, [targetId, targetType]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      checkVerification(session.user.id).then(setIsVerified);
+    }
+  }, [session?.user?.id, checkVerification]);
+
   const load = async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id, user_id, rating, title, body, created_at")
+      .select("id, user_id, rating, title, body, created_at, is_verified_purchase")
       .eq("target_type", targetType)
       .eq("target_id", targetId)
       .order("created_at", { ascending: false });
@@ -90,6 +122,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       rating,
       title: title.trim() || null,
       body: body.trim() || null,
+      is_verified_purchase: isVerified,
     };
     const { error } = await supabase
       .from("reviews")
@@ -186,7 +219,14 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
             <Card key={r.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <StarRating value={r.rating} readOnly size={14} />
+                  <div className="flex items-center gap-3">
+                    <StarRating value={r.rating} readOnly size={14} />
+                    {r.is_verified_purchase && (
+                      <span className="flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">
+                        <Check size={10} /> خرید تایید شده
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">{formatPersianDate(r.created_at)}</span>
                 </div>
                 {r.title && <h4 className="font-semibold text-foreground mb-1">{r.title}</h4>}

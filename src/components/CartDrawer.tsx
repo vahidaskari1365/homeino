@@ -174,7 +174,7 @@ const CartDrawer = () => {
                     <span>جمع کل:</span>
                     <span className="text-gold">{totalAmount.toLocaleString("fa-IR")} تومان</span>
                   </div>
-                  <Button onClick={() => setStep("checkout")} className="w-full gradient-gold text-primary-foreground">
+                  <Button onClick={() => { setOpen(false); navigate("/checkout"); }} className="w-full gradient-gold text-primary-foreground">
                     ادامه و تکمیل سفارش
                   </Button>
                 </div>
