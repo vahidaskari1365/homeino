@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Sparkles } from "lucide-react";
 import { z } from "zod";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const schema = z.object({
   title: z.string().trim().min(3).max(200),
@@ -31,6 +32,7 @@ interface Props {
 const ConsultationRequestDialog = ({ trigger, defaultType = "advice" }: Props) => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [type, setType] = useState<"advice" | "chat" | "custom_design">(defaultType);
   const [form, setForm] = useState({
     title: "",
@@ -45,8 +47,15 @@ const ConsultationRequestDialog = ({ trigger, defaultType = "advice" }: Props) =
   });
   const navigate = useNavigate();
 
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!recaptchaToken) {
+      toast({ title: "خطا", description: "لطفاً تأیید کنید که ربات نیستید", variant: "destructive" });
+      return;
+    }
+
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast({ title: "خطا", description: parsed.error.issues[0].message, variant: "destructive" });
@@ -99,7 +108,7 @@ const ConsultationRequestDialog = ({ trigger, defaultType = "advice" }: Props) =
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-2">
             <Label>نوع درخواست</Label>
-            <Select value={type} onValueChange={(v) => setType(v as any)}>
+            <Select value={type} onValueChange={(v: "advice" | "chat" | "custom_design") => setType(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="advice">مشاوره عمومی</SelectItem>
@@ -150,9 +159,18 @@ const ConsultationRequestDialog = ({ trigger, defaultType = "advice" }: Props) =
             <Label>توضیحات</Label>
             <Textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={2000} />
           </div>
+          
+          <div className="flex justify-center py-2">
+            <ReCAPTCHA
+              sitekey={RECAPTCHA_SITE_KEY}
+              onChange={(token) => setRecaptchaToken(token)}
+              hl="fa"
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>انصراف</Button>
-            <Button type="submit" disabled={submitting} className="gradient-gold text-primary-foreground">
+            <Button type="submit" disabled={submitting || !recaptchaToken} className="gradient-gold text-primary-foreground">
               {submitting ? <Loader2 className="animate-spin" size={16} /> : "ارسال درخواست"}
             </Button>
           </DialogFooter>

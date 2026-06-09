@@ -2,6 +2,7 @@ import { ArrowLeft, Package } from "lucide-react";
 import heroImg from "@/assets/hero-living.jpg";
 import classicImg from "@/assets/inspiration-classic.jpg";
 import bedroomImg from "@/assets/inspiration-bedroom.jpg";
+import OptimizedImage from "./OptimizedImage";
 
 const sets = [
   {
@@ -54,10 +55,9 @@ const CompleteSetsSection = () => {
           {sets.map((set, idx) => (
             <div key={idx} className="group rounded-2xl overflow-hidden bg-card border border-border hover:border-gold/30 hover:shadow-luxury transition-all duration-500">
               <div className="relative overflow-hidden h-64">
-                <img
+                <OptimizedImage
                   src={set.image}
                   alt={set.title}
-                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute top-4 right-4 bg-destructive text-primary-foreground text-xs font-bold px-3 py-1 rounded-full">

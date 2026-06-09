@@ -5,12 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowRight, Sparkles, Factory } from "lucide-react";
+import ReCAPTCHA from "react-google-recaptcha";
+import SEO from "@/components/SEO";
 
 interface Category {
   id: string;
@@ -44,6 +45,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   // Sign in state
   const [signInEmail, setSignInEmail] = useState("");
@@ -59,8 +61,9 @@ const Auth = () => {
   const [city, setCity] = useState("");
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
 
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"; // Test key
+
   useEffect(() => {
-    // Redirect if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/", { replace: true });
     });
@@ -88,8 +91,27 @@ const Auth = () => {
     );
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (error) {
+      toast({ title: "خطا در ورود با گوگل", description: error.message, variant: "destructive" });
+      setLoading(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!recaptchaToken) {
+      toast({ title: "خطا", description: "لطفاً تأیید کنید که ربات نیستید", variant: "destructive" });
+      return;
+    }
+
     const result = signInSchema.safeParse({ email: signInEmail, password: signInPassword });
     if (!result.success) {
       toast({ title: "خطا", description: result.error.issues[0].message, variant: "destructive" });
@@ -110,6 +132,11 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!recaptchaToken) {
+      toast({ title: "خطا", description: "لطفاً تأیید کنید که ربات نیستید", variant: "destructive" });
+      return;
+    }
+
     const result = signUpSchema.safeParse({
       email,
       password,
@@ -153,7 +180,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 relative overflow-hidden" dir="rtl">
+      <SEO title="ورود و ثبت‌نام" description="به حساب کاربری خود در خانه‌زیبا وارد شوید." />
+      
       {/* Decorative background */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-brand/10 rounded-full blur-3xl" />
@@ -181,13 +210,32 @@ const Auth = () => {
             </p>
           </div>
 
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-6 border-border hover:bg-accent transition-colors"
+            >
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+              ورود با حساب گوگل
+            </Button>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">یا با ایمیل</span>
+              </div>
+            </div>
+          </div>
+
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="signin">ورود</TabsTrigger>
               <TabsTrigger value="signup">ثبت‌نام</TabsTrigger>
             </TabsList>
 
-            {/* Sign In */}
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -213,9 +261,18 @@ const Auth = () => {
                     required
                   />
                 </div>
+                
+                <div className="flex justify-center py-2">
+                  <ReCAPTCHA
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setRecaptchaToken(token)}
+                    hl="fa"
+                  />
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !recaptchaToken}
                   className="w-full gradient-gold text-primary-foreground hover:opacity-90"
                 >
                   {loading ? <Loader2 className="animate-spin" size={18} /> : "ورود"}
@@ -223,7 +280,6 @@ const Auth = () => {
               </form>
             </TabsContent>
 
-            {/* Sign Up */}
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
@@ -251,7 +307,6 @@ const Auth = () => {
                   />
                 </div>
 
-                {/* Producer toggle */}
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-accent/50 border border-border">
                   <Checkbox
                     id="is-producer"
@@ -273,7 +328,6 @@ const Auth = () => {
                   </div>
                 </div>
 
-                {/* Producer fields */}
                 {isProducer && (
                   <div className="space-y-4 p-4 rounded-xl border border-gold/20 bg-gold/5 animate-fade-in-up">
                     <div className="space-y-2">
@@ -326,9 +380,6 @@ const Auth = () => {
                       <Label>
                         دسته فعالیت <span className="text-destructive">*</span>
                       </Label>
-                      <p className="text-xs text-muted-foreground">
-                        می‌توانید چند دسته انتخاب کنید
-                      </p>
                       <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 rounded-lg border border-border bg-background">
                         {categories.map((cat) => {
                           const checked = selectedSlugs.includes(cat.slug);
@@ -350,18 +401,21 @@ const Auth = () => {
                           );
                         })}
                       </div>
-                      {selectedSlugs.length > 0 && (
-                        <p className="text-xs text-gold">
-                          {selectedSlugs.length} دسته انتخاب شده
-                        </p>
-                      )}
                     </div>
                   </div>
                 )}
 
+                <div className="flex justify-center py-2">
+                  <ReCAPTCHA
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setRecaptchaToken(token)}
+                    hl="fa"
+                  />
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !recaptchaToken}
                   className="w-full gradient-gold text-primary-foreground hover:opacity-90"
                 >
                   {loading ? <Loader2 className="animate-spin" size={18} /> : "ثبت‌نام"}

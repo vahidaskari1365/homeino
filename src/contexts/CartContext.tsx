@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 
 export interface CartItem {
   product_id: string;
@@ -33,19 +33,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } catch { return []; }
   });
   const [isOpen, setOpen] = useState(false);
+  const itemsRef = useRef<CartItem[]>(items);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+    itemsRef.current = items;
+    try { 
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); 
+    } catch (e) {
+      console.error("Failed to save cart to localStorage", e);
+    }
   }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, "quantity">, qty = 1) => {
-    let result: { ok: boolean; message?: string } = { ok: true };
+    // enforce single-seller cart - use ref for immediate check
+    if (itemsRef.current.length && itemsRef.current[0].profile_id !== item.profile_id) {
+      return { ok: false, message: "سبد خرید فقط می‌تواند از یک فروشگاه باشد. ابتدا سبد را خالی کنید." };
+    }
+
     setItems((prev) => {
-      // enforce single-seller cart
-      if (prev.length && prev[0].profile_id !== item.profile_id) {
-        result = { ok: false, message: "سبد خرید فقط می‌تواند از یک فروشگاه باشد. ابتدا سبد را خالی کنید." };
-        return prev;
-      }
       const existing = prev.find((p) => p.product_id === item.product_id);
       if (existing) {
         const newQty = Math.min(existing.quantity + qty, item.stock || 99);
@@ -53,7 +58,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       return [...prev, { ...item, quantity: Math.min(qty, item.stock || 99) }];
     });
-    return result;
+    
+    return { ok: true };
   }, []);
 
   const removeItem = useCallback((product_id: string) => {

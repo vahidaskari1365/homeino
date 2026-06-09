@@ -9,10 +9,12 @@ import SecondHandSection from "@/components/SecondHandSection";
 import ServicesSection from "@/components/ServicesSection";
 import ChatBot from "@/components/ChatBot";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
+      <SEO />
       <Navbar />
       <HeroSection />
       <CategoriesSection />
