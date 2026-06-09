@@ -122,8 +122,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
               <div className="space-y-1">
                 {designers.map((d) => (
                   <Link key={d.id} to={`/designers`} onClick={close} className="block p-2 rounded hover:bg-muted text-sm">
-                    <span className="font-medium">{d.full_name}</span>
-                    {d.city && <span className="text-muted-foreground text-xs"> — {d.city}</span>}
+                    <span className="font-medium">{d.display_name}</span>
                   </Link>
                 ))}
               </div>
