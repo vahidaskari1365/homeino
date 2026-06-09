@@ -4,6 +4,7 @@ import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag
 
 import CartButton from "./CartButton";
 import NotificationBell from "./NotificationBell";
+import SearchDialog from "./SearchDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
