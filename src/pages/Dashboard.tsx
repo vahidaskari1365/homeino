@@ -22,7 +22,7 @@ import {
   ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { formatPersianDate } from "@/lib/date";
+import { CustomerDashboard } from "@/components/CustomerDashboard";
 
 interface Category { id: string; name: string; slug: string; }
 interface Profile {
@@ -92,6 +92,7 @@ const Dashboard = () => {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [viewMode, setViewMode] = useState<"producer" | "customer">("producer");
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -139,6 +140,7 @@ const Dashboard = () => {
     if (cats) setCategories(cats);
     if (prof) {
       setProfile(prof as Profile);
+      setViewMode("producer");
       const [{ data: pc }, { data: prods }] = await Promise.all([
         supabase.from("profile_categories").select("category_id").eq("profile_id", prof.id),
         supabase.from("products").select("*").eq("profile_id", prof.id).order("created_at", { ascending: false }),
@@ -146,6 +148,8 @@ const Dashboard = () => {
       if (pc) setSelectedCats(pc.map((r) => r.category_id));
       if (prods) setProducts(prods as Product[]);
       await loadSellerData(prof.id);
+    } else {
+      setViewMode("customer");
     }
   };
 
@@ -399,17 +403,26 @@ const Dashboard = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <Card className="max-w-md p-8 text-center">
-          <h2 className="text-xl font-bold text-foreground mb-2">پروفایل تولیدکننده یافت نشد</h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            این داشبورد مخصوص حساب‌های تولیدکننده است. لطفاً با حساب تولیدکننده ثبت‌نام کنید.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Button variant="outline" onClick={handleSignOut}>خروج</Button>
-            <Link to="/"><Button>صفحه اصلی</Button></Link>
+      <div className="min-h-screen bg-background py-10 px-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-brand/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold text-sm mb-2">
+                <ArrowRight size={16} /> بازگشت به خانه
+              </Link>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">حساب کاربری من</h1>
+            </div>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2 self-start">
+              <LogOut size={16} /> خروج
+            </Button>
           </div>
-        </Card>
+
+          <CustomerDashboard userId={userId!} />
+        </div>
       </div>
     );
   }
@@ -432,12 +445,25 @@ const Dashboard = () => {
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">{profile.brand_name}</h1>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="gap-2 self-start">
-            <LogOut size={16} /> خروج
-          </Button>
+          <div className="flex gap-2 self-start">
+            <Button 
+              variant="outline" 
+              onClick={() => setViewMode(viewMode === "producer" ? "customer" : "producer")}
+              className="gap-2"
+            >
+              {viewMode === "producer" ? <User size={16} /> : <Sparkles size={16} />}
+              {viewMode === "producer" ? "پنل مشتری" : "پنل فروشنده"}
+            </Button>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut size={16} /> خروج
+            </Button>
+          </div>
         </div>
 
-        <Tabs defaultValue="profile" className="w-full">
+        {viewMode === "customer" ? (
+          <CustomerDashboard userId={userId!} />
+        ) : (
+          <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-5 md:max-w-3xl mb-6 h-auto">
             <TabsTrigger value="profile" className="text-xs md:text-sm">پروفایل</TabsTrigger>
             <TabsTrigger value="products" className="text-xs md:text-sm">محصولات ({products.length})</TabsTrigger>
@@ -672,7 +698,7 @@ const Dashboard = () => {
                       <div className="border-t border-border pt-3 space-y-1.5">
                         {o.order_items.map((it) => (
                           <div key={it.id} className="flex justify-between text-sm">
-                            <span className="text-foreground">{it.product_name} × {it.quantity}</span>
+                            <span className="text-foreground">{it.product_name} �� {it.quantity}</span>
                             <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("fa-IR")} ت</span>
                           </div>
                         ))}
@@ -828,10 +854,11 @@ const Dashboard = () => {
               )}
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
+          </Tabs>
+          )}
+          </div>
 
-      {/* Product Dialog */}
+          {/* Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetProductForm(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -53,7 +53,91 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart,
+  Pie
+} from "recharts";
 import Navbar from "@/components/Navbar";
+
+type ShopProfile = {
+  id: string;
+  brand_name: string;
+  city: string | null;
+  approval_status: string;
+  is_visible: boolean;
+  is_blocked: boolean;
+  contact_name: string | null;
+  phone: string | null;
+  user_id: string;
+  created_at: string;
+};
+
+type SecondHandListing = {
+  id: string;
+  title: string;
+  price: number | null;
+  city: string | null;
+  approval_status: string;
+  created_at: string;
+};
+
+type AdminProduct = {
+  id: string;
+  name: string;
+  price: number | null;
+  stock: number;
+  is_active: boolean;
+  profiles: { brand_name: string } | null;
+};
+
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Report = {
+  id: string;
+  target_type: string;
+  reason: string;
+  description: string | null;
+  status: string;
+};
+
+type Payment = {
+  id: string;
+  order_id: string;
+  amount: number;
+  method: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+};
+
+type Advertisement = {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  placement: string;
+  is_active: boolean;
+  view_count: number;
+  click_count: number;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+};
 
 const statusBadge = (status: string) => {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -129,6 +213,9 @@ const Admin = () => {
             <TabsTrigger value="ads" className="flex flex-col gap-1 py-2">
               <Megaphone className="h-4 w-4" /> <span className="text-xs">تبلیغات</span>
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex flex-col gap-1 py-2">
+              <BarChart className="h-4 w-4" /> <span className="text-xs">آمار کل</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="shops"><ShopsTab /></TabsContent>
@@ -139,15 +226,131 @@ const Admin = () => {
           <TabsContent value="reports"><ReportsTab /></TabsContent>
           <TabsContent value="payments"><PaymentsTab /></TabsContent>
           <TabsContent value="ads"><AdsTab /></TabsContent>
+          <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
         </Tabs>
       </div>
     </div>
   );
 };
 
+// ============ ANALYTICS TAB ============
+const AnalyticsTab = () => {
+  const [data, setData] = useState<{
+    stats: { label: string; value: number | string; icon: React.ElementType; color: string }[];
+    dailyViews: { day: string; views: number }[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      const [
+        { count: userCount },
+        { count: shopCount },
+        { count: productCount },
+        { count: orderCount },
+        { data: payments },
+        { data: views }
+      ] = await Promise.all([
+        supabase.from("user_roles").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("products").select("*", { count: "exact", head: true }),
+        supabase.from("orders").select("*", { count: "exact", head: true }),
+        supabase.from("payments").select("amount, status, created_at"),
+        supabase.from("product_daily_views").select("views, day").order("day", { ascending: true })
+      ]);
+
+      const totalRevenue = (payments || [])
+        .filter(p => p.status === "paid")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      // Group views by day
+      const dailyViews = (views || []).reduce((acc: { day: string; views: number }[], curr: { day: string; views: number }) => {
+        const existing = acc.find(a => a.day === curr.day);
+        if (existing) {
+          existing.views += curr.views;
+        } else {
+          acc.push({ day: curr.day, views: curr.views });
+        }
+        return acc;
+      }, []);
+
+      setData({
+        stats: [
+          { label: "کل کاربران", value: userCount || 0, icon: Users, color: "text-blue-600" },
+          { label: "فروشگاه‌ها", value: shopCount || 0, icon: Store, color: "text-emerald-600" },
+          { label: "محصولات", value: productCount || 0, icon: Package, color: "text-orange-600" },
+          { label: "سفارش‌ها", value: orderCount || 0, icon: ShoppingBag, color: "text-purple-600" },
+          { label: "درآمد کل", value: `${(totalRevenue / 1000000).toFixed(1)}M`, icon: CreditCard, color: "text-gold" },
+        ],
+        dailyViews: dailyViews.slice(-14), // Last 14 days
+      });
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  if (loading || !data) return <Loader2 className="h-6 w-6 animate-spin mx-auto mt-12" />;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {data.stats.map((s, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <s.icon className={`h-5 w-5 ${s.color}`} />
+              </div>
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <h3 className="text-2xl font-bold">{s.value.toLocaleString("fa-IR")}</h3>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">بازدید کل سایت (۱۴ روز اخیر)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.dailyViews}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="day" 
+                  tickFormatter={(v) => v.split('-').slice(1).join('/')}
+                  fontSize={12}
+                />
+                <YAxis fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ direction: 'rtl', borderRadius: '8px' }}
+                  labelFormatter={(v) => `تاریخ: ${v}`}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="views" 
+                  name="بازدید"
+                  stroke="hsl(var(--gold))" 
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "hsl(var(--gold))" }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // ============ SHOPS TAB ============
 const ShopsTab = () => {
-  const [shops, setShops] = useState<any[]>([]);
+  const [shops, setShops] = useState<ShopProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -156,13 +359,13 @@ const ShopsTab = () => {
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
-    setShops(data ?? []);
+    setShops((data as ShopProfile[]) ?? []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const updateShop = async (id: string, updates: any) => {
+  const updateShop = async (id: string, updates: Partial<ShopProfile>) => {
     const { error } = await supabase.from("profiles").update(updates).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("به‌روزرسانی شد"); load(); }
@@ -221,7 +424,7 @@ const ShopsTab = () => {
 
 // ============ LISTINGS TAB ============
 const ListingsTab = () => {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<SecondHandListing[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -230,13 +433,13 @@ const ListingsTab = () => {
       .from("second_hand_listings")
       .select("*")
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+    setItems((data as SecondHandListing[]) ?? []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const update = async (id: string, updates: any) => {
+  const update = async (id: string, updates: Partial<SecondHandListing>) => {
     const { error } = await supabase.from("second_hand_listings").update(updates).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("به‌روزرسانی شد"); load(); }
@@ -300,7 +503,7 @@ const ListingsTab = () => {
 
 // ============ USERS TAB ============
 const UsersTab = ({ isAdmin }: { isAdmin: boolean }) => {
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<ShopProfile[]>([]);
   const [roles, setRoles] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
 
@@ -310,9 +513,9 @@ const UsersTab = ({ isAdmin }: { isAdmin: boolean }) => {
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
     ]);
-    setProfiles(ps ?? []);
+    setProfiles((ps as ShopProfile[]) ?? []);
     const grouped: Record<string, string[]> = {};
-    (rs ?? []).forEach((r: any) => {
+    (rs ?? []).forEach((r: { user_id: string; role: string }) => {
       grouped[r.user_id] = [...(grouped[r.user_id] ?? []), r.role];
     });
     setRoles(grouped);
@@ -398,7 +601,7 @@ const UsersTab = ({ isAdmin }: { isAdmin: boolean }) => {
 
 // ============ PRODUCTS TAB ============
 const ProductsTab = () => {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -407,7 +610,7 @@ const ProductsTab = () => {
       .from("products")
       .select("*, profiles(brand_name)")
       .order("created_at", { ascending: false });
-    setProducts(data ?? []);
+    setProducts((data as AdminProduct[]) ?? []);
     setLoading(false);
   };
 
@@ -471,7 +674,7 @@ const ProductsTab = () => {
 
 // ============ CATEGORIES TAB ============
 const CategoriesTab = () => {
-  const [cats, setCats] = useState<any[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -479,7 +682,7 @@ const CategoriesTab = () => {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from("producer_categories").select("*").order("name");
-    setCats(data ?? []);
+    setCats((data as Category[]) ?? []);
     setLoading(false);
   };
 
@@ -541,7 +744,7 @@ const CategoriesTab = () => {
 
 // ============ REPORTS TAB ============
 const ReportsTab = () => {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -550,7 +753,7 @@ const ReportsTab = () => {
       .from("reports")
       .select("*")
       .order("created_at", { ascending: false });
-    setReports(data ?? []);
+    setReports((data as Report[]) ?? []);
     setLoading(false);
   };
 
@@ -613,7 +816,7 @@ const ReportsTab = () => {
 
 // ============ PAYMENTS TAB ============
 const PaymentsTab = () => {
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -622,14 +825,14 @@ const PaymentsTab = () => {
       .from("payments")
       .select("*")
       .order("created_at", { ascending: false });
-    setPayments(data ?? []);
+    setPayments((data as Payment[]) ?? []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
   const updateStatus = async (id: string, status: string) => {
-    const updates: any = { status };
+    const updates: Partial<Payment> = { status };
     if (status === "paid") updates.paid_at = new Date().toISOString();
     await supabase.from("payments").update(updates).eq("id", id);
     toast.success("به‌روزرسانی شد");
@@ -687,11 +890,11 @@ const PaymentsTab = () => {
 
 // ============ ADS TAB ============
 const AdsTab = () => {
-  const [ads, setAds] = useState<any[]>([]);
+  const [ads, setAds] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState<any>({
+  const [editing, setEditing] = useState<Advertisement | null>(null);
+  const [form, setForm] = useState<Partial<Advertisement>>({
     title: "", description: "", image_url: "", link_url: "",
     placement: "home_banner", is_active: true, start_date: "", end_date: "",
   });
@@ -699,7 +902,7 @@ const AdsTab = () => {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from("advertisements").select("*").order("created_at", { ascending: false });
-    setAds(data ?? []);
+    setAds((data as Advertisement[]) ?? []);
     setLoading(false);
   };
 
@@ -711,7 +914,7 @@ const AdsTab = () => {
     setOpen(true);
   };
 
-  const openEdit = (ad: any) => {
+  const openEdit = (ad: Advertisement) => {
     setEditing(ad);
     setForm({
       title: ad.title, description: ad.description ?? "", image_url: ad.image_url ?? "",

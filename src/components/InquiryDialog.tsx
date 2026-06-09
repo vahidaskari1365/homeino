@@ -57,6 +57,17 @@ const InquiryDialog = ({ profile_id, product_id, label = "ارسال درخوا�
       toast({ title: "خطا", description: error.message, variant: "destructive" });
       return;
     }
+
+    // Create notification for seller
+    await supabase.rpc("create_notification", {
+      _user_id: profile_id,
+      _title: "درخواست جدید",
+      _body: `یک درخواست استعلام جدید از طرف ${parsed.data.name} دریافت کردید.`,
+      _type: "inquiry_new",
+      _link: "/dashboard",
+      _metadata: { product_id: product_id ?? null }
+    });
+
     toast({ title: "ارسال شد", description: "درخواست شما برای فروشنده ارسال شد" });
     setForm({ name: "", phone: "", message: "" });
     setOpen(false);
