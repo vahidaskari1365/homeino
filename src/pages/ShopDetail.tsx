@@ -18,6 +18,8 @@ import SiteVisitDialog from "@/components/SiteVisitDialog";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import OptimizedImage from "@/components/OptimizedImage";
+import SEO from "@/components/SEO";
 
 type Profile = {
   id: string;
@@ -41,7 +43,7 @@ type Product = {
   image_url: string | null;
   stock: number;
   category_id: string | null;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   rating?: number;
 };
 
@@ -105,9 +107,6 @@ const ShopDetail = () => {
       const prodList = (prodRes.data as Product[]) ?? [];
       setProducts(prodList);
       if (prof) {
-        document.title = `${prof.brand_name} | خانه‌زیبا`;
-        const meta = document.querySelector('meta[name="description"]');
-        if (meta) meta.setAttribute("content", prof.description?.slice(0, 155) ?? `محصولات ${prof.brand_name}`);
         // Fire-and-forget view logging: one per product per browser session
         void (async () => {
           const { data: { user } } = await supabase.auth.getUser();
@@ -126,6 +125,12 @@ const ShopDetail = () => {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      {profile && (
+        <SEO 
+          title={profile.brand_name} 
+          description={profile.description || `محصولات و خدمات ${profile.brand_name} در خانه‌زیبا`}
+        />
+      )}
       <Navbar />
       <main className="container mx-auto px-6 pt-28 pb-16">
         <Link to="/shops" className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold mb-6 text-sm">
@@ -162,7 +167,7 @@ const ShopDetail = () => {
                 <p className="text-muted-foreground leading-relaxed mb-4 max-w-3xl">{profile.description}</p>
               )}
               <div className="flex flex-wrap gap-2 mb-5">
-                {profile.profile_categories.map((pc) =>
+                {profile.profile_categories?.map((pc) =>
                   pc.producer_categories ? (
                     <Badge key={pc.producer_categories.id} variant="secondary">
                       {pc.producer_categories.name}
@@ -229,7 +234,7 @@ const ShopDetail = () => {
                     <Card key={p.id} className="overflow-hidden hover:border-gold/50 transition-colors">
                       <div className="aspect-square bg-muted overflow-hidden relative">
                         {p.image_url ? (
-                          <img src={p.image_url} alt={p.name} loading="lazy"
+                          <OptimizedImage src={p.image_url} alt={p.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

@@ -1,17 +1,19 @@
 import { Search, Sparkles } from "lucide-react";
 import heroImg from "@/assets/hero-living.jpg";
+import OptimizedImage from "./OptimizedImage";
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
+        <OptimizedImage
           src={heroImg}
           alt="دکوراسیون لوکس"
           className="w-full h-full object-cover"
           width={1920}
           height={1080}
+          lazy={false}
         />
         <div className="absolute inset-0 gradient-hero" />
         <div className="absolute inset-0 bg-charcoal/40" />

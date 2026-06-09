@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tag, Loader2 } from "lucide-react";
 import { z } from "zod";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const schema = z.object({
   customer_name: z.string().trim().min(2, "نام الزامی است").max(120),
@@ -50,6 +51,7 @@ const PriceQuoteDialog = ({
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [form, setForm] = useState({
     customer_name: "",
     customer_phone: "",
@@ -60,8 +62,15 @@ const PriceQuoteDialog = ({
   });
   const navigate = useNavigate();
 
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!recaptchaToken) {
+      toast({ title: "خطا", description: "لطفاً تأیید کنید که ربات نیستید", variant: "destructive" });
+      return;
+    }
+
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast({ title: "خطا", description: parsed.error.issues[0].message, variant: "destructive" });
@@ -81,7 +90,7 @@ const PriceQuoteDialog = ({
       request_type,
       product_id: product_id ?? null,
       set_id: set_id ?? null,
-      items: items as any,
+      items: items as unknown as Record<string, unknown>[],
       title,
       description: parsed.data.description || null,
       customer_name: parsed.data.customer_name,
@@ -145,9 +154,18 @@ const PriceQuoteDialog = ({
               maxLength={1500}
             />
           </div>
+
+          <div className="flex justify-center py-2">
+            <ReCAPTCHA
+              sitekey={RECAPTCHA_SITE_KEY}
+              onChange={(token) => setRecaptchaToken(token)}
+              hl="fa"
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>انصراف</Button>
-            <Button type="submit" disabled={submitting} className="gradient-gold text-primary-foreground">
+            <Button type="submit" disabled={submitting || !recaptchaToken} className="gradient-gold text-primary-foreground">
               {submitting ? <Loader2 className="animate-spin" size={16} /> : "ارسال درخواست"}
             </Button>
           </DialogFooter>
