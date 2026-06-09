@@ -34,7 +34,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
     const [p, s, d, sh] = await Promise.all([
       supabase.from("products").select("id,name,price,image_url,profile_id").ilike("name", like).limit(8),
       supabase.from("public_profiles").select("id,brand_name,city").ilike("brand_name", like).limit(6),
-      supabase.from("designers").select("id,full_name,city").ilike("full_name", like).limit(6),
+      supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", like).limit(6),
       supabase.from("public_second_hand_listings").select("id,title,price,city").ilike("title", like).limit(6),
     ]);
     setProducts((p.data as ProductHit[]) || []);
