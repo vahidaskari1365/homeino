@@ -59,6 +59,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetType, targetId]);
 
   const myReview = session ? reviews.find((r) => r.user_id === session.user.id) : null;
@@ -69,6 +70,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       setTitle(myReview.title || "");
       setBody(myReview.body || "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myReview?.id]);
 
   const submit = async (e: React.FormEvent) => {
@@ -93,12 +95,21 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       .from("reviews")
       .upsert(payload, { onConflict: "user_id,target_type,target_id" });
     setSubmitting(false);
-    if (error) {
-      toast({ title: "خطا", description: error.message, variant: "destructive" });
-      return;
+    if (!error) {
+      toast({ title: "ثبت شد", description: "نظر شما با موفقیت ثبت شد" });
+      
+      // Create notification for seller
+      await supabase.rpc("create_notification", {
+        _user_id: profileId,
+        _title: "نظر جدید",
+        _body: `یک نظر جدید برای ${targetType === 'product' ? 'محصول' : 'فروشگاه'} شما ثبت شد.`,
+        _type: "review_new",
+        _link: targetType === 'product' ? `/shops/${profileId}` : `/shops/${targetId}`,
+        _metadata: { target_id: targetId, target_type: targetType }
+      });
+
+      load();
     }
-    toast({ title: "ثبت شد", description: "نظر شما با موفقیت ثبت شد" });
-    load();
   };
 
   const remove = async () => {

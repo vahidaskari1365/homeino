@@ -30,17 +30,31 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
       return;
     }
     setLoading(true);
-    const like = `%${t}%`;
-    const [p, s, d, sh] = await Promise.all([
-      supabase.from("products").select("id,name,price,image_url,profile_id").ilike("name", like).limit(8),
-      supabase.from("public_profiles").select("id,brand_name,city").ilike("brand_name", like).limit(6),
-      supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", like).limit(6),
-      supabase.from("public_second_hand_listings").select("id,title,price,city").ilike("title", like).limit(6),
-    ]);
-    setProducts((p.data as ProductHit[]) || []);
-    setShops((s.data as ShopHit[]) || []);
-    setDesigners((d.data as DesignerHit[]) || []);
-    setSecond((sh.data as SecondHit[]) || []);
+    
+    // Use the new RPC if available, or fall back to textSearch
+    const { data: rpcData, error: rpcError } = await supabase.rpc("search_all", { query: t });
+    
+    if (!rpcError && rpcData) {
+      const res = rpcData as { products: ProductHit[]; profiles: ShopHit[]; second_hand: SecondHit[] };
+      setProducts(res.products || []);
+      setShops(res.profiles || []);
+      setSecond(res.second_hand || []);
+      // Designers search still uses ilike for now as it's small
+      const { data: dData } = await supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", `%${t}%`).limit(6);
+      setDesigners((dData as DesignerHit[]) || []);
+    } else {
+      // Fallback to textSearch or ILIKE
+      const [p, s, d, sh] = await Promise.all([
+        supabase.from("products").select("id,name,price,image_url,profile_id").textSearch("name", t, { config: 'simple', type: 'websearch' }).limit(8),
+        supabase.from("public_profiles").select("id,brand_name,city").textSearch("brand_name", t, { config: 'simple', type: 'websearch' }).limit(6),
+        supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", `%${t}%`).limit(6),
+        supabase.from("public_second_hand_listings").select("id,title,price,city").textSearch("title", t, { config: 'simple', type: 'websearch' }).limit(6),
+      ]);
+      setProducts((p.data as ProductHit[]) || []);
+      setShops((s.data as ShopHit[]) || []);
+      setDesigners((d.data as DesignerHit[]) || []);
+      setSecond((sh.data as SecondHit[]) || []);
+    }
     setLoading(false);
   }, []);
 
