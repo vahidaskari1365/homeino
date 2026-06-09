@@ -4,6 +4,7 @@ import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag
 
 import CartButton from "./CartButton";
 import NotificationBell from "./NotificationBell";
+import SearchDialog from "./SearchDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
@@ -20,6 +21,7 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const { isModerator } = useAdminRole();
 
@@ -58,7 +60,7 @@ const Navbar = () => {
         {/* Icons */}
         <div className="flex items-center gap-4">
           
-          <button className="text-muted-foreground hover:text-gold transition-colors">
+          <button onClick={() => setSearchOpen(true)} className="text-muted-foreground hover:text-gold transition-colors" title="جستجو">
             <Search size={20} />
           </button>
           <Link to="/wishlist" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="علاقه‌مندی‌ها">
@@ -136,6 +138,7 @@ const Navbar = () => {
           ))}
         </div>
       )}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </nav>
   );
 };
