@@ -138,6 +138,7 @@ const Navbar = () => {
           ))}
         </div>
       )}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </nav>
   );
 };
