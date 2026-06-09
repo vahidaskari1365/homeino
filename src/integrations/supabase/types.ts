@@ -359,6 +359,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          metadata: Json
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          metadata?: Json
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          metadata?: Json
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1164,6 +1200,17 @@ export type Database = {
       }
     }
     Functions: {
+      create_notification: {
+        Args: {
+          _body?: string
+          _link?: string
+          _metadata?: Json
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+          _user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1188,6 +1235,16 @@ export type Database = {
         | "completed"
         | "cancelled"
       consultation_type: "advice" | "chat" | "custom_design"
+      notification_type:
+        | "order_new"
+        | "order_status"
+        | "review_new"
+        | "quote_new"
+        | "consultation_new"
+        | "consultation_message"
+        | "site_visit_new"
+        | "inquiry_new"
+        | "system"
       order_status:
         | "pending"
         | "confirmed"
@@ -1354,6 +1411,17 @@ export const Constants = {
         "cancelled",
       ],
       consultation_type: ["advice", "chat", "custom_design"],
+      notification_type: [
+        "order_new",
+        "order_status",
+        "review_new",
+        "quote_new",
+        "consultation_new",
+        "consultation_message",
+        "site_visit_new",
+        "inquiry_new",
+        "system",
+      ],
       order_status: [
         "pending",
         "confirmed",
