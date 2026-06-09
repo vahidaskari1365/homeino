@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette } from "lucide-react";
 
 import CartButton from "./CartButton";
+import NotificationBell from "./NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import type { Session } from "@supabase/supabase-js";
@@ -76,6 +77,7 @@ const Navbar = () => {
             <Palette size={20} />
           </Link>
           <CartButton />
+          {session && <NotificationBell />}
           {session ? (
             <>
               {isModerator && (
