@@ -99,6 +99,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
+  const [dailySales, setDailySales] = useState<{ day: string; amount: number }[]>([]);
   const [productViews, setProductViews] = useState<Record<string, number>>({});
 
   // product dialog
@@ -167,7 +168,21 @@ const Dashboard = () => {
         .select("product_id").eq("profile_id", profileId),
     ]);
 
-    if (ordersRes.data) setOrders(ordersRes.data as unknown as Order[]);
+    if (ordersRes.data) {
+      const ordersData = ordersRes.data as unknown as Order[];
+      setOrders(ordersData);
+      
+      // Calculate daily sales for the last 30 days
+      const salesMap = new Map<string, number>();
+      ordersData.forEach(o => {
+        const day = o.created_at.split('T')[0];
+        salesMap.set(day, (salesMap.get(day) ?? 0) + o.total_amount);
+      });
+      const salesArr = Array.from(salesMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, amount]) => ({ day, amount }));
+      setDailySales(salesArr);
+    }
     if (inqRes.data) setInquiries(inqRes.data as Inquiry[]);
 
     if (dailyRes.data) {
@@ -787,10 +802,12 @@ const Dashboard = () => {
               </Card>
               <Card className="p-5 bg-card border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">کل سفارش‌ها</span>
+                  <span className="text-sm text-muted-foreground">کل فروش</span>
                   <ShoppingCart size={16} className="text-gold" />
                 </div>
-                <p className="text-2xl font-bold text-foreground mt-2">{orders.length.toLocaleString("fa-IR")}</p>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {orders.reduce((s, o) => s + o.total_amount, 0).toLocaleString("fa-IR")} <span className="text-xs">تومان</span>
+                </p>
               </Card>
               <Card className="p-5 bg-card border-border">
                 <div className="flex items-center justify-between">
@@ -802,6 +819,38 @@ const Dashboard = () => {
                 </p>
               </Card>
             </div>
+
+            <Card className="p-6 shadow-luxury bg-card border-border mb-6">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 size={18} className="text-gold" /> فروش روزانه (۳۰ روز اخیر)
+              </h3>
+              {dailySales.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">هنوز فروشی ثبت نشده است</p>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11}
+                        tickFormatter={(v) => v.slice(5)} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} 
+                        tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
+                      <Tooltip
+                        formatter={(v: number) => [`${v.toLocaleString("fa-IR")} تومان`, "فروش"]}
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Line type="monotone" dataKey="amount" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Card>
 
             <Card className="p-6 shadow-luxury bg-card border-border mb-6">
               <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">

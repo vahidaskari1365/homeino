@@ -23,6 +23,7 @@ import SiteVisits from "./pages/SiteVisits.tsx";
 import Designers from "./pages/Designers.tsx";
 import SecondHand from "./pages/SecondHand.tsx";
 import AIDesign from "./pages/AIDesign.tsx";
+import Checkout from "./pages/Checkout.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/designers" element={<Designers />} />
                 <Route path="/second-hand" element={<SecondHand />} />
                 <Route path="/ai-design" element={<AIDesign />} />
+                <Route path="/checkout" element={<Checkout />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

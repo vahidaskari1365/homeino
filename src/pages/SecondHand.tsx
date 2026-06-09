@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import PromoteListingDialog from "@/components/PromoteListingDialog";
-import { Loader2, MapPin, Tag, Plus, Flame, Sparkles, Trash2 } from "lucide-react";
+import { Loader2, MapPin, Tag, Plus, Flame, Sparkles, Trash2, ChevronRight, ChevronLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 type Listing = {
   id: string;
@@ -55,22 +56,34 @@ const SecondHand = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", price: "", city: "", phone: "", image_url: "" });
+  
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 12;
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
-      await load(user?.id);
+      await load(user?.id, page);
       setLoading(false);
     })();
-  }, []);
+  }, [page]);
 
-  const load = async (uid?: string | null) => {
+  const load = async (uid?: string | null, pageNum = 0) => {
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
     // Public list uses the safe view (no phone exposed to anonymous visitors)
-    const { data: pub } = await supabase
+    const { data: pub, count } = await supabase
       .from("public_second_hand_listings")
-      .select("*");
+      .select("*", { count: 'exact' })
+      .range(from, to);
+    
     setList(sortListings(((pub as unknown) as Listing[]) ?? []));
+    setTotalCount(count ?? 0);
+
     if (uid) {
       const { data: my } = await supabase
         .from("second_hand_listings")
@@ -80,6 +93,8 @@ const SecondHand = () => {
       setMine((my as Listing[]) ?? []);
     }
   };
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const submit = async () => {
     if (!userId) { navigate("/auth"); return; }
@@ -147,6 +162,10 @@ const SecondHand = () => {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      <SEO 
+        title="آگهی‌های دست دوم" 
+        description="خرید و فروش لوازم خانگی و دکوراسیون دست دوم در هومینو." 
+      />
       <Navbar />
       <main className="container mx-auto px-6 pt-28 pb-20">
         <div className="flex items-center justify-between mb-8">
@@ -176,42 +195,68 @@ const SecondHand = () => {
         {loading ? (
           <div className="flex justify-center py-20"><Loader2 className="animate-spin text-gold" size={40} /></div>
         ) : (
-          <Tabs defaultValue="all">
-            <TabsList>
-              <TabsTrigger value="all">همه آگهی‌ها ({list.length})</TabsTrigger>
-              <TabsTrigger value="featured"><Sparkles size={14} className="ml-1" />ویژه ({featuredAds.length})</TabsTrigger>
-              {userId && <TabsTrigger value="mine">آگهی‌های من ({mine.length})</TabsTrigger>}
-            </TabsList>
+          <>
+            <Tabs defaultValue="all">
+              <TabsList>
+                <TabsTrigger value="all">همه آگهی‌ها ({totalCount})</TabsTrigger>
+                <TabsTrigger value="featured"><Sparkles size={14} className="ml-1" />ویژه ({featuredAds.length})</TabsTrigger>
+                {userId && <TabsTrigger value="mine">آگهی‌های من ({mine.length})</TabsTrigger>}
+              </TabsList>
 
-            <TabsContent value="all" className="mt-6">
-              {featuredAds.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gold"><Sparkles size={18} />آگهی‌های ویژه</h2>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{featuredAds.slice(0, 4).map((l) => renderCard(l))}</div>
-                </div>
-              )}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {list.filter((l) => !featuredAds.find((f) => f.id === l.id)).map((l) => renderCard(l))}
-                {list.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نشده است</CardContent></Card>}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="featured" className="mt-6">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {featuredAds.map((l) => renderCard(l))}
-                {featuredAds.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">آگهی ویژه‌ای موجود نیست</CardContent></Card>}
-              </div>
-            </TabsContent>
-
-            {userId && (
-              <TabsContent value="mine" className="mt-6">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mine.map((l) => renderCard(l, true))}
-                  {mine.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نکرده‌اید</CardContent></Card>}
+              <TabsContent value="all" className="mt-6">
+                {featuredAds.length > 0 && page === 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gold"><Sparkles size={18} />آگهی‌های ویژه</h2>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{featuredAds.slice(0, 4).map((l) => renderCard(l))}</div>
+                  </div>
+                )}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {list.filter((l) => !featuredAds.find((f) => f.id === l.id)).map((l) => renderCard(l))}
+                  {list.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نشده است</CardContent></Card>}
                 </div>
               </TabsContent>
+
+              <TabsContent value="featured" className="mt-6">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {featuredAds.map((l) => renderCard(l))}
+                  {featuredAds.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">آگهی ویژه‌ای موجود نیست</CardContent></Card>}
+                </div>
+              </TabsContent>
+
+              {userId && (
+                <TabsContent value="mine" className="mt-6">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {mine.map((l) => renderCard(l, true))}
+                    {mine.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نکرده‌اید</CardContent></Card>}
+                  </div>
+                </TabsContent>
+              )}
+            </Tabs>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-12 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(prev => Math.max(0, prev - 1))}
+                  disabled={page === 0}
+                >
+                  <ChevronRight size={16} className="ml-1" /> قبلی
+                </Button>
+                <div className="flex items-center px-4 text-sm font-medium">
+                  صفحه {page + 1} از {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={page === totalPages - 1}
+                >
+                  بعدی <ChevronLeft size={16} className="mr-1" />
+                </Button>
+              </div>
             )}
-          </Tabs>
+          </>
         )}
       </main>
       <Footer />

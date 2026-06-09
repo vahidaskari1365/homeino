@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useCart } from "@/contexts/CartContext";
 
 const STYLES = [
   { id: "modern", label: "مدرن" },
@@ -36,6 +37,8 @@ type Product = {
   price: number | null;
   image_url: string | null;
   category_id: string | null;
+  profile_id?: string;
+  stock?: number;
 };
 
 const fmt = (n: number | null | undefined) =>
@@ -52,6 +55,8 @@ const AIDesign = () => {
   const [products, setProducts] = useState<Record<string, Product[]>>({}); // slug -> products
   const [selected, setSelected] = useState<Record<string, Product>>({}); // productId -> product
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addItem, setOpen: setOpenCart } = useCart();
+  const navigate = useNavigate();
 
   // Load categories ids + products per category
   useEffect(() => {
@@ -60,21 +65,21 @@ const AIDesign = () => {
         .from("producer_categories")
         .select("id, slug");
       const map: Record<string, string> = {};
-      (cats || []).forEach((c: any) => { map[c.slug] = c.id; });
+      (cats || []).forEach((c) => { map[c.slug] = c.id; });
       setCatMap(map);
 
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, price, image_url, category_id")
+        .select("id, name, price, image_url, category_id, profile_id, stock")
         .eq("is_active", true)
         .not("image_url", "is", null)
         .limit(500);
 
       const byCat: Record<string, Product[]> = {};
-      (prods || []).forEach((p: any) => {
+      (prods || []).forEach((p) => {
         const slug = Object.keys(map).find((s) => map[s] === p.category_id);
         if (!slug) return;
-        (byCat[slug] = byCat[slug] || []).push(p);
+        (byCat[slug] = byCat[slug] || []).push(p as Product);
       });
       setProducts(byCat);
     })();
@@ -103,6 +108,35 @@ const AIDesign = () => {
   const selectedList = useMemo(() => Object.values(selected), [selected]);
   const total = selectedList.reduce((s, p) => s + (Number(p.price) || 0), 0);
 
+  const buyTheLook = () => {
+    if (selectedList.length === 0) return;
+    
+    // check if all products are from the same seller
+    const profileIds = new Set(selectedList.map(p => p.profile_id));
+    if (profileIds.size > 1) {
+      toast.error("در حال حاضر فقط امکان خرید محصولات از یک فروشگاه به صورت همزمان وجود دارد.");
+      return;
+    }
+
+    let addedCount = 0;
+    for (const p of selectedList) {
+      const res = addItem({
+        product_id: p.id,
+        profile_id: p.profile_id || "",
+        name: p.name,
+        price: p.price || 0,
+        image_url: p.image_url,
+        stock: p.stock || 10,
+      });
+      if (res.ok) addedCount++;
+    }
+
+    if (addedCount > 0) {
+      toast.success(`${addedCount} محصول به سبد خرید اضافه شد`);
+      setOpenCart(true);
+    }
+  };
+
   const generate = async () => {
     if (!imageBase64) return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
     setLoading(true);
@@ -113,7 +147,7 @@ const AIDesign = () => {
         const cat = CATEGORIES.find((c) => c.slug === slug)?.label;
         return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
       });
-      const { data, error } = await supabase.functions.invoke("ai-redesign", {
+      const { data, error } = await supabase.functions.invoke<{ image?: string; error?: string }>("ai-redesign", {
         body: {
           imageBase64,
           style,
@@ -122,14 +156,14 @@ const AIDesign = () => {
         },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const img = (data as any)?.image;
+      if (data?.error) throw new Error(data.error);
+      const img = data?.image;
       if (!img) throw new Error("تصویری دریافت نشد");
       setResultImage(img);
       toast.success("طراحی جدید آماده شد");
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      toast.error(e?.message || "خطا در تولید طراحی");
+      toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
     } finally {
       setLoading(false);
     }
@@ -299,9 +333,17 @@ const AIDesign = () => {
                 </div>
               )}
               {selectedList.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">مجموع</span>
-                  <span className="font-bold text-accent">{fmt(total)}</span>
+                <div className="mt-3 pt-3 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">مجموع</span>
+                    <span className="font-bold text-accent">{fmt(total)}</span>
+                  </div>
+                  <button 
+                    onClick={buyTheLook}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors"
+                  >
+                    <ShoppingBag size={16} /> خرید این چیدمان
+                  </button>
                 </div>
               )}
             </div>
