@@ -12,7 +12,7 @@ interface SearchDialogProps {
 
 type ProductHit = { id: string; name: string; price: number | null; image_url: string | null; profile_id: string };
 type ShopHit = { id: string; brand_name: string; city: string | null };
-type DesignerHit = { id: string; full_name: string; city: string | null };
+type DesignerHit = { id: string; display_name: string };
 type SecondHit = { id: string; title: string; price: number | null; city: string | null };
 
 const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
