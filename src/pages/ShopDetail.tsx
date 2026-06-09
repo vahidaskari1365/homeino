@@ -41,7 +41,7 @@ type Product = {
   image_url: string | null;
   stock: number;
   category_id: string | null;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   rating?: number;
 };
 
@@ -90,7 +90,7 @@ const ShopDetail = () => {
       const [profRes, prodRes] = await Promise.all([
         supabase
           .from("public_profiles")
-          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, contact_published_at")
+          .select("id, brand_name, description, city, address, phone, website, contact_name, contact_published, contact_published_at, profile_categories(category_id, producer_categories(id, name))")
           .eq("id", id)
           .maybeSingle(),
         supabase
