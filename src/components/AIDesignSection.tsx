@@ -1,8 +1,18 @@
-import { useState, useRef } from "react";
-import { Upload, Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader2, Download, RefreshCw, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader2, Download, RefreshCw, Check, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import { useCart } from "@/contexts/CartContext";
+
+const PROGRESS_MESSAGES = [
+  "در حال تحلیل ابعاد اتاق...",
+  "بررسی نورپردازی و زوایا...",
+  "چیدمان هوشمند محصولات...",
+  "اعمال سبک دکوراسیون...",
+  "بهینه‌سازی نهایی تصویر...",
+];
 
 const STYLES = [
   { id: "modern", label: "مدرن" },
@@ -22,6 +32,19 @@ const furniture = [
   { icon: Package, label: "دکور", slug: "wood-decor" },
   { icon: Bed, label: "تخت", slug: "bedding" },
 ];
+
+type Product = {
+  id: string;
+  name: string;
+  price: number | null;
+  image_url: string | null;
+  category_id: string | null;
+  profile_id?: string;
+  stock?: number;
+};
+
+const fmt = (n: number | null | undefined) =>
+  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 const steps = [
   {
@@ -56,8 +79,12 @@ const AIDesignSection = () => {
   const [selectedStyle, setSelectedStyle] = useState("modern");
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["carpet"]);
   const [loading, setLoading] = useState(false);
+  const [progressIndex, setProgressIndex] = useState(0);
+  const [roomTip, setRoomTip] = useState<string | null>(null);
+  const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addItem } = useCart();
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -91,10 +118,18 @@ const AIDesignSection = () => {
     }
     setLoading(true);
     setResultImage(null);
-    type AiRedesignResponse = { image?: string; error?: string };
+    setRoomTip(null);
+    setGeneratedProducts([]);
+    setProgressIndex(0);
+    
+    const progressInterval = setInterval(() => {
+      setProgressIndex((prev) => (prev + 1) % PROGRESS_MESSAGES.length);
+    }, 5000);
+
+    type AiRedesignResponse = { image?: string; tip?: string; error?: string };
 
     try {
-      const products = selectedCategories.map((slug) => ({
+      const productsPayload = selectedCategories.map((slug) => ({
         name: categoryLabel(slug),
         category: slug,
       }));
@@ -108,7 +143,7 @@ const AIDesignSection = () => {
           imageBase64,
           style: selectedStyle,
           prompt: promptText,
-          products,
+          products: productsPayload,
         },
       });
       if (error) throw error;
@@ -116,13 +151,31 @@ const AIDesignSection = () => {
       if (result?.error) throw new Error(result.error);
       const img = result?.image;
       if (!img) throw new Error("تصویری دریافت نشد");
+      
       setResultImage(img);
+      if (result?.tip) setRoomTip(result.tip);
+      
+      // Fetch some products for "Buy the Look" based on selected categories
+      const { data: cats } = await supabase.from("producer_categories").select("id, slug").in("slug", selectedCategories);
+      if (cats && cats.length > 0) {
+        const catIds = cats.map(c => c.id);
+        const { data: prods } = await supabase
+          .from("products")
+          .select("id, name, price, image_url, category_id, profile_id, stock")
+          .in("category_id", catIds)
+          .eq("is_active", true)
+          .not("image_url", "is", null)
+          .limit(3);
+        if (prods) setGeneratedProducts(prods as Product[]);
+      }
+
       toast.success("طراحی جدید آماده شد!");
     } catch (e: unknown) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
     } finally {
       setLoading(false);
+      clearInterval(progressInterval);
     }
   };
 
@@ -192,10 +245,15 @@ const AIDesignSection = () => {
             >
               {imageBase64 ? (
                 <>
-                  <img src={resultImage || imageBase64} alt="فضای طراحی شده" className="w-full h-full object-cover transition-all duration-500" />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 60%, hsl(20 40% 8% / 0.5) 100%)" }} />
+                  {resultImage && !loading ? (
+                    <BeforeAfterSlider beforeImage={imageBase64} afterImage={resultImage} />
+                  ) : (
+                    <img src={imageBase64} alt="فضای طراحی شده" className="w-full h-full object-cover transition-all duration-500" />
+                  )}
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, transparent 60%, hsl(20 40% 8% / 0.5) 100%)" }} />
+                  
                   {/* Result pins */}
-                  {resultImage && selectedCategories.map((slug) => (
+                  {resultImage && !loading && selectedCategories.map((slug) => (
                     <div key={slug} className="absolute flex flex-col items-center gap-1" style={{ top: `${40 + furniture.findIndex((f) => f.slug === slug) * 5}%`, right: `${50 + furniture.findIndex((f) => f.slug === slug) * 4}%` }}>
                       <span className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, hsl(25 95% 60%), hsl(15 85% 55%))" }}>
                         <Check size={14} className="text-white" />
@@ -205,13 +263,16 @@ const AIDesignSection = () => {
                       </span>
                     </div>
                   ))}
+                  
                   {/* Overlay on hover to change image */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "hsl(20 40% 8% / 0.6)" }}>
-                    <div className="text-center">
-                      <Upload size={28} className="mx-auto mb-2" style={{ color: "hsl(40 20% 80%)" }} />
-                      <span className="text-sm font-medium" style={{ color: "hsl(40 30% 95%)" }}>تغییر تصویر</span>
+                  {!resultImage && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "hsl(20 40% 8% / 0.6)" }}>
+                      <div className="text-center">
+                        <Upload size={28} className="mx-auto mb-2" style={{ color: "hsl(40 20% 80%)" }} />
+                        <span className="text-sm font-medium" style={{ color: "hsl(40 30% 95%)" }}>تغییر تصویر</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full transition-all" style={{ background: dragging ? "hsl(20 80% 50% / 0.1)" : "transparent" }}>
@@ -228,15 +289,23 @@ const AIDesignSection = () => {
 
               {/* Loading overlay */}
               {loading && (
-                <div className="absolute inset-0 flex items-center justify-center z-20" style={{ background: "hsl(20 40% 8% / 0.75)" }}>
-                  <div className="text-center">
-                    <Loader2 className="animate-spin mx-auto mb-3" size={40} style={{ color: "hsl(25 95% 60%)" }} />
-                    <p className="font-bold" style={{ color: "hsl(40 30% 95%)" }}>هوش مصنوعی در حال طراحی...</p>
-                    <p className="text-sm mt-1" style={{ color: "hsl(40 20% 65%)" }}>۱۵ تا ۴۰ ثانیه طول می‌کشد</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-20" style={{ background: "hsl(20 40% 8% / 0.8)" }}>
+                  <div className="text-center p-6">
+                    <Loader2 className="animate-spin mx-auto mb-4" size={48} style={{ color: "hsl(25 95% 60%)" }} />
+                    <p className="font-bold text-lg" style={{ color: "hsl(40 30% 95%)" }}>{PROGRESS_MESSAGES[progressIndex]}</p>
+                    <p className="text-sm mt-2" style={{ color: "hsl(40 20% 65%)" }}>۱۵ تا ۴۰ ثانیه طول می‌کشد</p>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Room Analytics Tip */}
+            {roomTip && (
+              <div className="px-5 py-3 mx-5 mt-4 rounded-xl flex gap-3 items-center" style={{ background: "hsl(20 80% 50% / 0.1)", border: "1px solid hsl(20 80% 50% / 0.2)" }}>
+                <Lightbulb size={20} style={{ color: "hsl(25 95% 60%)" }} />
+                <p className="text-xs" style={{ color: "hsl(40 30% 90%)" }}>{roomTip}</p>
+              </div>
+            )}
 
             {/* Style picker */}
             <div className="px-5 pt-4">
@@ -258,6 +327,43 @@ const AIDesignSection = () => {
                 ))}
               </div>
             </div>
+
+            {/* Buy the Look - Post Generation */}
+            {resultImage && !loading && generatedProducts.length > 0 && (
+              <div className="px-5 pb-5">
+                <div className="text-xs mb-3 tracking-widest" style={{ color: "hsl(40 20% 55%)" }}>BUY THE LOOK</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {generatedProducts.map((p) => (
+                    <div key={p.id} className="rounded-xl overflow-hidden border" style={{ background: "hsl(20 25% 13%)", border: "1px solid hsl(20 25% 18%)" }}>
+                      <div className="aspect-square relative overflow-hidden">
+                        {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="p-3">
+                        <div className="text-[10px] font-bold truncate mb-1" style={{ color: "hsl(40 30% 95%)" }}>{p.name}</div>
+                        <div className="text-[10px] font-bold mb-2" style={{ color: "hsl(25 95% 60%)" }}>{fmt(p.price)}</div>
+                        <button
+                          onClick={() => {
+                            addItem({
+                              product_id: p.id,
+                              profile_id: p.profile_id || "",
+                              name: p.name,
+                              price: p.price || 0,
+                              image_url: p.image_url,
+                              stock: p.stock || 10,
+                            });
+                            toast.success("به سبد خرید اضافه شد");
+                          }}
+                          className="w-full py-1.5 rounded-lg text-[10px] font-bold transition-all"
+                          style={{ background: "hsl(20 80% 50% / 0.15)", border: "1px solid hsl(25 95% 60%)", color: "hsl(25 95% 65%)" }}
+                        >
+                          + خرید
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Furniture grid — now interactive */}
             <div className="p-5 pt-0">
