@@ -12,7 +12,7 @@ type Enriched = {
   id: string;
   shop_name?: string;
   shop_id?: string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   rating?: number;
 };
 
@@ -29,7 +29,7 @@ const Compare = () => {
         .select("id, attributes, rating, profile_id, profiles(id, brand_name)")
         .in("id", ids);
       const map: Record<string, Enriched> = {};
-      (data || []).forEach((p: any) => {
+      (data || []).forEach((p: { id: string; attributes: Record<string, unknown> | null; rating: number | null; profiles: { id: string; brand_name: string | null } | null }) => {
         map[p.id] = {
           id: p.id,
           attributes: p.attributes || {},

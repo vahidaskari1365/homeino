@@ -7,7 +7,7 @@ export type CompareItem = {
   price: number | null;
   image_url: string | null;
   rating: number;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   shop_name?: string;
   shop_id?: string;
 };
@@ -34,7 +34,7 @@ export const CompareProvider = ({ children }: { children: ReactNode }) => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setItems(JSON.parse(raw));
-    } catch {}
+    } catch { /* empty */ }
   }, []);
 
   useEffect(() => {
