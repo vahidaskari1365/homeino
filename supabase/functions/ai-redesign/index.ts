@@ -51,8 +51,10 @@ Deno.serve(async (req) => {
     const prompt: string = (body.prompt || "").toString();
     const style: string = (body.style || "modern").toString();
     const products: SelectedProduct[] = Array.isArray(body.products) ? body.products : [];
+    const maskBase64: string | undefined = body.maskBase64;
+    const isPolish: boolean = body.isPolish === true;
 
-    console.log("Request payload - Style:", style, "Prompt length:", prompt.length, "Products count:", products.length);
+    console.log("Request payload - Style:", style, "Prompt length:", prompt.length, "Products count:", products.length, "Has mask:", !!maskBase64, "Is polish:", isPolish);
     if (imageBase64) {
       console.log("Request payload - Image length:", imageBase64.length, "Prefix:", imageBase64.substring(0, 30));
     } else {
@@ -76,21 +78,65 @@ Deno.serve(async (req) => {
       .map((p, i) => `${i + 1}. ${p.category ? `[${p.category}] ` : ""}${p.name}`)
       .join("\n");
 
+    // Build the system instruction based on mode
+    let redesignInstruction = "";
+    
+    if (isPolish) {
+      // Polish mode: refine and enhance the already-generated design
+      redesignInstruction = [
+        `Refine and polish this AI-generated interior design in a ${style} style.`,
+        productList
+          ? `The following furniture/decor items should remain in the room:\n${productList}`
+          : "",
+        prompt?.trim() ? `Additional refinement: ${prompt.trim()}` : "",
+        "Improve the lighting, textures, material details, and overall photorealism. Keep the same room structure, walls, windows, floor, viewpoint, and furniture arrangement. Make it look more realistic and professionally designed.",
+      ].filter(Boolean).join("\n\n");
+    } else if (maskBase64) {
+      // Selective replacement mode: only modify masked areas
+      redesignInstruction = [
+        `Redesign ONLY the masked/painted areas of this interior space in a ${style} style.`,
+        productList
+          ? `Place the EXACT following furniture/decor items (provided as reference images) into the room, matching their look, color, material and shape as closely as possible:\n${productList}`
+          : "",
+        prompt?.trim() ? `Additional request: ${prompt.trim()}` : "",
+        "CRITICAL: Only modify the areas indicated by the mask image. Keep all other parts of the image exactly as they are - do not change any non-masked region. The mask is provided as a separate image where white/colored areas indicate regions to modify and black areas should remain unchanged. Keep the same room structure, walls, windows, floor and viewpoint.",
+      ].filter(Boolean).join("\n\n");
+    } else {
+      // Standard redesign mode
+      redesignInstruction = [
+        `Redesign this interior space in a ${style} style.`,
+        productList
+          ? `Place the EXACT following furniture/decor items (provided as reference images) into the room, matching their look, color, material and shape as closely as possible:\n${productList}`
+          : "",
+        prompt?.trim() ? `Additional request: ${prompt.trim()}` : "",
+        "Keep the same room structure, walls, windows, floor and viewpoint. Replace existing furniture only where the new items belong. Photorealistic interior photography, natural lighting, high quality, cohesive composition.",
+      ].filter(Boolean).join("\n\n");
+    }
+
+    // Add analytics instruction for standard redesigns (not polish)
+    const analyticsInstruction = isPolish ? "" : `
+      After generating the image, provide a JSON object with room analytics. Format:
+      {
+        "tip": "یک نکته طراحی در مورد فضا به فارسی (حداکثر ۲۰ کلمه)",
+        "colorPalette": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
+        "styleMatch": 85,
+        "spatialAdvice": "توصیه‌ای برای چیدمان بهتر فضا به فارسی (حداکثر ۲۰ کلمه)"
+      }
+      styleMatch is a number 0-100 indicating how well the space matches the ${style} style.
+      Provide BOTH the image AND the analytics JSON in your response.
+    `;
+
     const fullPrompt = [
-      `Redesign this interior space in a ${style} style.`,
-      productList
-        ? `Place the EXACT following furniture/decor items (provided as reference images) into the room, matching their look, color, material and shape as closely as possible:\n${productList}`
-        : "",
-      prompt?.trim() ? `Additional request: ${prompt.trim()}` : "",
-      "Keep the same room structure, walls, windows, floor and viewpoint. Replace existing furniture only where the new items belong. Photorealistic interior photography, natural lighting, high quality, cohesive composition.",
-      "IMPORTANT: Also provide a very brief interior design tip (15 words max) in PERSIAN based on the room's characteristics (light, space, potential). Format your response as a JSON object with 'image' (base64) and 'tip' (string) fields. But actually, since I need the image as a modality, just output the text tip separately if possible, or I will parse it from the text response.",
+      redesignInstruction,
+      analyticsInstruction,
+      "IMPORTANT: You must respond with BOTH an image and a text response containing the analytics JSON. The text should be a valid JSON object as specified above.",
     ].filter(Boolean).join("\n\n");
 
     const roomDataUrl = imageBase64.startsWith("data:")
       ? imageBase64
       : `data:image/png;base64,${imageBase64}`;
 
-    // Build content: text + room image + each product image
+    // Build content: text + room image + (optional mask) + each product image
     const content: (
       | { type: "text"; text: string }
       | { type: "image_url"; image_url: { url: string } }
@@ -98,6 +144,15 @@ Deno.serve(async (req) => {
       { type: "text", text: fullPrompt },
       { type: "image_url", image_url: { url: roomDataUrl } },
     ];
+
+    // If mask is provided, include it as an additional image
+    if (maskBase64) {
+      const maskDataUrl = maskBase64.startsWith("data:")
+        ? maskBase64
+        : `data:image/png;base64,${maskBase64}`;
+      content.push({ type: "image_url", image_url: { url: maskDataUrl } });
+      console.log("Mask image added to request content");
+    }
 
     for (const p of products) {
       if (!p?.imageUrl) continue;
@@ -169,7 +224,7 @@ Deno.serve(async (req) => {
     const data = await upstream.json();
     console.log("AI Gateway response received. Keys present in response:", Object.keys(data));
     const b64 = data?.data?.[0]?.b64_json;
-    const tip = data?.choices?.[0]?.message?.content || data?.data?.[0]?.text || "";
+    const textContent = data?.choices?.[0]?.message?.content || data?.data?.[0]?.text || "";
 
     if (!b64) {
       console.error("Invalid response: 'b64_json' is missing in response data:", JSON.stringify(data).slice(0, 500));
@@ -178,10 +233,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Successfully generated design. Base64 length: ${b64.length}, Tip generated: "${tip}"`);
+    // Parse analytics JSON from text response (try multiple approaches)
+    let analytics: Record<string, unknown> = {};
+    let tip = textContent;
+    
+    if (textContent) {
+      try {
+        // Try to extract JSON from the text
+        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          analytics = parsed;
+          tip = (parsed.tip as string) || textContent;
+        }
+      } catch {
+        // If parsing fails, use raw text as tip
+        console.log("Could not parse JSON from response text, using raw text as tip");
+      }
+    }
+
+    console.log(`Successfully generated design. Base64 length: ${b64.length}, Tip generated: "${tip?.substring(0, 50)}"`);
 
     return new Response(
-      JSON.stringify({ image: `data:image/png;base64,${b64}`, tip }),
+      JSON.stringify({ 
+        image: `data:image/png;base64,${b64}`, 
+        tip,
+        analytics: Object.keys(analytics).length > 0 ? analytics : undefined,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
