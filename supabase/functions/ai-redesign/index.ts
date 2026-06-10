@@ -31,11 +31,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    console.log("------------------- ai-redesign start -------------------");
     const body = await req.json();
     const imageBase64: string | undefined = body.imageBase64;
     const prompt: string = (body.prompt || "").toString();
     const style: string = (body.style || "modern").toString();
     const products: SelectedProduct[] = Array.isArray(body.products) ? body.products : [];
+
+    console.log("Request payload - Style:", style, "Prompt length:", prompt.length, "Products count:", products.length);
+    if (imageBase64) {
+      console.log("Request payload - Image length:", imageBase64.length, "Prefix:", imageBase64.substring(0, 30));
+    } else {
+      console.warn("Request payload - No imageBase64 provided");
+    }
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: "imageBase64 الزامی است" }), {
@@ -44,7 +52,10 @@ Deno.serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("Configuration Error: LOVABLE_API_KEY is not defined in environment variables");
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
 
     const productList = products
       .filter((p) => p && p.name)
@@ -81,17 +92,24 @@ Deno.serve(async (req) => {
       if (!url.startsWith("data:") && !/^https?:\/\//i.test(url)) continue;
       // For maximum reliability convert remote URL to data URL.
       if (/^https?:\/\//i.test(url)) {
+        console.log(`Converting product image URL to base64 data URL: ${url.substring(0, 50)}...`);
         const d = await urlToDataUrl(url);
-        if (d) url = d;
+        if (d) {
+          url = d;
+          console.log("Successfully converted to base64");
+        } else {
+          console.warn(`Failed to convert remote image to data URL: ${url}`);
+        }
       }
       content.push({ type: "image_url", image_url: { url } });
     }
 
+    console.log(`Sending request to Lovable AI Gateway with model google/gemini-2.0-flash-exp`);
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
+        model: "google/gemini-2.0-flash-exp",
         messages: [{ role: "user", content }],
         modalities: ["image", "text"],
       }),
@@ -99,39 +117,61 @@ Deno.serve(async (req) => {
 
     if (!upstream.ok) {
       const errText = await upstream.text();
-      console.error("AI gateway error:", upstream.status, errText);
+      console.error(`AI Gateway error (HTTP status: ${upstream.status}):`, errText);
+      
+      let gatewayErrorMessage = "";
+      try {
+        const parsed = JSON.parse(errText);
+        gatewayErrorMessage = parsed.error?.message || parsed.error || parsed.message || "";
+      } catch (e) {
+        console.error("Failed to parse Gateway error body as JSON:", e);
+      }
+
+      console.log(`Extracted error message from AI Gateway response: "${gatewayErrorMessage}"`);
+
+      let persianError = "";
       if (upstream.status === 429) {
-        return new Response(JSON.stringify({ error: "تعداد درخواست‌ها زیاد است. کمی صبر کنید." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        persianError = "تعداد درخواست‌های ارسالی بیش از حد مجاز است. لطفاً چند لحظه صبر کنید و دوباره تلاش کنید.";
+        if (gatewayErrorMessage) {
+          persianError += ` (جزئیات: ${gatewayErrorMessage})`;
+        }
+      } else if (upstream.status === 402) {
+        persianError = "اعتبار استفاده از سرویس هوش مصنوعی به اتمام رسیده است. لطفاً نسبت به شارژ یا ارتقای اشتراک خود اقدام کنید.";
+        if (gatewayErrorMessage) {
+          persianError += ` (جزئیات: ${gatewayErrorMessage})`;
+        }
+      } else {
+        persianError = "خطایی در پردازش و طراحی تصویر توسط سرویس هوش مصنوعی رخ داده است. لطفاً دوباره تلاش کنید.";
+        if (gatewayErrorMessage) {
+          persianError += ` (علت: ${gatewayErrorMessage})`;
+        }
       }
-      if (upstream.status === 402) {
-        return new Response(JSON.stringify({ error: "اعتبار هوش مصنوعی تمام شده. لطفاً شارژ کنید." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "خطا در سرویس هوش مصنوعی" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      return new Response(JSON.stringify({ error: persianError }), {
+        status: upstream.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await upstream.json();
+    console.log("AI Gateway response received. Keys present in response:", Object.keys(data));
     const b64 = data?.data?.[0]?.b64_json;
     const tip = data?.choices?.[0]?.message?.content || data?.data?.[0]?.text || "";
 
     if (!b64) {
-      console.error("No image in response:", JSON.stringify(data).slice(0, 500));
-      return new Response(JSON.stringify({ error: "تصویری دریافت نشد. دوباره تلاش کنید." }), {
+      console.error("Invalid response: 'b64_json' is missing in response data:", JSON.stringify(data).slice(0, 500));
+      return new Response(JSON.stringify({ error: "تصویری از سرویس هوش مصنوعی دریافت نشد. لطفا دوباره تلاش کنید." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`Successfully generated design. Base64 length: ${b64.length}, Tip generated: "${tip}"`);
 
     return new Response(
       JSON.stringify({ image: `data:image/png;base64,${b64}`, tip }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    console.error("ai-redesign error:", e);
+    console.error("Internal server error in ai-redesign function:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
