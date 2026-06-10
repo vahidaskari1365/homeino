@@ -37,7 +37,8 @@ export const useNotifications = () => {
   }, []);
 
   const load = useCallback(async () => {
-    if (!session?.user) {
+    const uid = session?.user?.id;
+    if (!uid) {
       setItems([]);
       return;
     }
@@ -45,7 +46,7 @@ export const useNotifications = () => {
     const { data } = await supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", session.user.id)
+      .eq("user_id", uid)
       .order("created_at", { ascending: false })
       .limit(30);
     setItems((data as AppNotification[]) || []);
@@ -53,17 +54,18 @@ export const useNotifications = () => {
   }, [session?.user?.id]);
 
   useEffect(() => {
+    const uid = session?.user?.id;
     load();
-    if (!session?.user) return;
+    if (!uid) return;
     const channel = supabase
-      .channel(`notifications:${session.user.id}`)
+      .channel(`notifications:${uid}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "notifications",
-          filter: `user_id=eq.${session.user.id}`,
+          filter: `user_id=eq.${uid}`,
         },
         (payload) => {
           setItems((prev) => [payload.new as AppNotification, ...prev].slice(0, 30));
@@ -81,12 +83,13 @@ export const useNotifications = () => {
   }, []);
 
   const markAllRead = useCallback(async () => {
-    if (!session?.user) return;
+    const uid = session?.user?.id;
+    if (!uid) return;
     setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
     await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", session.user.id)
+      .eq("user_id", uid)
       .eq("is_read", false);
   }, [session?.user?.id]);
 

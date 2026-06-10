@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Tag, Loader2, Check, X, Clock, MessageCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -58,7 +58,7 @@ const Quotes = () => {
   const [days, setDays] = useState("7");
   const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate("/auth"); return; }
@@ -74,9 +74,9 @@ const Quotes = () => {
       setSellerQuotes((sq.data ?? []) as Quote[]);
     }
     setLoading(false);
-  };
+  }, [navigate]);
 
-  useEffect(() => { load(); document.title = "درخواست‌های قیمت | هومینو"; }, []);
+  useEffect(() => { load(); document.title = "درخواست‌های قیمت | هومینو"; }, [load]);
 
   const openRespond = (q: Quote) => {
     setEditing(q);

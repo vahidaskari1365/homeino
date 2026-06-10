@@ -97,12 +97,13 @@ const Consultations = () => {
   };
 
   useEffect(() => {
-    if (!active) return;
-    supabase.from("consultation_messages").select("*").eq("consultation_id", active.id).order("created_at")
+    const aid = active?.id;
+    if (!aid) return;
+    supabase.from("consultation_messages").select("*").eq("consultation_id", aid).order("created_at")
       .then(({ data }) => setMessages((data as Message[]) ?? []));
 
-    const channel = supabase.channel(`consult-${active.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "consultation_messages", filter: `consultation_id=eq.${active.id}` },
+    const channel = supabase.channel(`consult-${aid}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "consultation_messages", filter: `consultation_id=eq.${aid}` },
         (payload) => setMessages((prev) => [...prev, payload.new as Message]))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
