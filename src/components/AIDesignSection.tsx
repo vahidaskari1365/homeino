@@ -91,10 +91,6 @@ const AIDesignSection = () => {
       toast.error("لطفاً یک تصویر انتخاب کنید");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("حجم تصویر باید کمتر از ۸ مگابایت باشد");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);
@@ -281,7 +277,7 @@ const AIDesignSection = () => {
                       <Upload size={28} style={{ color: "hsl(25 95% 60%)" }} />
                     </div>
                     <p className="font-bold text-lg mb-1" style={{ color: "hsl(40 30% 95%)" }}>عکس فضای خود را آپلود کنید</p>
-                    <p className="text-sm" style={{ color: "hsl(40 20% 65%)" }}>کلیک کنید یا عکس را اینجا بکشید (JPG/PNG تا ۸ مگابایت)</p>
+                    <p className="text-sm" style={{ color: "hsl(40 20% 65%)" }}>کلیک کنید یا عکس را اینجا بکشید (JPG/PNG)</p>
                   </div>
                 </div>
               )}
