@@ -32,6 +32,20 @@ Deno.serve(async (req) => {
 
   try {
     console.log("------------------- ai-redesign start -------------------");
+
+    // Estimate total payload size before parsing to catch oversized requests early
+    const contentLength = req.headers.get("content-length");
+    if (contentLength) {
+      const sizeBytes = parseInt(contentLength, 10);
+      // Supabase Edge Functions have a ~10 MB physical limit
+      if (sizeBytes > 10 * 1024 * 1024) {
+        console.error(`Payload too large: ${sizeBytes} bytes exceeds 10 MB limit`);
+        return new Response(JSON.stringify({ error: "حجم تصویر ارسالی بیش از حد مجاز است. لطفاً تصویری با حجم کمتر (حداکثر ۱۰ مگابایت) انتخاب کنید." }), {
+          status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const body = await req.json();
     const imageBase64: string | undefined = body.imageBase64;
     const prompt: string = (body.prompt || "").toString();

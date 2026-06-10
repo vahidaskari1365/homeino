@@ -99,7 +99,6 @@ const AIDesign = () => {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر انتخاب کنید");
-    if (file.size > 8 * 1024 * 1024) return toast.error("حجم تصویر باید کمتر از ۸ مگابایت باشد");
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);
@@ -243,7 +242,7 @@ const AIDesign = () => {
                   <div className="text-center p-6">
                     <Upload className="mx-auto mb-3 text-muted-foreground" size={36} />
                     <p className="text-sm text-muted-foreground">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">JPG/PNG تا ۸ مگابایت</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">JPG/PNG</p>
                   </div>
                 )}
                 <input ref={inputRef} type="file" accept="image/*" className="hidden"
