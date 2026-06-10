@@ -68,7 +68,7 @@ const SiteVisits = () => {
     setUserId(user.id);
 
     const { data: profs } = await supabase.from("profiles").select("id").eq("user_id", user.id);
-    const ids = (profs || []).map((p: any) => p.id);
+    const ids = (profs || []).map((p: { id: string }) => p.id);
     setProfileIds(ids);
 
     const { data: mine } = await supabase.from("site_visits").select("*").eq("customer_id", user.id).order("created_at", { ascending: false });
@@ -168,7 +168,7 @@ const SiteVisits = () => {
   );
 };
 
-const ShopVisitCard = ({ visit: v, onUpdate }: { visit: Visit; onUpdate: (id: string, status: Visit["status"], extra?: any) => void }) => {
+const ShopVisitCard = ({ visit: v, onUpdate }: { visit: Visit; onUpdate: (id: string, status: Visit["status"], extra?: { seller_note?: string; confirmed_at?: string | null }) => void }) => {
   const [note, setNote] = useState(v.seller_note || "");
   const [confirmDate, setConfirmDate] = useState(v.confirmed_at?.slice(0, 16) || "");
 

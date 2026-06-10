@@ -143,7 +143,7 @@ const Consultations = () => {
 
   const updateStatus = async (status: string) => {
     if (!active) return;
-    const { error } = await supabase.from("consultations").update({ status: status as any, completed_at: status === "completed" ? new Date().toISOString() : null }).eq("id", active.id);
+    const { error } = await supabase.from("consultations").update({ status, completed_at: status === "completed" ? new Date().toISOString() : null }).eq("id", active.id);
     if (error) { toast({ title: "خطا", description: error.message, variant: "destructive" }); return; }
     toast({ title: "بروزرسانی شد" });
     if (userId) await loadList(userId, designerId);
@@ -253,7 +253,16 @@ const Consultations = () => {
   );
 };
 
-const ChatPanel = ({ active, messages, input, setInput, sendMessage, sending, scrollRef, userId }: any) => (
+const ChatPanel = ({ active, messages, input, setInput, sendMessage, sending, scrollRef, userId }: {
+  active: Consultation;
+  messages: Message[];
+  input: string;
+  setInput: (v: string) => void;
+  sendMessage: () => void;
+  sending: boolean;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  userId: string | null;
+}) => (
   <Card className="flex flex-col h-[600px]">
     <CardHeader className="border-b">
       <CardTitle className="text-lg">{active.title}</CardTitle>

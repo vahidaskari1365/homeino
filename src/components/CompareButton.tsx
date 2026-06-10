@@ -16,7 +16,8 @@ const CompareButton = ({ item, variant = "icon", className }: Props) => {
   const onClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    active ? remove(item.id) : add(item);
+    if (active) remove(item.id);
+    else add(item);
   };
 
   if (variant === "full") {

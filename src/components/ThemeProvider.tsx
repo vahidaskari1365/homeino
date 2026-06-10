@@ -21,7 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.classList.add("light");
     try {
       localStorage.setItem("theme", "light");
-    } catch {}
+    } catch { /* empty */ }
   }, []);
 
   return (
