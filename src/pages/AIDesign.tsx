@@ -261,7 +261,26 @@ const AIDesign = () => {
           isPolish: mode === "polish",
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error("Supabase function error:", error);
+        let errorMessage = "خطا در برقراری ارتباط با سرویس هوش مصنوعی";
+        
+        try {
+          // Try to extract the error message from the response body
+          if (error.context && typeof error.context.json === 'function') {
+            const errorData = await error.context.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        } catch (e) {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
       if (data?.error) throw new Error(data.error);
       
       const img = data?.image;
