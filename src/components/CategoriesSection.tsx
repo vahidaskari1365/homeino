@@ -3,7 +3,7 @@ import { Armchair, Lamp, Palette, Flower2, UtensilsCrossed, Frame, Bed, Megaphon
 const categories = [
   { icon: Armchair, label: "مبلمان", count: "۲,۴۰۰+" },
   { icon: Palette, label: "فرش و قالی", count: "۱,۸۰۰+" },
-  { icon: Lamp, label: "لوستر و روشنایی", count: "۹۵۰+" },
+  { icon: Lamp, label: "لوستر و آباژور", count: "۹۵۰+" },
   { icon: Frame, label: "پرده", count: "۱,۲۰۰+" },
   { icon: Bed, label: "کالای خواب", count: "۸۰۰+" },
   { icon: Palette, label: "دکور و کالای چوبی", count: "۶۵۰+" },
