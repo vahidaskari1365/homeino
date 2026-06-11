@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader2, Download, RefreshCw, Check, ShoppingBag } from "lucide-react";
+import { Upload, Wand as Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader as Loader2, Download, RefreshCw, Check, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -88,13 +88,56 @@ const AIDesignSection = () => {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      toast.error("لطفاً یک تصویر انتخاب کنید");
+      toast.error("لطفاً یک تصوً یک تصویر انتخاب کنید");
       return;
     }
+
+    // Compress and resize image before converting to base64
+    const compressImage = (img: HTMLImageElement): string => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+
+      // Max dimensions for reasonable upload size
+      const MAX_WIDTH = 1920;
+      const MAX_HEIGHT = 1080;
+      let width = img.width;
+      let height = img.height;
+
+      // Scale down if needed
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+        width = Math.floor(width * ratio);
+        height = Math.floor(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Return as JPEG with reasonable quality
+      return canvas.toDataURL("image/jpeg", 0.8);
+    };
+
+    const img = new Image();
+    img.onload = () => {
+      const compressed = compressImage(img);
+      if (compressed) {
+        setImageBase64(compressed);
+        setResultImage(null);
+        toast.success("تصویر با موفقیت بارگذاری شد");
+      } else {
+        toast.error("خطا در پردازش تصویر");
+      }
+    };
+    img.onerror = () => {
+      toast.error("خطا در بارگذاری تصویر");
+    };
+
+    // Read file and load into image
     const reader = new FileReader();
     reader.onload = () => {
-      setImageBase64(reader.result as string);
-      setResultImage(null);
+      img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
   };
