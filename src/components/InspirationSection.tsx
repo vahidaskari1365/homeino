@@ -43,13 +43,13 @@ const InspirationSection = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
           <div>
-            <span className="text-gold text-sm font-medium tracking-wider">طراح هوشمند هومینو</span>
+            <span className="text-gold text-sm font-medium tracking-wider">الهام دکوراسیون</span>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-3">
-              خانه‌ات را با هوش مصنوعی طراحی کن
+              ایده بگیرید، خلق کنید
             </h2>
           </div>
-          <a href="/ai-design" className="flex items-center gap-2 text-gold hover:gap-3 transition-all mt-4 md:mt-0">
-            <span>شروع طراحی</span>
+          <a href="#" className="flex items-center gap-2 text-gold hover:gap-3 transition-all mt-4 md:mt-0">
+            <span>مشاهده همه</span>
             <ArrowLeft size={18} />
           </a>
         </div>
