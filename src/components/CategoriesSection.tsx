@@ -1,4 +1,4 @@
-import { Armchair, Lamp, Palette, Flower2, Bath, UtensilsCrossed, Frame, Bed, ShoppingBag, Wrench, Megaphone, Store } from "lucide-react";
+import { Armchair, Lamp, Palette, Flower2, UtensilsCrossed, Frame, Bed, Megaphone, Store } from "lucide-react";
 
 const categories = [
   { icon: Armchair, label: "مبلمان", count: "۲,۴۰۰+" },
@@ -8,11 +8,8 @@ const categories = [
   { icon: Bed, label: "کالای خواب", count: "۸۰۰+" },
   { icon: Palette, label: "دکور و کالای چوبی", count: "۶۵۰+" },
   { icon: Frame, label: "تابلو و آثار هنری", count: "۴۲۰+" },
-  { icon: Bath, label: "سرویس بهداشتی", count: "۵۸۰+" },
-  { icon: ShoppingBag, label: "اکسسوری خانه", count: "۱,۱۰۰+" },
   { icon: UtensilsCrossed, label: "لوازم آشپزخانه", count: "۷۳۰+" },
   { icon: Flower2, label: "گل و گیاه", count: "۳۴۰+" },
-  { icon: Wrench, label: "طراحی و بازسازی", count: "۱۵۰+" },
   { icon: Store, label: "فروشگاه‌ها", count: "۲۸۰+" },
   { icon: Megaphone, label: "آگهی دست دوم", count: "۳,۵۰۰+" },
 ];
