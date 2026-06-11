@@ -70,7 +70,11 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("Configuration Error: LOVABLE_API_KEY is not defined in environment variables");
-      throw new Error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ 
+        error: "کلید API تنظیم نشده است. لطفاً LOVABLE_API_KEY را در تنظیمات Supabase وارد کنید." 
+      }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const productList = products
@@ -174,7 +178,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Sending request to Lovable AI Gateway with model google/gemini-2.0-flash-exp`);
-    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -223,11 +227,30 @@ Deno.serve(async (req) => {
 
     const data = await upstream.json();
     console.log("AI Gateway response received. Keys present in response:", Object.keys(data));
-    const b64 = data?.data?.[0]?.b64_json;
-    const textContent = data?.choices?.[0]?.message?.content || data?.data?.[0]?.text || "";
+    
+    // Gemini 2.0 Multimodal response parsing
+    let b64 = "";
+    let textContent = "";
+    
+    const message = data?.choices?.[0]?.message;
+    if (message?.content && Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part.type === "text") {
+          textContent = part.text || "";
+        } else if (part.type === "image" && part.image?.b64_json) {
+          b64 = part.image.b64_json;
+        }
+      }
+    } else if (message?.content && typeof message.content === "string") {
+      textContent = message.content;
+    }
+
+    // Fallback to old parsing if new one failed
+    if (!b64) b64 = data?.data?.[0]?.b64_json || "";
+    if (!textContent && data?.data?.[0]?.text) textContent = data.data[0].text;
 
     if (!b64) {
-      console.error("Invalid response: 'b64_json' is missing in response data:", JSON.stringify(data).slice(0, 500));
+      console.error("Invalid response: Image data missing in response:", JSON.stringify(data).slice(0, 500));
       return new Response(JSON.stringify({ error: "تصویری از سرویس هوش مصنوعی دریافت نشد. لطفا دوباره تلاش کنید." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
