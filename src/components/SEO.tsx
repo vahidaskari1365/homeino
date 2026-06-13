@@ -16,7 +16,7 @@ const SEO: React.FC<SEOProps> = ({
   description = 'پلتفرم تخصصی دکوراسیون داخلی و خرید مستقیم از تولیدکنندگان',
   keywords = 'دکوراسیون, مبلمان, چیدمان منزل, طراحی داخلی, خرید مستقیم',
   ogImage = '/og-image.png',
-  ogUrl = window.location.href,
+  ogUrl = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website',
   jsonLd,
 }) => {
