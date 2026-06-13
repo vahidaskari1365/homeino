@@ -41,6 +41,7 @@ type Product = {
   is_active: boolean;
   category_id: string | null;
   profile_id: string;
+  attributes?: Record<string, unknown> | null;
   profiles: { brand_name: string; city: string | null } | null;
 };
 
@@ -57,6 +58,12 @@ const Shops = () => {
   const [search, setSearch] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [activeTab, setActiveTab] = useState("producers");
+
+  // Advanced filters state for products
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [color, setColor] = useState<string>(ALL);
+  const [material, setMaterial] = useState<string>(ALL);
   
   // Pagination state
   const [profilePage, setProfilePage] = useState(0);
@@ -89,8 +96,6 @@ const Shops = () => {
       if (verifiedOnly) profileQuery = profileQuery.eq("contact_published", true);
       if (city !== ALL) profileQuery = profileQuery.eq("city", city);
       if (search) profileQuery = profileQuery.ilike("brand_name", `%${search}%`);
-      // Note: Category filtering for profiles is more complex with Supabase joins, 
-      // simplified here but in a real app would need a join or edge function
 
       const { data: profs, count: profCount } = await profileQuery
         .order("brand_name")
@@ -98,12 +103,16 @@ const Shops = () => {
 
       let productQuery = supabase
         .from("products")
-        .select("id, name, description, price, image_url, is_active, category_id, profile_id, profiles(brand_name, city)", { count: 'exact' })
+        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, profiles(brand_name, city)", { count: 'exact' })
         .eq("is_active", true);
 
       if (city !== ALL) productQuery = productQuery.eq("profiles.city", city);
       if (category !== ALL) productQuery = productQuery.eq("category_id", category);
       if (search) productQuery = productQuery.ilike("name", `%${search}%`);
+      if (minPrice !== undefined) productQuery = productQuery.gte("price", minPrice);
+      if (maxPrice !== undefined) productQuery = productQuery.lte("price", maxPrice);
+      if (color !== ALL) productQuery = productQuery.eq("attributes->>color", color);
+      if (material !== ALL) productQuery = productQuery.eq("attributes->>material", material);
 
       const { data: prods, count: prodCount } = await productQuery
         .order("created_at", { ascending: false })
@@ -117,7 +126,7 @@ const Shops = () => {
     };
 
     loadData();
-  }, [profilePage, productPage, city, category, search, verifiedOnly]);
+  }, [profilePage, productPage, city, category, search, verifiedOnly, minPrice, maxPrice, color, material]);
 
   // Cities list for filter - we still might want to fetch all unique cities once
   const [cities, setCities] = useState<string[]>([]);
@@ -177,17 +186,76 @@ const Shops = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Advanced product-specific filters */}
+          {activeTab === "products" && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-border">
+              <div className="flex gap-2 items-center md:col-span-2">
+                <Input
+                  type="number"
+                  placeholder="حداقل قیمت (تومان)"
+                  value={minPrice ?? ""}
+                  onChange={(e) => { setMinPrice(e.target.value ? Number(e.target.value) : undefined); setProductPage(0); }}
+                  className="text-xs"
+                />
+                <span className="text-muted-foreground text-xs shrink-0">تا</span>
+                <Input
+                  type="number"
+                  placeholder="حداکثر قیمت (تومان)"
+                  value={maxPrice ?? ""}
+                  onChange={(e) => { setMaxPrice(e.target.value ? Number(e.target.value) : undefined); setProductPage(0); }}
+                  className="text-xs"
+                />
+              </div>
+              <Select value={color} onValueChange={(v) => { setColor(v); setProductPage(0); }}>
+                <SelectTrigger className="text-xs"><SelectValue placeholder="رنگ" /></SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value={ALL}>همه رنگ‌ها</SelectItem>
+                  <SelectItem value="سفید">سفید</SelectItem>
+                  <SelectItem value="مشکی">مشکی</SelectItem>
+                  <SelectItem value="قهوه‌ای">قهوه‌ای</SelectItem>
+                  <SelectItem value="کرم">کرم</SelectItem>
+                  <SelectItem value="خاکستری">خاکستری</SelectItem>
+                  <SelectItem value="طلایی">طلایی</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={material} onValueChange={(v) => { setMaterial(v); setProductPage(0); }}>
+                <SelectTrigger className="text-xs"><SelectValue placeholder="جنس / مواد" /></SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value={ALL}>همه جنس‌ها</SelectItem>
+                  <SelectItem value="چوب">چوب</SelectItem>
+                  <SelectItem value="فلز">فلز</SelectItem>
+                  <SelectItem value="پارچه">پارچه</SelectItem>
+                  <SelectItem value="چرم">چرم</SelectItem>
+                  <SelectItem value="شیشه">شیشه</SelectItem>
+                  <SelectItem value="سنگ">سنگ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
             <div className="flex items-center gap-2">
               <Switch id="verified-only" checked={verifiedOnly} onCheckedChange={(v) => { setVerifiedOnly(v); setProfilePage(0); setProductPage(0); }} />
-              <Label htmlFor="verified-only" className="cursor-pointer flex items-center gap-1.5">
+              <Label htmlFor="verified-only" className="cursor-pointer flex items-center gap-1.5 text-xs">
                 <BadgeCheck size={14} className="text-emerald-brand" />
                 فقط تولیدکنندگان با اطلاعات تماس تأیید‌شده
               </Label>
             </div>
-            {(city !== ALL || category !== ALL || search || verifiedOnly) && (
+            {(city !== ALL || category !== ALL || search || verifiedOnly || minPrice !== undefined || maxPrice !== undefined || color !== ALL || material !== ALL) && (
               <button
-                onClick={() => { setCity(ALL); setCategory(ALL); setSearch(""); setVerifiedOnly(false); setProfilePage(0); setProductPage(0); }}
+                onClick={() => { 
+                  setCity(ALL); 
+                  setCategory(ALL); 
+                  setSearch(""); 
+                  setVerifiedOnly(false); 
+                  setMinPrice(undefined);
+                  setMaxPrice(undefined);
+                  setColor(ALL);
+                  setMaterial(ALL);
+                  setProfilePage(0); 
+                  setProductPage(0); 
+                }}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 پاک کردن فیلترها

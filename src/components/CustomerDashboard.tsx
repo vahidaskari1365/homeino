@@ -16,10 +16,14 @@ import {
   ChevronRight,
   Loader2,
   Settings,
-  Bell
+  Bell,
+  Check,
+  CheckCheck,
+  Trash2
 } from "lucide-react";
 import { formatPersianDate } from "@/lib/date";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useNotifications, type NotificationType } from "@/hooks/useNotifications";
 
 interface Order {
   id: string;
@@ -44,10 +48,23 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   cancelled: { label: "لغو شده", color: "bg-rose-100 text-rose-700 border-rose-200" },
 };
 
+const typeEmoji: Record<NotificationType, string> = {
+  order_new: "🛒",
+  order_status: "📦",
+  review_new: "⭐",
+  quote_new: "💬",
+  consultation_new: "🎨",
+  consultation_message: "✉️",
+  site_visit_new: "📅",
+  inquiry_new: "📨",
+  system: "🔔",
+};
+
 export const CustomerDashboard = ({ userId }: { userId: string }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { items: wishlistItems } = useWishlist();
+  const { items: notifications, unreadCount, markRead, markAllRead, remove } = useNotifications();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -78,14 +95,14 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-gold/10 to-transparent border-gold/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">سفارش‌های من</p>
-                <h3 className="text-2xl font-bold mt-1">{orders.length}</h3>
+                <h3 className="text-2xl font-bold mt-1">{orders.length.toLocaleString("fa-IR")}</h3>
               </div>
               <div className="h-12 w-12 bg-gold/20 rounded-full flex items-center justify-center text-gold">
                 <ShoppingBag size={24} />
@@ -99,7 +116,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">علاقه‌مندی‌ها</p>
-                <h3 className="text-2xl font-bold mt-1">{wishlistItems.length}</h3>
+                <h3 className="text-2xl font-bold mt-1">{wishlistItems.length.toLocaleString("fa-IR")}</h3>
               </div>
               <div className="h-12 w-12 bg-emerald-brand/20 rounded-full flex items-center justify-center text-emerald-brand">
                 <Heart size={24} />
@@ -113,7 +130,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">اعلان‌های جدید</p>
-                <h3 className="text-2xl font-bold mt-1">۰</h3>
+                <h3 className="text-2xl font-bold mt-1">{unreadCount.toLocaleString("fa-IR")}</h3>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
                 <Bell size={24} />
@@ -127,6 +144,14 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
         <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 mb-6">
           <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-gold data-[state=active]:bg-transparent py-3 px-6">
             <ShoppingBag size={16} className="ml-2" /> سفارش‌های اخیر
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="rounded-none border-b-2 border-transparent data-[state=active]:border-gold data-[state=active]:bg-transparent py-3 px-6">
+            <Bell size={16} className="ml-2" /> مرکز اعلان‌ها
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="mr-2 px-1.5 py-0.5 text-[10px]">
+                {unreadCount.toLocaleString("fa-IR")}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="wishlist" className="rounded-none border-b-2 border-transparent data-[state=active]:border-gold data-[state=active]:bg-transparent py-3 px-6">
             <Heart size={16} className="ml-2" /> لیست علاقه‌مندی
@@ -201,6 +226,91 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
                 </div>
               </Card>
             ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Bell size={20} className="text-gold" /> اعلان‌های دریافتی
+            </h3>
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllRead} className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-gold">
+                <CheckCheck size={14} /> علامت‌گذاری همه به عنوان خوانده شده
+              </Button>
+            )}
+          </div>
+
+          {notifications.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Bell size={48} className="mx-auto text-muted-foreground mb-4 opacity-20" />
+                <p className="text-muted-foreground">اعلانی برای نمایش وجود ندارد.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((n) => (
+                <Card 
+                  key={n.id} 
+                  className={`transition-all hover:border-muted-foreground/30 ${
+                    n.is_read ? "opacity-75 bg-card/50" : "border-r-4 border-r-gold bg-gold/5 shadow-sm"
+                  }`}
+                >
+                  <CardContent className="p-4 md:p-5 flex gap-4 items-start">
+                    <div className="text-2xl mt-0.5 shrink-0 bg-muted/30 p-2.5 rounded-xl">
+                      {typeEmoji[n.type] || "🔔"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className={`text-sm md:text-base ${n.is_read ? "text-muted-foreground font-normal" : "font-bold text-foreground"}`}>
+                          {n.title}
+                        </h4>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatPersianDate(n.created_at)}
+                        </span>
+                      </div>
+                      {n.body && (
+                        <p className="text-xs text-muted-foreground mt-2 leading-relaxed whitespace-pre-line">
+                          {n.body}
+                        </p>
+                      )}
+                      {n.link && (
+                        <div className="mt-3">
+                          <Link to={n.link}>
+                            <Button variant="link" size="sm" className="text-xs p-0 h-auto text-gold gap-1">
+                              مشاهده جزئیات سفارش <ChevronRight size={12} className="rotate-180" />
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 shrink-0 justify-center">
+                      {!n.is_read && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-gold"
+                          onClick={() => markRead(n.id)}
+                          title="علامت‌گذاری به عنوان خوانده شده"
+                        >
+                          <Check size={16} />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => remove(n.id)}
+                        title="حذف"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 

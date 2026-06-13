@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { formatPersianDate } from "@/lib/date";
-import StarRating from "@/components/StarRating";
-import { Trash2, MessageSquare, Check } from "lucide-react";
+import StarRating from "@/StarRating"; // Note: It is imported as StarRating from @/components/StarRating in original. Let's see original imports: import StarRating from "@/components/StarRating";
+import StarRatingComponent from "@/components/StarRating";
+import { Trash2, MessageSquare, Check, Star, ArrowUpDown } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 
 interface Props {
@@ -42,6 +44,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [sortBy, setSortBy] = useState<"newest" | "highest" | "lowest">("newest");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -156,20 +159,92 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
 
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
 
+  // Rating distribution calculation (1 to 5 stars)
+  const stats = useMemo(() => {
+    const distribution = [0, 0, 0, 0, 0, 0]; // Indices correspond to stars (1 to 5)
+    reviews.forEach((r) => {
+      if (r.rating >= 1 && r.rating <= 5) {
+        distribution[r.rating]++;
+      }
+    });
+    return distribution;
+  }, [reviews]);
+
+  // Client-side sorting for super-fast UX
+  const sortedReviews = useMemo(() => {
+    const list = [...reviews];
+    if (sortBy === "newest") {
+      return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    if (sortBy === "highest") {
+      return list.sort((a, b) => b.rating - a.rating);
+    }
+    if (sortBy === "lowest") {
+      return list.sort((a, b) => a.rating - b.rating);
+    }
+    return list;
+  }, [reviews, sortBy]);
+
   return (
-    <section className="mt-8">
+    <section className="mt-8" dir="rtl">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-xl font-display font-bold flex items-center gap-2">
           <MessageSquare className="text-gold" size={20} />
-          نظرات و امتیازها ({reviews.length})
+          نظرات و امتیازها ({reviews.length.toLocaleString("fa-IR")})
         </h3>
         {reviews.length > 0 && (
           <div className="flex items-center gap-2">
-            <StarRating value={Math.round(avg)} readOnly size={16} />
-            <span className="text-sm text-muted-foreground">{avg.toFixed(1)} از ۵</span>
+            <StarRatingComponent value={Math.round(avg)} readOnly size={16} />
+            <span className="text-sm text-muted-foreground">{avg.toFixed(1).toLocaleString("fa-IR")} از ۵</span>
           </div>
         )}
       </div>
+
+      {/* Review Breakdown & Statistics Summary */}
+      {reviews.length > 0 && (
+        <Card className="mb-6 overflow-hidden bg-muted/20 border-border">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              {/* Overall Score */}
+              <div className="text-center md:border-l md:border-border">
+                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1).toLocaleString("fa-IR")}</span>
+                <div className="flex justify-center my-2">
+                  <StarRatingComponent value={Math.round(avg)} readOnly size={20} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  براساس {reviews.length.toLocaleString("fa-IR")} امتیاز ثبت شده
+                </p>
+              </div>
+
+              {/* Progress Bars Distribution */}
+              <div className="md:col-span-2 space-y-2">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = stats[star];
+                  const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="w-12 text-right flex items-center gap-1">
+                        <span className="font-semibold">{star.toLocaleString("fa-IR")}</span>
+                        <Star size={12} className="text-gold fill-gold shrink-0" />
+                      </div>
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gold rounded-full transition-all duration-500" 
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-left flex justify-between font-mono text-[10px]">
+                        <span>{Math.round(percentage).toLocaleString("fa-IR")}٪</span>
+                        <span className="text-muted-foreground/60">({count.toLocaleString("fa-IR")})</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {session ? (
         <Card className="mb-6">
@@ -177,7 +252,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
             <form onSubmit={submit} className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm text-muted-foreground">امتیاز شما:</span>
-                <StarRating value={rating} onChange={setRating} size={22} />
+                <StarRatingComponent value={rating} onChange={setRating} size={22} />
               </div>
               <Input
                 placeholder="عنوان (اختیاری)"
@@ -211,16 +286,38 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
         </div>
       )}
 
+      {/* Sorting Control Header */}
+      {reviews.length > 0 && (
+        <div className="flex items-center justify-between mb-4 border-b pb-2">
+          <span className="text-sm text-muted-foreground font-medium">نظرات کاربران</span>
+          <div className="flex items-center gap-2 text-xs">
+            <ArrowUpDown size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">مرتب‌سازی براساس:</span>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-36 h-8 text-xs font-semibold">
+                <SelectValue placeholder="مرتب‌سازی" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value="newest" className="text-xs">جدیدترین‌ها</SelectItem>
+                <SelectItem value="highest" className="text-xs">بالاترین امتیاز</SelectItem>
+                <SelectItem value="lowest" className="text-xs">پایین‌ترین امتیاز</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews List */}
       <div className="space-y-3">
         {reviews.length === 0 ? (
           <p className="text-center text-muted-foreground py-6 text-sm">هنوز نظری ثبت نشده است</p>
         ) : (
-          reviews.map((r) => (
+          sortedReviews.map((r) => (
             <Card key={r.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <div className="flex items-center gap-3">
-                    <StarRating value={r.rating} readOnly size={14} />
+                    <StarRatingComponent value={r.rating} readOnly size={14} />
                     {r.is_verified_purchase && (
                       <span className="flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">
                         <Check size={10} /> خرید تایید شده
