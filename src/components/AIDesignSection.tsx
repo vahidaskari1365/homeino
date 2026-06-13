@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Wand as Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader as Loader2, Download, RefreshCw, Check, ShoppingBag } from "lucide-react";
+import { Upload, Wand as Wand2, Sparkles, ShoppingCart, ArrowLeft, Sofa, Lightbulb, Layers, Bed, Flower2, Image as ImageIcon, Package, Blinds, Loader as Loader2, Download, RefreshCw, Check, ShoppingBag, CircleDot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ const furniture = [
   { icon: Lightbulb, label: "لوستر", slug: "lighting" },
   { icon: Layers, label: "فرش", slug: "carpet" },
   { icon: Sofa, label: "مبل راحتی", slug: "furniture" },
+  { icon: CircleDot, label: "میز ناهارخوری", slug: "dining-table" },
   { icon: Flower2, label: "گلدان", slug: "plants" },
   { icon: ImageIcon, label: "تابلو", slug: "art" },
   { icon: Package, label: "دکور", slug: "wood-decor" },
