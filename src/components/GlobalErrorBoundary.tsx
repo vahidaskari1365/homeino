@@ -37,7 +37,7 @@ class GlobalErrorBoundary extends React.Component<Props, State> {
           >
             تلاش مجدد
           </Button>
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <pre className="mt-8 p-4 bg-muted rounded text-left overflow-auto max-w-full text-xs">
               {this.state.error?.toString()}
             </pre>
