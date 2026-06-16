@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from "react";
+import { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 
