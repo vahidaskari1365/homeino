@@ -13,6 +13,33 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'ui';
+            }
+            if (id.includes('recharts')) {
+              return 'charts';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -22,7 +49,8 @@ export default defineConfig(({ mode }) => ({
         name: 'Homeino | خانه‌زیبا',
         short_name: 'Homeino',
         description: 'پلتفرم تخصصی دکوراسیون داخلی و خرید مستقیم از تولیدکنندگان',
-        theme_color: '#B89048',
+        theme_color: '#155449',
+        background_color: '#155449',
         icons: [
           {
             src: 'pwa-192x192.png',

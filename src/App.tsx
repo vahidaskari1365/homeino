@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CartProvider } from "./contexts/CartContext";
 import { CompareProvider } from "./contexts/CompareContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import CartDrawer from "./components/CartDrawer";
 import CompareBar from "./components/CompareBar";
 import Index from "./pages/Index.tsx";
@@ -29,42 +30,44 @@ import NotFound from "./pages/NotFound.tsx";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <CartProvider>
-        <CompareProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <CartDrawer />
-              <CompareBar />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/shops" element={<Shops />} />
-                <Route path="/shops/:id" element={<ShopDetail />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/compare" element={<Compare />} />
-                <Route path="/quotes" element={<Quotes />} />
-                <Route path="/consultations" element={<Consultations />} />
-                <Route path="/site-visits" element={<SiteVisits />} />
-                
-                <Route path="/designers" element={<Designers />} />
-                <Route path="/second-hand" element={<SecondHand />} />
-                <Route path="/ai-design" element={<AIDesign />} />
-                <Route path="/checkout" element={<Checkout />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </CompareProvider>
-      </CartProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <CartProvider>
+          <CompareProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <CartDrawer />
+                <CompareBar />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/shops" element={<Shops />} />
+                  <Route path="/shops/:id" element={<ShopDetail />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/compare" element={<Compare />} />
+                  <Route path="/quotes" element={<Quotes />} />
+                  <Route path="/consultations" element={<Consultations />} />
+                  <Route path="/site-visits" element={<SiteVisits />} />
+                  
+                  <Route path="/designers" element={<Designers />} />
+                  <Route path="/second-hand" element={<SecondHand />} />
+                  <Route path="/ai-design" element={<AIDesign />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </CompareProvider>
+        </CartProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
