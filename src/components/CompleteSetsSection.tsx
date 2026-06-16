@@ -30,7 +30,7 @@ const sets = [
 
 const CompleteSetsSection = () => {
   return (
-    <section className="py-24 bg-background">
+    <section id="complete-sets" className="py-24 bg-background">
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
           <div>
