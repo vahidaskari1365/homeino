@@ -27,30 +27,46 @@ const CategoriesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4" style={{ perspective: '1000px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4" style={{ perspective: '1200px' }}>
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
               <div
                 key={cat.label}
-                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-gold/30 hover:shadow-luxury cursor-pointer transition-all duration-500"
-                style={{ transformStyle: 'preserve-3d' }}
+                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-gold/30 cursor-pointer transition-all duration-500"
+                style={{ 
+                  transformStyle: 'preserve-3d',
+                  transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                }}
               >
                 <div 
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center group-hover:text-gold transition-all duration-500"
+                  className="relative w-16 h-16 rounded-2xl flex items-center justify-center group-hover:text-gold transition-all duration-500"
                   style={{
-                    background: 'linear-gradient(145deg, hsl(var(--accent)), hsl(var(--accent) / 0.7))',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                    transform: 'translateZ(12px)',
+                    background: 'linear-gradient(160deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.6) 100%)',
+                    boxShadow: `
+                      0 8px 16px -4px hsl(var(--accent) / 0.4),
+                      0 4px 8px -2px hsl(var(--accent) / 0.3),
+                      inset 0 2px 4px rgba(255, 255, 255, 0.25),
+                      inset 0 -2px 4px rgba(0, 0, 0, 0.1)
+                    `,
+                    transform: 'translateZ(24px) rotateX(-5deg)',
                     transformStyle: 'preserve-3d'
                   }}
                 >
-                  <Icon 
-                    size={26} 
-                    className="text-muted-foreground group-hover:text-gold transition-colors duration-500"
+                  <div 
+                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
-                      filter: 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))',
-                      transform: 'translateZ(8px)'
+                      background: 'linear-gradient(160deg, hsl(var(--gold) / 0.2) 0%, hsl(var(--gold) / 0.05) 100%)',
+                      transform: 'translateZ(1px)'
+                    }}
+                  />
+                  <Icon 
+                    size={28} 
+                    className="relative text-muted-foreground group-hover:text-gold transition-colors duration-500"
+                    style={{
+                      filter: 'drop-shadow(0 3px 3px rgba(0, 0, 0, 0.15))',
+                      transform: 'translateZ(12px) scale(1)',
+                      transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
                     }}
                   />
                 </div>
