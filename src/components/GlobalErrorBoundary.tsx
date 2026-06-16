@@ -1,4 +1,4 @@
-import React, { ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from './ui/button';
 
 interface Props {
@@ -10,7 +10,7 @@ interface State {
   error?: Error;
 }
 
-class GlobalErrorBoundary extends React.Component<Props, State> {
+class GlobalErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
   };
