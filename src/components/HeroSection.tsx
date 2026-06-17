@@ -38,13 +38,7 @@ const HeroSection = () => {
             همه چیز در یک پلتفرم.
           </p>
 
-          {/* Urgency Badge */}
-          <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/40 rounded-full px-4 py-2 mb-8">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-red-300 text-sm font-medium">
-              🔥 تخفیف ویژه تابستانی: ۲۰٪ off روی تمام ست‌ها
-            </span>
-          </div>
+          {/* Badges removed */}
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">

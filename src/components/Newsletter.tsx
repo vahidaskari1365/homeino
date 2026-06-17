@@ -38,7 +38,7 @@ const Newsletter = () => {
           </div>
 
           <h2 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-4">
-            ۲۰٪ تخفیف اولین خرید شما
+            عضویت در خبرنامه هومینو
           </h2>
           <p className="text-primary-foreground/60 mb-8 max-w-xl mx-auto">
             در خبرنامه هومینو عضو شوید تا از جدیدترین تخفیف‌ها، ایده‌های دکوراسیون
