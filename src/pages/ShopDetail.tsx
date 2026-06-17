@@ -229,19 +229,19 @@ const ShopDetail = () => {
               {products.length === 0 ? (
                 <p className="text-center text-muted-foreground py-12">هنوز محصولی ثبت نشده است.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="columns-1 sm:columns-2 lg:columns-4 gap-6 [column-fill:_auto] space-y-6">
                   {products.map((p) => (
-                    <Card key={p.id} className="overflow-hidden hover:border-gold/50 transition-colors">
-                      <div className="aspect-square bg-muted overflow-hidden relative">
+                    <Card key={p.id} className="break-inside-avoid overflow-hidden border border-border/60 rounded-2xl hover:border-gold/50 shadow-sm hover:shadow-xl transition-all duration-300 bg-card mb-6">
+                      <div className="relative overflow-hidden bg-muted group">
                         {p.image_url ? (
                           <OptimizedImage src={p.image_url} alt={p.name}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                            className="w-full h-auto max-h-[350px] object-cover transition-transform duration-500 group-hover:scale-105" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="aspect-[4/3] w-full flex items-center justify-center text-muted-foreground">
                             <Package size={40} />
                           </div>
                         )}
-                        <div className="absolute top-2 left-2 flex flex-col gap-2">
+                        <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
                           <WishlistButton item={{
                             item_type: "product",
                             item_id: p.id,
@@ -264,35 +264,39 @@ const ShopDetail = () => {
                         </div>
                       </div>
                       <CardContent className="p-4 space-y-2">
-                        <h3 className="font-semibold line-clamp-1">{p.name}</h3>
+                        <h3 className="font-bold text-base line-clamp-1 hover:text-gold transition-colors">{p.name}</h3>
                         {p.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{p.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{p.description}</p>
                         )}
-                        {p.price && (
-                          <p className="text-gold font-bold">
-                            {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {p.stock > 0 ? `موجود: ${p.stock}` : "ناموجود"}
-                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                          {p.price ? (
+                            <span className="text-gold font-extrabold text-base">
+                              {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>
+                          )}
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${p.stock > 0 ? "bg-emerald-brand/10 text-emerald-brand" : "bg-red-500/10 text-red-500"}`}>
+                            {p.stock > 0 ? `موجود` : "ناموجود"}
+                          </span>
+                        </div>
                         <div className="flex gap-2 pt-2">
                           <Button
                             size="sm"
-                            className="flex-1 gradient-gold text-primary-foreground gap-1"
+                            className="flex-1 gradient-gold text-primary-foreground gap-1 font-bold text-xs"
                             disabled={p.stock <= 0 || !p.price}
                             onClick={() => handleAddToCart(p)}
                           >
                             <ShoppingBag size={14} /> افزودن
                           </Button>
-                          <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" />
+                          <InquiryDialog profile_id={profile.id} product_id={p.id} label="استعلام" variant="outline" size="sm" />
                         </div>
                         <PriceQuoteDialog
                           profile_id={profile.id}
                           request_type="product"
                           product_id={p.id}
                           title={p.name}
-                          label="درخواست قیمت"
+                          label="درخواست قیمت سفارشی"
                           variant="secondary"
                           size="sm"
                           fullWidth

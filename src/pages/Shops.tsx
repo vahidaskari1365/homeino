@@ -367,36 +367,40 @@ const Shops = () => {
               <p className="text-center text-muted-foreground py-16">هیچ محصولی یافت نشد.</p>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="columns-1 sm:columns-2 lg:columns-4 gap-6 [column-fill:_auto] space-y-6">
                   {products.map((p) => (
-                    <Link to={`/shops/${p.profile_id}`} key={p.id} className="block">
-                      <Card className="overflow-hidden hover:border-gold/50 transition-colors h-full">
-                        <div className="aspect-square bg-muted overflow-hidden">
+                    <Link to={`/shops/${p.profile_id}`} key={p.id} className="block break-inside-avoid mb-6">
+                      <Card className="overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg rounded-2xl h-full bg-card">
+                        <div className="relative bg-muted overflow-hidden">
                           {p.image_url ? (
                             <OptimizedImage 
                               src={p.image_url} 
                               alt={p.name}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" 
+                              className="w-full h-auto max-h-[350px] object-cover hover:scale-105 transition-transform duration-500" 
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <div className="aspect-[4/3] w-full flex items-center justify-center text-muted-foreground">
                               <Package size={40} />
                             </div>
                           )}
                         </div>
                         <CardContent className="p-4 space-y-2">
-                          <h3 className="font-semibold line-clamp-1">{p.name}</h3>
-                          <p className="text-xs text-muted-foreground">{p.profiles?.brand_name}</p>
-                          {p.price && (
-                            <p className="text-gold font-bold">
-                              {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
-                            </p>
-                          )}
-                          {p.profiles?.city && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin size={12} />{p.profiles.city}
-                            </div>
-                          )}
+                          <h3 className="font-bold text-base line-clamp-1">{p.name}</h3>
+                          <p className="text-xs text-muted-foreground font-semibold">{p.profiles?.brand_name}</p>
+                          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                            {p.price ? (
+                              <span className="text-gold font-extrabold text-base">
+                                {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>
+                            )}
+                            {p.profiles?.city && (
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <MapPin size={12} />{p.profiles.city}
+                              </span>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     </Link>
