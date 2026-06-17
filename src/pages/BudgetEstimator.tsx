@@ -193,6 +193,10 @@ const BudgetEstimator = () => {
   const { addItem, setOpen } = useCart();
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchDbData = async () => {
       setLoading(true);
       try {
