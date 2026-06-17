@@ -1,6 +1,40 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Calculator, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+
+const toEnglishDigits = (str: string) => {
+  return str.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString());
+};
 
 const BudgetSection = () => {
+  const [inputValue, setInputValue] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    // Convert Persian digits to English and strip non-numeric characters
+    const cleanStr = toEnglishDigits(inputValue).replace(/[^\d]/g, "");
+    const parsedBudget = parseInt(cleanStr, 10);
+
+    if (isNaN(parsedBudget) || parsedBudget <= 0) {
+      toast.error("لطفاً یک بودجه معتبر وارد کنید");
+      return;
+    }
+
+    if (parsedBudget < 100000) {
+      toast.error("مبلغ بودجه وارد شده بسیار کم است");
+      return;
+    }
+
+    navigate(`/budget-estimator?amount=${parsedBudget}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <section className="py-24 bg-cream-dark">
       <div className="container mx-auto px-6">
@@ -20,11 +54,17 @@ const BudgetSection = () => {
             <div className="flex-1 w-full relative">
               <input
                 type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="مثال: ۵۰,۰۰۰,۰۰۰ تومان"
-                className="w-full bg-card border border-border rounded-xl px-6 py-4 text-foreground placeholder:text-muted-foreground outline-none focus:border-gold/50 transition-colors"
+                className="w-full bg-card border border-border rounded-xl px-6 py-4 text-foreground placeholder:text-muted-foreground outline-none focus:border-gold/50 transition-colors text-center font-bold text-lg"
               />
             </div>
-            <button className="gradient-gold text-primary-foreground px-8 py-4 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2 whitespace-nowrap">
+            <button 
+              onClick={handleSearch}
+              className="w-full sm:w-auto gradient-gold text-primary-foreground px-8 py-4 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 whitespace-nowrap"
+            >
               پیشنهاد بگیرید
               <ArrowLeft size={18} />
             </button>
