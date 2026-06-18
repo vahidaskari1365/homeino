@@ -126,10 +126,10 @@ const SecondHand = () => {
     const isFeatured = l.is_featured && (!l.featured_until || new Date(l.featured_until).getTime() > now);
     const isUrgent = l.is_urgent && (!l.urgent_until || new Date(l.urgent_until).getTime() > now);
     return (
-      <Card key={l.id} className={`overflow-hidden transition ${isFeatured ? "border-gold ring-1 ring-gold/40 shadow-lg" : "hover:border-gold/40"}`}>
+      <Card key={l.id} className={`break-inside-avoid mb-4 inline-block w-full overflow-hidden transition rounded-2xl ${isFeatured ? "border-gold ring-1 ring-gold/40 shadow-lg" : "hover:border-gold/40"}`}>
         <div className="relative">
           {l.image_url ? (
-            <img src={l.image_url} alt={l.title} className="w-full h-44 object-cover" />
+            <img src={l.image_url} alt={l.title} className="w-full h-auto max-h-[320px] min-h-[160px] object-cover" />
           ) : (
             <div className="w-full h-44 bg-muted flex items-center justify-center"><Tag size={32} className="text-muted-foreground/30" /></div>
           )}
@@ -207,17 +207,17 @@ const SecondHand = () => {
                 {featuredAds.length > 0 && page === 0 && (
                   <div className="mb-8">
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gold"><Sparkles size={18} />آگهی‌های ویژه</h2>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{featuredAds.slice(0, 4).map((l) => renderCard(l))}</div>
+                    <div className="columns-1 sm:columns-2 lg:columns-4 gap-4 space-y-4">{featuredAds.slice(0, 4).map((l) => renderCard(l))}</div>
                   </div>
                 )}
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="columns-1 sm:columns-2 lg:columns-4 gap-4 space-y-4">
                   {list.filter((l) => !featuredAds.find((f) => f.id === l.id)).map((l) => renderCard(l))}
                   {list.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نشده است</CardContent></Card>}
                 </div>
               </TabsContent>
 
               <TabsContent value="featured" className="mt-6">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="columns-1 sm:columns-2 lg:columns-4 gap-4 space-y-4">
                   {featuredAds.map((l) => renderCard(l))}
                   {featuredAds.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">آگهی ویژه‌ای موجود نیست</CardContent></Card>}
                 </div>
@@ -225,7 +225,7 @@ const SecondHand = () => {
 
               {userId && (
                 <TabsContent value="mine" className="mt-6">
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
                     {mine.map((l) => renderCard(l, true))}
                     {mine.length === 0 && <Card className="col-span-full"><CardContent className="py-10 text-center text-muted-foreground">هنوز آگهی ثبت نکرده‌اید</CardContent></Card>}
                   </div>
