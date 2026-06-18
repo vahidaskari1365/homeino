@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const HF_TOKEN = "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";
 
 export interface RedesignResult {
@@ -31,7 +33,38 @@ export async function redesignRoom(
   maskBase64?: string,
   isPolish?: boolean
 ): Promise<RedesignResult> {
+  // Phase 1: Try premium Zhipu AI via Supabase Edge Function first
   try {
+    console.log("Attempting room redesign using premium Zhipu AI API...");
+    const { data, error } = await supabase.functions.invoke<{ image?: string; tip?: string; analytics?: any; error?: string }>("ai-redesign", {
+      body: {
+        imageBase64,
+        style,
+        prompt,
+        products,
+        maskBase64,
+        isPolish,
+      },
+    });
+
+    if (!error && data && !data.error && data.image) {
+      console.log("Successfully generated room design using Zhipu AI!");
+      return {
+        image: data.image,
+        tip: data.tip || "طراحی جدید با موفقیت توسط هوش مصنوعی ممتاز Zhipu انجام شد.",
+        analytics: data.analytics,
+      };
+    }
+
+    const errStr = error?.message || data?.error || "";
+    console.warn("Zhipu AI is unavailable or returned an error. Fallback to free Hugging Face model... Error:", errStr);
+  } catch (e) {
+    console.warn("Zhipu AI Supabase function call failed, falling back to Hugging Face:", e);
+  }
+
+  // Phase 2: Fallback to Free Hugging Face (Stable Diffusion XL)
+  try {
+    console.log("Running free fallback model (Hugging Face SDXL)...");
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     
     const styleLabel = stylePrompts[style] || stylePrompts.modern;
@@ -44,7 +77,6 @@ export async function redesignRoom(
       ? `${styleLabel}, ${prompt}${productNames ? `, including: ${productNames}` : ""}`
       : `${styleLabel}${productNames ? `, including: ${productNames}` : ""}`;
 
-    // Try image-to-image with Stable Diffusion XL
     const response = await fetch(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
@@ -70,7 +102,6 @@ export async function redesignRoom(
       const errorText = await response.text();
       console.error("HF API Error:", response.status, errorText);
       
-      // If model is loading, wait and retry
       if (response.status === 503 && errorText.includes("currently loading")) {
         console.log("Model loading, waiting 10s...");
         await new Promise(r => setTimeout(r, 10000));
@@ -81,14 +112,11 @@ export async function redesignRoom(
     }
 
     const blob = await response.blob();
-    const imageUrl = URL.createObjectURL(blob);
     
-    // Convert blob to base64 for consistent handling
     const arrayBuffer = await blob.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
     const dataUrl = `data:image/jpeg;base64,${base64}`;
 
-    // Generate tip based on style
     const tips: Record<string, string> = {
       modern: "از خط‌های تمیز و رنگ‌های خنثی با اکسنت‌های جسورانه استفاده کنید. مبلمان مینیمال فضا را بزرگتر نشان می‌دهد.",
       classic: "مبلمان کلاسیک با جزئیات منبت‌کاری و رنگ‌های گرم، گرما و شکوه را به فضا می‌آورد.",
@@ -104,7 +132,7 @@ export async function redesignRoom(
 
     return {
       image: dataUrl,
-      tip,
+      tip: tip + " (اجرا شده با موتور رایگان پشتیبان)",
       analytics: {
         tip,
         colorPalette: getColorPalette(style),
@@ -116,10 +144,9 @@ export async function redesignRoom(
   } catch (error) {
     console.error("Hugging Face API error:", error);
     
-    // Fallback: return the original image with a filter effect
     return {
       image: imageBase64,
-      tip: "به دلیل محدودیت موقت API، تصویر اصلی نمایش داده شد. لطفاً دوباره تلاش کنید.",
+      tip: "به دلیل محدودیت موقت سرویس هوش مصنوعی، تصویر اصلی بازگردانده شد. لطفاً چند لحظه بعد مجدداً تلاش نمایید.",
       analytics: {
         tip: "لطفاً دوباره تلاش کنید",
         colorPalette: getColorPalette(style),
