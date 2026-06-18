@@ -11,6 +11,7 @@ import MaskCanvas from "@/components/MaskCanvas";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { redesignRoom } from "@/services/siliconFlow";
 
 // ---- Design stages for progressive feedback ----
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
@@ -251,39 +252,19 @@ const AIDesign = () => {
         return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
       });
 
-      const { data, error } = await supabase.functions.invoke<{ image?: string; tip?: string; analytics?: RoomAnalytics; error?: string }>("ai-redesign", {
-        body: {
-          imageBase64: currentImage,
-          style,
-          prompt: prompt.trim(),
-          products: payloadProducts,
-          maskBase64: mode === "mask" ? pendingMask : undefined,
-          isPolish: mode === "polish",
-        },
-      });
+      // Use Silicon Flow API instead of Supabase function
+      const data = await redesignRoom(
+        currentImage,
+        style,
+        prompt.trim(),
+        payloadProducts,
+        mode === "mask" ? pendingMask : undefined,
+        mode === "polish"
+      );
 
-      if (error) {
-        console.error("Supabase function error:", error);
-        let errorMessage = "خطا در برقراری ارتباط با سرویس هوش مصنوعی";
-        
-        try {
-          // Try to extract the error message from the response body
-          if (error.context && typeof error.context.json === 'function') {
-            const errorData = await error.context.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } else {
-            errorMessage = error.message || errorMessage;
-          }
-        } catch (e) {
-          errorMessage = error.message || errorMessage;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      if (data?.error) throw new Error(data.error);
+      if (data.error) throw new Error(data.error);
       
-      const img = data?.image;
+      const img = data.image;
       if (!img) throw new Error("تصویری دریافت نشد");
 
       // Force the final stage for the last stretch
@@ -293,8 +274,8 @@ const AIDesign = () => {
       await new Promise(r => setTimeout(r, 800));
 
       setResultImage(img);
-      if (data?.tip) setRoomTip(data.tip);
-      if (data?.analytics) setRoomAnalytics(data.analytics);
+      if (data.tip) setRoomTip(data.tip);
+      if (data.analytics) setRoomAnalytics(data.analytics);
       
       // Store products that were used for "Buy the Look" post-generation
       setGeneratedProducts([...selectedList]);
