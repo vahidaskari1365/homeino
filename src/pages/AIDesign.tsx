@@ -11,7 +11,7 @@ import MaskCanvas from "@/components/MaskCanvas";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { redesignRoom } from "@/services/siliconFlow";
+import { redesignRoom } from "@/services/huggingface";
 
 // ---- Design stages for progressive feedback ----
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
