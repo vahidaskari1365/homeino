@@ -10,20 +10,45 @@ import Newsletter from "@/components/Newsletter";
 import ChatBot from "@/components/ChatBot";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import ScrollProgress from "@/components/ScrollProgress";
+import Reveal from "@/components/Reveal";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <SEO />
+      <ScrollProgress />
       <Navbar />
       <HeroSection />
-      <CategoriesSection />
-      <AIDesignSection />
-      <InspirationSection />
-      <BudgetSection />
-      <SecondHandSection />
-      <ServicesSection />
-      <Newsletter />
+
+      <Reveal variant="up" delay={0}>
+        <CategoriesSection />
+      </Reveal>
+
+      <Reveal variant="scale" delay={80}>
+        <AIDesignSection />
+      </Reveal>
+
+      <Reveal variant="up" delay={0}>
+        <InspirationSection />
+      </Reveal>
+
+      <Reveal variant="up" delay={80}>
+        <BudgetSection />
+      </Reveal>
+
+      <Reveal variant="up" delay={0}>
+        <SecondHandSection />
+      </Reveal>
+
+      <Reveal variant="up" delay={80}>
+        <ServicesSection />
+      </Reveal>
+
+      <Reveal variant="fade" delay={0}>
+        <Newsletter />
+      </Reveal>
+
       <Footer />
       <ChatBot />
     </div>

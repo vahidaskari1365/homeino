@@ -93,7 +93,9 @@ Deno.serve(async (req) => {
             error: "اعتبار کلید API هوش مصنوعی (Zhipu AI) کافی نیست. لطفاً حساب کاربری خود را شارژ کنید تا طراحی هوشمند فعال شود."
           }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-      } catch {}
+      } catch {
+        /* ignore JSON parse error and fall through to generic error */
+      }
       throw new Error("خطا در برقراری ارتباط با مدل تحلیل طراحی Zhipu AI");
     }
 
@@ -148,7 +150,9 @@ Deno.serve(async (req) => {
             error: "اعتبار کلید API هوش مصنوعی (Zhipu AI) برای تولید تصویر کافی نیست. لطفاً حساب کاربری خود را شارژ کنید."
           }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-      } catch {}
+      } catch {
+        /* ignore JSON parse error and fall through to generic error */
+      }
       throw new Error("خطا در تولید تصویر توسط هوش مصنوعی Zhipu AI");
     }
 

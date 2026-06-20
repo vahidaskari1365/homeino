@@ -216,7 +216,16 @@ const BudgetEstimator = () => {
           .eq("is_active", true);
 
         if (prodData && prodData.length > 0) {
-          const formattedProducts: Product[] = prodData.map((p: any) => ({
+          type ProductRow = {
+            id: string;
+            name: string;
+            description: string | null;
+            price: number | null;
+            image_url: string | null;
+            attributes: { category?: string; style?: string } | null;
+            profiles: { brand_name?: string } | null;
+          };
+          const formattedProducts: Product[] = (prodData as ProductRow[]).map((p) => ({
             id: p.id,
             name: p.name,
             description: p.description,

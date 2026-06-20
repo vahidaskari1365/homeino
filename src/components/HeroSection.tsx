@@ -1,21 +1,52 @@
+import { useEffect, useRef } from "react";
 import { Search, Sparkles, ShoppingBag } from "lucide-react";
 import heroImg from "@/assets/hero-living.jpg";
 import OptimizedImage from "./OptimizedImage";
 
 const HeroSection = () => {
+  const parallaxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = parallaxRef.current;
+    if (!el) return;
+
+    const prefersReduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    let raf = 0;
+    const update = () => {
+      const offset = Math.min(window.scrollY, window.innerHeight);
+      // gentle downward drift + subtle zoom for a cinematic feel
+      el.style.transform = `translate3d(0, ${offset * 0.25}px, 0) scale(${1 + offset * 0.0002})`;
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
+      {/* Background Image (parallax) */}
+      <div ref={parallaxRef} className="absolute inset-0 parallax-bg">
         <OptimizedImage
           src={heroImg}
           alt="دکوراسیون لوکس"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover scale-110"
           width={1920}
           height={1080}
           lazy={false}
         />
-        <div className="absolute inset-0 gradient-hero" />
+        <div className="absolute inset-0 gradient-hero hero-glow" />
         <div className="absolute inset-0 bg-charcoal/40" />
       </div>
 

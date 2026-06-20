@@ -162,3 +162,76 @@
 }
 
 .animate-float { animation: float 3s ease-in-out infinite; }
+
+/* ============================================================
+   Cinematic scroll reveal + visual effects
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
+}
+
+.reveal {
+  opacity: 0;
+  transition-property: opacity, transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: none !important;
+}
+
+.reveal-up { transform: translateY(48px); }
+.reveal-down { transform: translateY(-48px); }
+.reveal-left { transform: translateX(48px); }
+.reveal-right { transform: translateX(-48px); }
+.reveal-scale { transform: scale(0.92); }
+.reveal-fade { transform: none; }
+
+/* Scroll progress bar */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 100;
+  background: transparent;
+  pointer-events: none;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--gradient-gold);
+  box-shadow: 0 0 12px hsl(var(--gold) / 0.6);
+  transition: width 0.1s linear;
+}
+
+/* Parallax background helper */
+.parallax-bg {
+  will-change: transform;
+  transition: transform 0.05s linear;
+}
+
+/* Subtle continuous gradient drift for hero overlay */
+@keyframes heroGlow {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+.hero-glow { animation: heroGlow 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .parallax-bg { transform: none !important; }
+  .scroll-progress-bar { transition: none; }
+  .animate-float,
+  .animate-shimmer,
+  .hero-glow { animation: none !important; }
+}
