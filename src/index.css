@@ -235,3 +235,43 @@ html {
   .animate-shimmer,
   .hero-glow { animation: none !important; }
 }
+
+/* ============================================================
+   Exaggerated-minimalism hero (kinetic typography)
+   ============================================================ */
+@keyframes heroWordUp {
+  from { opacity: 0; transform: translateY(110%) rotate(2deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0); }
+}
+@keyframes lineGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes scrollCue {
+  0% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(8px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 0.9; }
+}
+
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  animation: heroWordUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.hero-mask { overflow: hidden; display: inline-block; vertical-align: top; padding-bottom: 0.12em; }
+
+.hero-rule {
+  transform: scaleX(0);
+  transform-origin: right center; /* RTL: grow from the right */
+  animation: lineGrow 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-kicker { letter-spacing: 0.35em; }
+
+.scroll-cue { animation: scrollCue 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-word { opacity: 1 !important; animation: none !important; }
+  .hero-rule { transform: scaleX(1) !important; animation: none !important; }
+  .scroll-cue { animation: none !important; }
+}
