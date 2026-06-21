@@ -15,8 +15,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "Vazirmatn", "sans-serif"],
-        body: ["DM Sans", "Vazirmatn", "sans-serif"],
+        sans: ["Estedad", "Vazirmatn", "DM Sans", "sans-serif"],
+        display: ["Estedad", "Vazirmatn", "Space Grotesk", "sans-serif"],
+        body: ["Estedad", "Vazirmatn", "DM Sans", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
