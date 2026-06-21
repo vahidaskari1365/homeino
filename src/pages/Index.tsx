@@ -23,46 +23,55 @@ import imgBedroom from "@/assets/board/b-bedroom.jpg";
 import imgKitchen from "@/assets/board/b-kitchen.jpg";
 
 const BACKGROUNDS = [
-  { id: "hero", src: sceneLiving },
-  { id: "categories", src: imgLiving },
-  { id: "ai-design", src: sceneKitchen },
-  { id: "inspiration", src: sceneBedroom },
-  { id: "budget", src: imgBedroom },
-  { id: "secondhand", src: imgKitchen },
+  { id: "hero", src: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=80" }, // Stunning Villa Exterior
+  { id: "categories", src: sceneLiving }, // Enters into living room
+  { id: "ai-design", src: imgLiving }, // Sitting on sofa
+  { id: "inspiration", src: sceneBedroom }, // Cozy Bedroom
+  { id: "budget", src: imgBedroom }, // Study Room
+  { id: "secondhand", src: sceneKitchen }, // Sleek Kitchen
 ];
 
 const Index = () => {
   const [activeBg, setActiveBg] = useState("hero");
+
+  // Preload all cinematic images in background for 0ms transition latency
+  useEffect(() => {
+    BACKGROUNDS.forEach((bg) => {
+      const img = new Image();
+      img.src = bg.src;
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       const windowHeight = window.innerHeight;
 
-      // Detect which section is currently centered/active in viewport
-      const sections = [
-        { id: "hero", top: 0, bottom: windowHeight },
-        { id: "categories", el: document.getElementById("categories") },
-        { id: "ai-design", el: document.getElementById("ai-design") },
-        { id: "inspiration", el: document.getElementById("inspiration") },
-        { id: "budget", el: document.getElementById("budget") },
-        { id: "secondhand", el: document.getElementById("secondhand") },
-      ];
+      // Safe checks
+      const categoriesEl = document.getElementById("categories");
+      const aiDesignEl = document.getElementById("ai-design");
+      const inspirationEl = document.getElementById("inspiration");
+      const budgetEl = document.getElementById("budget");
+      const secondhandEl = document.getElementById("secondhand");
 
-      for (const section of sections) {
-        if (section.id === "hero") {
-          if (scrollY < windowHeight * 0.8) {
-            setActiveBg("hero");
-            break;
-          }
-        } else if (section.el) {
-          const rect = section.el.getBoundingClientRect();
-          const elemCenter = rect.top + rect.height / 2;
-          if (elemCenter >= 0 && elemCenter <= windowHeight * 1.5) {
-            setActiveBg(section.id);
-            break;
-          }
-        }
+      if (scrollY < windowHeight * 0.6) {
+        setActiveBg("hero");
+        return;
+      }
+
+      // Check current active section with a balanced viewport mid-point threshold
+      const midPoint = scrollY + windowHeight / 2;
+
+      if (secondhandEl && midPoint >= secondhandEl.offsetTop) {
+        setActiveBg("secondhand");
+      } else if (budgetEl && midPoint >= budgetEl.offsetTop) {
+        setActiveBg("budget");
+      } else if (inspirationEl && midPoint >= inspirationEl.offsetTop) {
+        setActiveBg("inspiration");
+      } else if (aiDesignEl && midPoint >= aiDesignEl.offsetTop) {
+        setActiveBg("ai-design");
+      } else if (categoriesEl && midPoint >= categoriesEl.offsetTop) {
+        setActiveBg("categories");
       }
     };
 
@@ -70,21 +79,51 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Compute 3D transition state styles for each background layer
+  const getBgStyle = (id: string) => {
+    const currentIndex = BACKGROUNDS.findIndex((bg) => bg.id === activeBg);
+    const thisIndex = BACKGROUNDS.findIndex((bg) => bg.id === id);
+
+    if (thisIndex === currentIndex) {
+      return {
+        opacity: 0.82,
+        transform: "scale(1.0) translate3d(0, 0, 0) rotateX(0deg)",
+        filter: "blur(0px) brightness(1.02) contrast(1.02)",
+      };
+    } else if (thisIndex < currentIndex) {
+      // Scrolled past -> zoom in and float up slightly with 3D perspective
+      return {
+        opacity: 0,
+        transform: "scale(1.14) translate3d(0, -6%, 50px) rotateX(6deg)",
+        filter: "blur(4px) brightness(0.9)",
+      };
+    } else {
+      // Upcoming -> start smaller with downward 3D tilt
+      return {
+        opacity: 0,
+        transform: "scale(0.86) translate3d(0, 6%, -50px) rotateX(-6deg)",
+        filter: "blur(4px) brightness(0.95)",
+      };
+    }
+  };
+
   return (
-    <div className="min-h-screen relative text-foreground">
+    <div className="min-h-screen relative text-foreground overflow-x-hidden">
       <SEO />
       <ScrollProgress />
       <Navbar />
 
-      {/* Real Cinematic Parallax Scroll-linked Background Manager */}
-      <div className="immersive-scrolling-bg">
+      {/* Real Cinematic 3D Parallax Scroll-linked Camera-Travel Background Manager */}
+      <div className="fixed inset-0 z-[-10] pointer-events-none bg-[#faf8f6]">
         {BACKGROUNDS.map((bg) => (
           <div
             key={bg.id}
-            className={`immersive-bg-layer ${activeBg === bg.id ? "opacity-[0.85] scale-100" : "opacity-0 scale-[1.08]"}`}
+            className="absolute inset-0 transition-all duration-[1300ms] ease-out will-change-transform-opacity"
+            style={getBgStyle(bg.id)}
           >
-            <img src={bg.src} alt="Cinematic Interior Design" loading="lazy" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/50" />
+            <img src={bg.src} alt="Cinematic Interior Design Journey" className="w-full h-full object-cover" />
+            {/* Elegant luxury cream-to-transparent overlay wash */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#faf8f6]/35 via-transparent to-[#faf8f6]/55" />
           </div>
         ))}
       </div>
