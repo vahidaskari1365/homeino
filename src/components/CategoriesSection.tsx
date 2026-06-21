@@ -2,16 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { Armchair, Lamp, Palette, Flower2, Frame, Bed, Megaphone, Store, Bath, Star } from "lucide-react";
 
 const categories = [
-  { icon: Armchair, label: "مبلمان", slug: "furniture", count: "۲,۴۰۰+" },
-  { icon: Palette, label: "فرش و قالی", slug: "carpet", count: "۱,۸۰۰+" },
-  { icon: Lamp, label: "لوستر و روشنایی", slug: "lighting", count: "۹۵۰+" },
-  { icon: Frame, label: "پرده", slug: "curtain", count: "۱,۲۰۰+" },
-  { icon: Bed, label: "کالای خواب", slug: "bedding", count: "۸۰۰+" },
-  { icon: Palette, label: "دکور و کالای چوبی", slug: "wood-decor", count: "۶۵۰+" },
-  { icon: Frame, label: "تابلو و آثار هنری", slug: "art", count: "۴۲۰+" },
-  { icon: Bath, label: "سرویس بهداشتی و حمام", slug: "bathroom", count: "۳۴۰+" },
-  { icon: Star, label: "اکسسوری خانه", slug: "accessories", count: "۲۸۰+" },
-  { icon: Megaphone, label: "آگهی دست دوم", slug: "second-hand", count: "۳,۵۰۰+" },
+  { icon: Armchair, label: "مبلمان", slug: "furniture", count: "۲,۴۰۰+", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80" },
+  { icon: Palette, label: "فرش و قالی", slug: "carpet", count: "۱,۸۰۰+", image: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=400&q=80" },
+  { icon: Lamp, label: "لوستر و روشنایی", slug: "lighting", count: "۹۵۰+", image: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=400&q=80" },
+  { icon: Frame, label: "پرده", slug: "curtain", count: "۱,۲۰۰+", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80" },
+  { icon: Bed, label: "کالای خواب", slug: "bedding", count: "۸۰۰+", image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=400&q=80" },
+  { icon: Palette, label: "دکور و کالای چوبی", slug: "wood-decor", count: "۶۵۰+", image: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=400&q=80" },
+  { icon: Frame, label: "تابلو و آثار هنری", slug: "art", count: "۴۲۰+", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=400&q=80" },
+  { icon: Bath, label: "سرویس بهداشتی و حمام", slug: "bathroom", count: "۳۴۰+", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80" },
+  { icon: Star, label: "اکسسوری خانه", slug: "accessories", count: "۲۸۰+", image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=400&q=80" },
+  { icon: Megaphone, label: "آگهی دست دوم", slug: "second-hand", count: "۳,۵۰۰+", image: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=400&q=80" },
 ];
 
 const CategoriesSection = () => {
@@ -31,76 +31,54 @@ const CategoriesSection = () => {
     <section id="categories" className="py-24 bg-transparent relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="text-primary text-sm font-semibold tracking-wider">دسته‌بندی‌ها</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-3">
+          <span className="text-primary text-sm font-semibold tracking-wider">دسته‌بندی‌های اصلی</span>
+          <h2 className="text-3xl md:text-5xl font-black text-foreground mt-3 tracking-tight">
             همه نیازهای خانه شما
           </h2>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-            از مبلمان تا دکور، از روشنایی تا گل و گیاه — هر آنچه برای زیبایی خانه نیاز دارید
+          <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-base sm:text-lg">
+            از مبلمان تا دکور، از روشنایی تا پرده و فرش — هر آنچه برای زیبایی خانه نیاز دارید
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" style={{ perspective: '1500px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" style={{ perspective: "1500px" }}>
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
               <div
                 key={cat.label}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/85 backdrop-blur-md border border-border/50 hover:border-primary/40 cursor-pointer transition-all duration-500 hover:shadow-luxury"
-                style={{ 
-                  transformStyle: 'preserve-3d',
-                  transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
-                }}
+                className="group relative overflow-hidden aspect-[3/4] rounded-[2rem] cursor-pointer shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-2 border border-border/40"
               >
-                <div 
-                  className="relative w-16 h-16 rounded-2xl flex items-center justify-center group-hover:text-primary transition-all duration-500"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-                    boxShadow: `
-                      0 12px 24px -6px rgba(0,0,0,0.3),
-                      inset 0 2px 6px rgba(255, 255, 255, 0.1),
-                      inset 0 -2px 6px rgba(0, 0, 0, 0.2)\n                    `,
-                    transform: 'translateZ(32px) rotateX(-8deg)',
-                    transformStyle: 'preserve-3d'
-                  }}
-                >
-                  {/* Top highlight for 3D effect */}
-                  <div 
-                    className="absolute inset-x-2 top-1 h-1/3 rounded-lg opacity-40"
-                    style={{
-                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
-                      transform: 'translateZ(2px)'
-                    }}
-                  />
-                  {/* Bottom shadow for depth */}
-                  <div 
-                    className="absolute inset-x-2 bottom-1 h-1/4 rounded-lg opacity-30"
-                    style={{
-                      background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%)',
-                      transform: 'translateZ(2px)'
-                    }}
-                  />
-                  {/* Hover glow overlay */}
-                  <div 
-                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background: 'linear-gradient(145deg, hsl(var(--primary) / 0.25) 0%, hsl(var(--primary) / 0.1) 100%)',
-                      transform: 'translateZ(4px)'
-                    }}
-                  />
-                  <Icon 
-                    size={28} 
-                    className="relative text-white/70 group-hover:text-primary transition-colors duration-500"
-                    style={{
-                      filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3))',
-                      transform: 'translateZ(16px) scale(1)',
-                      transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
-                    }}
-                  />
+                {/* Real High-End Interior Image */}
+                <img
+                  src={cat.image}
+                  alt={cat.label}
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                />
+
+                {/* Ambient dark gradient overlay to anchor text */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-80 group-hover:from-black/60 transition-opacity duration-300" />
+
+                {/* Floating premium tag */}
+                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                  <span className="text-[10px] font-bold text-white tracking-widest">HOMEINO</span>
                 </div>
-                <span className="text-sm font-medium text-white group-hover:text-primary transition-colors duration-300 text-center">{cat.label}</span>
-                <span className="text-xs text-muted-foreground">{cat.count} محصول</span>
+
+                {/* Glassmorphic Bottom Panel containing Labels */}
+                <div className="absolute inset-x-3 bottom-3 p-4 rounded-[1.4rem] bg-white/85 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-white/5 flex flex-col gap-0.5 transition-all duration-300 group-hover:bg-white/95">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                      {cat.label}
+                    </span>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                      <Icon size={15} />
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {cat.count} کالا
+                  </span>
+                </div>
               </div>
             );
           })}
