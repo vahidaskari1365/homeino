@@ -89,6 +89,16 @@ const AIDesignSection = () => {
   const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
   const [dragging, setDragging] = useState(false);
   const [liveProducts, setLiveProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+
+  const toggleProductSelection = (p: Product) => {
+    setSelectedProducts((prev) =>
+      prev.some((item) => item.id === p.id)
+        ? prev.filter((item) => item.id !== p.id)
+        : [...prev, p]
+    );
+  };
+
   const inputRef = useRef<HTMLInputElement>(null);
   const { addItem } = useCart();
 
@@ -113,10 +123,12 @@ const AIDesignSection = () => {
             .in("category_id", catIds)
             .eq("is_active", true)
             .not("image_url", "is", null)
-            .limit(3);
+            .limit(8);
             
           if (prods) {
             setLiveProducts(prods as Product[]);
+            // Auto-select the fetched products so they display immediately
+            setSelectedProducts(prods as Product[]);
           }
         }
       } catch (err) {
@@ -204,12 +216,21 @@ const AIDesignSection = () => {
     try {
       const categoryLabel = (slug: string) => furniture.find((f) => f.slug === slug)?.label || slug;
       
-      const productsPayload = selectedCategories.map((slug) => ({
-        name: categoryLabel(slug),
-        category: slug,
-      }));
+      const productsPayload = selectedProducts.length > 0
+        ? selectedProducts.map((p) => ({
+            name: p.name,
+            category: p.category_id ? String(p.category_id) : undefined,
+          }))
+        : selectedCategories.map((slug) => ({
+            name: categoryLabel(slug),
+            category: slug,
+          }));
 
-      const promptText = `Only replace the following items in the room: ${selectedCategories.map(categoryLabel).join("، ")}. Keep all other furniture, decor, and architectural elements exactly as they are.`;
+      const itemsText = selectedProducts.length > 0
+        ? selectedProducts.map((p) => p.name).join("، ")
+        : selectedCategories.map(categoryLabel).join("، ");
+
+      const promptText = `Only replace the following items in the room with neoclassic, luxury, boho, or modern designs: ${itemsText}. Keep all other furniture, decor, and architectural elements exactly as they are.`;
 
       const result = await redesignRoom(
         imageBase64,
@@ -230,18 +251,23 @@ const AIDesignSection = () => {
       setResultImage(img);
       if (result.tip) setRoomTip(result.tip);
 
-      // Fetch matched products for shopping list based on categories
-      const { data: cats } = await supabase.from("producer_categories").select("id, slug").in("slug", selectedCategories);
-      if (cats && cats.length > 0) {
-        const catIds = cats.map(c => c.id);
-        const { data: prods } = await supabase
-          .from("products")
-          .select("id, name, price, image_url, category_id, profile_id, stock")
-          .in("category_id", catIds)
-          .eq("is_active", true)
-          .not("image_url", "is", null)
-          .limit(4);
-        if (prods) setGeneratedProducts(prods as Product[]);
+      // Set generatedProducts to the exact products the user selected for the design
+      if (selectedProducts.length > 0) {
+        setGeneratedProducts(selectedProducts);
+      } else {
+        // Fallback: fetch matched products for shopping list based on categories
+        const { data: cats } = await supabase.from("producer_categories").select("id, slug").in("slug", selectedCategories);
+        if (cats && cats.length > 0) {
+          const catIds = cats.map(c => c.id);
+          const { data: prods } = await supabase
+            .from("products")
+            .select("id, name, price, image_url, category_id, profile_id, stock")
+            .in("category_id", catIds)
+            .eq("is_active", true)
+            .not("image_url", "is", null)
+            .limit(4);
+          if (prods) setGeneratedProducts(prods as Product[]);
+        }
       }
 
       toast.success("طراحی دکوراسیون با موفقیت انجام شد!");
@@ -439,6 +465,54 @@ const AIDesignSection = () => {
               </div>
             </div>
 
+            {/* Real Store Product Selection Catalog Grid */}
+            {liveProducts.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-stone-800/60 text-right">
+                <div className="flex items-center justify-between mb-4 flex-row-reverse">
+                  <h4 className="text-xs md:text-sm font-black text-stone-300">کاتالوگ محصولات واقعی فروشگاه جهت پرو و چیدمان</h4>
+                  <span className="text-[10px] md:text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-full">امکان انتخاب مدل مبلمان، پرده و فرش دلخواه</span>
+                </div>
+                
+                <p className="text-xs text-stone-400 mb-4">
+                  بر روی هر یک از محصولات زیر کلیک کنید تا در چیدمان نهایی هوش مصنوعی قرار گیرد و قیمت آن در فاکتور برآورد شود:
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {liveProducts.map((p) => {
+                    const isChecked = selectedProducts.some((item) => item.id === p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleProductSelection(p)}
+                        className={`cursor-pointer rounded-2xl overflow-hidden border p-3 flex flex-col gap-3 transition-all duration-300 hover:translate-y-[-4px] ${
+                          isChecked
+                            ? "bg-emerald-500/10 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.12)]"
+                            : "bg-stone-900/30 border-stone-850 hover:border-emerald-500/30"
+                        }`}
+                      >
+                        <div className="aspect-square relative overflow-hidden rounded-xl bg-stone-950/60 border border-white/5">
+                          {p.image_url && (
+                            <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                          )}
+                          <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                            isChecked
+                              ? "bg-emerald-500 border-emerald-400 text-stone-950"
+                              : "bg-stone-900/80 border-stone-700 text-transparent"
+                          }`}>
+                            <Check size={14} className="stroke-[3]" />
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col justify-between flex-1">
+                          <h5 className="text-xs font-bold text-stone-200 line-clamp-2 leading-relaxed mb-1">{p.name}</h5>
+                          <span className="text-xs font-black text-emerald-400 mt-auto">{fmt(p.price)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {resultImage && !loading && (
               <div className="mt-5 pt-5 border-t border-stone-800/80 flex gap-3">
                 <button onClick={download} className="flex-1 py-3 rounded-xl bg-stone-900 hover:bg-stone-850 text-white font-bold text-sm flex items-center justify-center gap-2 border border-stone-800 transition-colors">
@@ -531,14 +605,14 @@ const AIDesignSection = () => {
                 </button>
 
                 {/* Live Estimator Box */}
-                {liveProducts.length > 0 && (
+                {selectedProducts.length > 0 && (
                   <div className="mt-6 rounded-2xl p-5 border border-emerald-500/10 bg-emerald-950/5 backdrop-blur-md flex flex-col gap-4">
                     <div className="flex items-center gap-2 pb-2.5 border-b border-emerald-950/30">
                       <Receipt size={16} className="text-emerald-400" />
                       <h4 className="text-xs font-bold text-white text-right w-full">لیست قیمت واقعی محصولات انتخابی در فروشگاه هومینو</h4>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {liveProducts.map((p) => (
+                    <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto custom-scrollbar">
+                      {selectedProducts.map((p) => (
                         <div key={p.id} className="flex items-center justify-between p-2 rounded-xl bg-stone-900/30 border border-stone-850">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-white/5">
@@ -553,7 +627,7 @@ const AIDesignSection = () => {
                     <div className="flex items-center justify-between pt-2 border-t border-emerald-950/30">
                       <span className="text-xs text-stone-400 font-bold">برآورد کل هزینه خرید:</span>
                       <span className="text-sm font-black text-emerald-300">
-                        {fmt(liveProducts.reduce((sum, p) => sum + (p.price || 0), 0))}
+                        {fmt(selectedProducts.reduce((sum, p) => sum + (p.price || 0), 0))}
                       </span>
                     </div>
                   </div>
