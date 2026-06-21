@@ -14,6 +14,7 @@ import Auth from "./pages/Auth.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Shops from "./pages/Shops.tsx";
 import ShopDetail from "./pages/ShopDetail.tsx";
+import ProductDetail from "./pages/ProductDetail.tsx";
 import Admin from "./pages/Admin.tsx";
 import Wishlist from "./pages/Wishlist.tsx";
 import Compare from "./pages/Compare.tsx";
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/shops" element={<Shops />} />
                   <Route path="/shops/:id" element={<ShopDetail />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/compare" element={<Compare />} />

@@ -38,7 +38,7 @@ const ItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: () => void
         </p>
         )}
         <div className="flex gap-2 mt-2">
-        <Link to={item.item_type === 'product' ? `/shops/${item.metadata?.profile_id || ''}` : '/wishlist'} className="flex-1">
+        <Link to={item.item_type === 'product' ? `/product/${item.item_id}` : '/wishlist'} className="flex-1">
           <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
         </Link>
         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive p-2" onClick={onRemove}>

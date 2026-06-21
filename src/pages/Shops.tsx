@@ -369,7 +369,7 @@ const Shops = () => {
               <>
                 <div className="columns-1 sm:columns-2 lg:columns-4 gap-6 [column-fill:_auto] space-y-6">
                   {products.map((p) => (
-                    <Link to={`/shops/${p.profile_id}`} key={p.id} className="block break-inside-avoid mb-6">
+                    <Link to={`/product/${p.id}`} key={p.id} className="block break-inside-avoid mb-6">
                       <Card className="overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg rounded-2xl h-full bg-card">
                         <div className="relative bg-muted overflow-hidden">
                           {p.image_url ? (

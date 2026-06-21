@@ -101,7 +101,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
               <h4 className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1"><Package size={14} /> محصولات</h4>
               <div className="space-y-1">
                 {products.map((p) => (
-                  <Link key={p.id} to={`/shops/${p.profile_id}`} onClick={close}
+                  <Link key={p.id} to={`/product/${p.id}`} onClick={close}
                     className="flex items-center gap-3 p-2 rounded hover:bg-muted transition">
                     <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
                       {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}

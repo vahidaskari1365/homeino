@@ -342,7 +342,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
                     <h4 className="font-bold truncate">{item.title}</h4>
                     <p className="text-gold font-bold mt-1">{item.price?.toLocaleString("fa-IR")} تومان</p>
                     <div className="flex gap-2 mt-4">
-                      <Link to={item.item_type === 'product' ? `/shops/${item.metadata?.profile_id || ''}` : '/wishlist'} className="flex-1">
+                      <Link to={item.item_type === 'product' ? `/product/${item.item_id}` : '/wishlist'} className="flex-1">
                         <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
                       </Link>
                     </div>
