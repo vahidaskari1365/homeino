@@ -105,32 +105,48 @@ const AIDesignSection = () => {
   // Live fetch representative products for selected categories
   useEffect(() => {
     const fetchLiveProducts = async () => {
-      if (selectedCategories.length === 0) {
-        setLiveProducts([]);
-        return;
-      }
       try {
-        const { data: cats } = await supabase
-          .from("producer_categories")
-          .select("id, slug")
-          .in("slug", selectedCategories);
-          
-        if (cats && cats.length > 0) {
-          const catIds = cats.map(c => c.id);
-          const { data: prods } = await supabase
+        let prods: any[] = [];
+
+        if (selectedCategories.length > 0) {
+          const { data: cats } = await supabase
+            .from("producer_categories")
+            .select("id, slug")
+            .in("slug", selectedCategories);
+            
+          if (cats && cats.length > 0) {
+            const catIds = cats.map(c => c.id);
+            const { data } = await supabase
+              .from("products")
+              .select("id, name, price, image_url, category_id, profile_id, stock")
+              .in("category_id", catIds)
+              .eq("is_active", true)
+              .not("image_url", "is", null)
+              .limit(8);
+            
+            if (data && data.length > 0) {
+              prods = data;
+            }
+          }
+        }
+
+        // Fallback: If no products found for selected categories, fetch any active products from the shop
+        if (prods.length === 0) {
+          const { data } = await supabase
             .from("products")
             .select("id, name, price, image_url, category_id, profile_id, stock")
-            .in("category_id", catIds)
             .eq("is_active", true)
             .not("image_url", "is", null)
             .limit(8);
-            
-          if (prods) {
-            setLiveProducts(prods as Product[]);
-            // Auto-select the fetched products so they display immediately
-            setSelectedProducts(prods as Product[]);
+          
+          if (data) {
+            prods = data;
           }
         }
+
+        setLiveProducts(prods as Product[]);
+        // Auto-select the fetched products so they display immediately
+        setSelectedProducts(prods as Product[]);
       } catch (err) {
         console.error("Error fetching live products:", err);
       }
