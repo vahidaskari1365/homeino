@@ -156,10 +156,9 @@ const HeroSection = () => {
             </div>
 
             {/* Strictly single-line centered oversized 3D headline */}
-            <h1 className="w-full text-center py-4 select-none pointer-events-none drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
-              <span className="block whitespace-nowrap overflow-visible text-[clamp(1.8rem,6vw,5.5rem)] leading-none font-black">
-                <span className="text-3d-luxury mr-2">خانه رویایی‌تان را</span>
-                <span className="text-3d-luxury"> طراحی کنید</span>
+            <h1 className="w-full text-center py-4 select-none pointer-events-none drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex items-center justify-center">
+              <span className="block text-[clamp(1.5rem,5.2vw,4.8rem)] leading-none font-black text-3d-luxury whitespace-nowrap">
+                خانه رؤیایی‌تان را طراحی کنید
               </span>
             </h1>
 
