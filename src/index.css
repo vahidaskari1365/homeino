@@ -36,22 +36,22 @@
     --muted: 38 24% 93%;
     --muted-foreground: 28 14% 40%;
 
-    --accent: 38 55% 46%;
-    --accent-foreground: 28 30% 14%;
+    --accent: 158 44% 38%;
+    --accent-foreground: 42 45% 98%;
 
     --destructive: 4 68% 50%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 36 22% 86%;
     --input: 36 22% 88%;
-    --ring: 38 55% 46%;
+    --ring: 158 48% 32%;
 
     --radius: 0.85rem;
 
-    /* Brand tokens — "gold" is now a true warm brass accent (paired with emerald) */
-    --gold: 38 56% 44%;
-    --gold-light: 43 72% 58%;
-    --gold-dark: 34 58% 34%;
+    /* Brand tokens — emerald-green accent system (cream + walnut neutrals) */
+    --gold: 158 48% 30%;
+    --gold-light: 158 42% 42%;
+    --gold-dark: 158 54% 20%;
     --emerald: 158 54% 15%;
     --emerald-light: 158 42% 30%;
     --cream: 42 40% 97%;
@@ -65,7 +65,7 @@
     --surface-emerald: 158 54% 15%;
     --surface-emerald-foreground: 42 40% 97%;
 
-    --gradient-gold: linear-gradient(135deg, hsl(34 58% 40%), hsl(43 74% 60%));
+    --gradient-gold: linear-gradient(135deg, hsl(158 50% 26%), hsl(158 44% 40%));
     --gradient-dark: linear-gradient(180deg, hsl(28 28% 14%), hsl(28 32% 9%));
     --gradient-hero: linear-gradient(135deg, hsl(28 30% 12% / 0.78), hsl(158 54% 14% / 0.58));
     --shadow-luxury: 0 24px 60px -28px hsl(28 30% 14% / 0.32);
