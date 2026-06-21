@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import { useCart } from "@/contexts/CartContext";
+import { redesignRoom } from "@/services/huggingface";
 
 const PROGRESS_MESSAGES = [
   "در حال تحلیل ابعاد اتاق...",
@@ -162,39 +163,49 @@ const AIDesignSection = () => {
     }, 2500);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-decor", {
-        body: {
-          image: imageBase64,
-          style: selectedStyle,
-          categories: selectedCategories,
-        },
-      });
+      const categoryLabel = (slug: string) => furniture.find((f) => f.slug === slug)?.label || slug;
+      
+      const productsPayload = selectedCategories.map((slug) => ({
+        name: categoryLabel(slug),
+        category: slug,
+      }));
+
+      const promptText = `Only replace the following items in the room: ${selectedCategories.map(categoryLabel).join("، ")}. Keep all other furniture, decor, and architectural elements exactly as they are.`;
+
+      const result = await redesignRoom(
+        imageBase64,
+        selectedStyle,
+        promptText,
+        productsPayload
+      );
 
       clearInterval(interval);
 
-      if (error) throw error;
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
-      if (data && data.image) {
-        setResultImage(data.image);
-        setRoomTip(data.tip || null);
+      const img = result.image;
+      if (!img) throw new Error("تصویری دریافت نشد");
 
-        // Fetch matched products for shopping list based on categories
-        const categoriesPayload = selectedCategories.map((slug) => ({
-          category_slug: slug,
-        }));
+      setResultImage(img);
+      if (result.tip) setRoomTip(result.tip);
 
-        const { data: prods, error: dbErr } = await supabase
+      // Fetch matched products for shopping list based on categories
+      const { data: cats } = await supabase.from("producer_categories").select("id, slug").in("slug", selectedCategories);
+      if (cats && cats.length > 0) {
+        const catIds = cats.map(c => c.id);
+        const { data: prods } = await supabase
           .from("products")
           .select("id, name, price, image_url, category_id, profile_id, stock")
+          .in("category_id", catIds)
+          .eq("is_active", true)
+          .not("image_url", "is", null)
           .limit(4);
-
-        if (!dbErr && prods) {
-          setGeneratedProducts(prods as Product[]);
-        }
-        toast.success("طراحی دکوراسیون با موفقیت انجام شد!");
-      } else {
-        throw new Error("پاسخی از سرور دریافت نشد");
+        if (prods) setGeneratedProducts(prods as Product[]);
       }
+
+      toast.success("طراحی دکوراسیون با موفقیت انجام شد!");
     } catch (e: any) {
       clearInterval(interval);
       console.error(e);
@@ -346,13 +357,13 @@ const AIDesignSection = () => {
             {/* Design styles and filters picker */}
             <div className="mt-6 flex flex-col sm:flex-row gap-5">
               <div className="flex-1">
-                <div className="text-[10px] font-bold text-stone-500 mb-3 tracking-widest text-right">STYLE</div>
+                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">سبک دکوراسیون (STYLE)</div>
                 <div className="flex flex-wrap gap-2">
                   {STYLES.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => { setSelectedStyle(s.id); setResultImage(null); }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                      className={`px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold border transition-all hover:scale-[1.03] ${
                         selectedStyle === s.id
                           ? "bg-emerald-500/15 border-emerald-500 text-emerald-300"
                           : "bg-stone-900/60 border-stone-800 text-stone-400 hover:border-emerald-500/20"
@@ -365,21 +376,23 @@ const AIDesignSection = () => {
               </div>
 
               <div className="flex-1">
-                <div className="text-[10px] font-bold text-stone-500 mb-3 tracking-widest text-right">ITEMS TO USE</div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">وسایل مورد استفاده (ITEMS TO USE)</div>
+                <div className="flex flex-wrap gap-2">
                   {furniture.map((f) => {
+                    const Icon = f.icon;
                     const isActive = selectedCategories.includes(f.slug);
                     return (
                       <button
                         key={f.label}
                         onClick={() => toggleCategory(f.slug)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all ${
+                        className={`px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold border flex items-center gap-2 transition-all hover:scale-[1.03] ${
                           isActive
                             ? "bg-emerald-500/15 border-emerald-500 text-emerald-300"
                             : "bg-stone-900/40 border-stone-850 text-stone-500 hover:border-emerald-500/20"
                         }`}
                       >
-                        {f.label}
+                        <Icon size={18} className={isActive ? "text-emerald-400" : "text-stone-500"} />
+                        <span>{f.label}</span>
                       </button>
                     );
                   })}
