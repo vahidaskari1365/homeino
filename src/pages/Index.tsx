@@ -5,7 +5,6 @@ import CategoriesSection from "@/components/CategoriesSection";
 import InspirationSection from "@/components/InspirationSection";
 import AIDesignSection from "@/components/AIDesignSection";
 import BudgetSection from "@/components/BudgetSection";
-import SecondHandSection from "@/components/SecondHandSection";
 import ServicesSection from "@/components/ServicesSection";
 import Newsletter from "@/components/Newsletter";
 import ChatBot from "@/components/ChatBot";
@@ -28,7 +27,6 @@ const BACKGROUNDS = [
   { id: "ai-design", src: imgLiving }, // Sitting on sofa
   { id: "inspiration", src: sceneBedroom }, // Cozy Bedroom
   { id: "budget", src: imgBedroom }, // Study Room
-  { id: "secondhand", src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80" }, // Sleek Kitchen
 ];
 
 const Index = () => {
@@ -52,7 +50,6 @@ const Index = () => {
       const aiDesignEl = document.getElementById("ai-design");
       const inspirationEl = document.getElementById("inspiration");
       const budgetEl = document.getElementById("budget");
-      const secondhandEl = document.getElementById("secondhand");
 
       if (scrollY < windowHeight * 0.6) {
         setActiveBg("hero");
@@ -62,9 +59,7 @@ const Index = () => {
       // Check current active section with a balanced viewport mid-point threshold
       const midPoint = scrollY + windowHeight / 2;
 
-      if (secondhandEl && midPoint >= secondhandEl.offsetTop) {
-        setActiveBg("secondhand");
-      } else if (budgetEl && midPoint >= budgetEl.offsetTop) {
+      if (budgetEl && midPoint >= budgetEl.offsetTop) {
         setActiveBg("budget");
       } else if (inspirationEl && midPoint >= inspirationEl.offsetTop) {
         setActiveBg("inspiration");
@@ -146,9 +141,7 @@ const Index = () => {
         <BudgetSection />
       </Reveal>
 
-      <Reveal variant="up" delay={0}>
-        <SecondHandSection />
-      </Reveal>
+
 
       <Reveal variant="up" delay={80}>
         <ServicesSection />
