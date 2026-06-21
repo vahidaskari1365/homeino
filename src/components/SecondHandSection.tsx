@@ -20,30 +20,7 @@ const SecondHandSection = () => {
   return (
     <section id="secondhand" className="py-24 bg-background">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-          <div>
-            <span className="text-primary text-sm font-semibold tracking-[0.2em] uppercase">آگهی دست دوم</span>
-            <h2 className="text-4xl md:text-6xl font-black text-foreground mt-3 tracking-tight">بخرید، بفروشید</h2>
-            <p className="text-muted-foreground mt-4 max-w-lg text-lg">
-              لوازم دست دوم خانهٔ خود را بفروشید یا با قیمت مناسب خرید کنید.
-            </p>
-          </div>
-          <div className="flex gap-3 mt-5 md:mt-0">
-            <button 
-              onClick={() => navigate("/second-hand")}
-              className="gradient-gold text-primary-foreground px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center gap-2 shadow-luxury"
-            >
-              ثبت آگهی رایگان
-              <ArrowLeft size={16} />
-            </button>
-            <button 
-              onClick={() => navigate("/second-hand")}
-              className="flex items-center gap-2 text-primary border border-primary/30 px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/5 transition-colors"
-            >
-              مشاهده همه آگهی‌ها
-            </button>
-          </div>
-        </div>
+        <div className="h-4" />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {ads.map((ad, idx) => {
