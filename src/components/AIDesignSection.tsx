@@ -18,9 +18,12 @@ const PROGRESS_MESSAGES = [
 const STYLES = [
   { id: "modern", label: "مدرن" },
   { id: "classic", label: "کلاسیک" },
+  { id: "neoclassic", label: "نئوکلاسیک" },
   { id: "minimalist", label: "مینیمال" },
-  { id: "industrial", label: "صنعتی" },
   { id: "scandinavian", label: "اسکاندیناوی" },
+  { id: "luxury", label: "لوکس" },
+  { id: "bohemian", label: "بوهمی" },
+  { id: "traditional", label: "سنتی" },
 ];
 
 const furniture = [
@@ -85,8 +88,44 @@ const AIDesignSection = () => {
   const [roomTip, setRoomTip] = useState<string | null>(null);
   const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [liveProducts, setLiveProducts] = useState<Product[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addItem } = useCart();
+
+  // Live fetch representative products for selected categories
+  useEffect(() => {
+    const fetchLiveProducts = async () => {
+      if (selectedCategories.length === 0) {
+        setLiveProducts([]);
+        return;
+      }
+      try {
+        const { data: cats } = await supabase
+          .from("producer_categories")
+          .select("id, slug")
+          .in("slug", selectedCategories);
+          
+        if (cats && cats.length > 0) {
+          const catIds = cats.map(c => c.id);
+          const { data: prods } = await supabase
+            .from("products")
+            .select("id, name, price, image_url, category_id, profile_id, stock")
+            .in("category_id", catIds)
+            .eq("is_active", true)
+            .not("image_url", "is", null)
+            .limit(3);
+            
+          if (prods) {
+            setLiveProducts(prods as Product[]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching live products:", err);
+      }
+    };
+    
+    fetchLiveProducts();
+  }, [selectedCategories]);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -490,6 +529,35 @@ const AIDesignSection = () => {
                   همین الان شروع کنید
                   <ArrowLeft size={20} />
                 </button>
+
+                {/* Live Estimator Box */}
+                {liveProducts.length > 0 && (
+                  <div className="mt-6 rounded-2xl p-5 border border-emerald-500/10 bg-emerald-950/5 backdrop-blur-md flex flex-col gap-4">
+                    <div className="flex items-center gap-2 pb-2.5 border-b border-emerald-950/30">
+                      <Receipt size={16} className="text-emerald-400" />
+                      <h4 className="text-xs font-bold text-white text-right w-full">لیست قیمت واقعی محصولات انتخابی در فروشگاه هومینو</h4>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {liveProducts.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between p-2 rounded-xl bg-stone-900/30 border border-stone-850">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-white/5">
+                              {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                            </div>
+                            <span className="text-[11px] font-bold text-stone-300 line-clamp-1 text-right">{p.name}</span>
+                          </div>
+                          <span className="text-[11px] font-black text-emerald-400 shrink-0">{fmt(p.price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-emerald-950/30">
+                      <span className="text-xs text-stone-400 font-bold">برآورد کل هزینه خرید:</span>
+                      <span className="text-sm font-black text-emerald-300">
+                        {fmt(liveProducts.reduce((sum, p) => sum + (p.price || 0), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
