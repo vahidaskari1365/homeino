@@ -31,30 +31,30 @@ const CategoriesSection = () => {
     <section id="categories" className="py-24 bg-transparent relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="text-gold text-sm font-semibold tracking-wider">دسته‌بندی‌ها</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-white mt-3">
+          <span className="text-primary text-sm font-semibold tracking-wider">دسته‌بندی‌ها</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-3">
             همه نیازهای خانه شما
           </h2>
-          <p className="text-white/70 mt-4 max-w-xl mx-auto">
+          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
             از مبلمان تا دکور، از روشنایی تا گل و گیاه — هر آنچه برای زیبایی خانه نیاز دارید
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-4" style={{ perspective: '1500px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" style={{ perspective: '1500px' }}>
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
               <div
                 key={cat.label}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/65 backdrop-blur-md border border-white/10 hover:border-gold/40 cursor-pointer transition-all duration-500 hover:shadow-luxury"
+                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/85 backdrop-blur-md border border-border/50 hover:border-primary/40 cursor-pointer transition-all duration-500 hover:shadow-luxury"
                 style={{ 
                   transformStyle: 'preserve-3d',
                   transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }}
               >
                 <div 
-                  className="relative w-16 h-16 rounded-2xl flex items-center justify-center group-hover:text-gold transition-all duration-500"
+                  className="relative w-16 h-16 rounded-2xl flex items-center justify-center group-hover:text-primary transition-all duration-500"
                   style={{
                     background: 'linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
                     boxShadow: `
@@ -85,13 +85,13 @@ const CategoriesSection = () => {
                   <div 
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
-                      background: 'linear-gradient(145deg, hsl(var(--gold) / 0.25) 0%, hsl(var(--gold) / 0.1) 100%)',
+                      background: 'linear-gradient(145deg, hsl(var(--primary) / 0.25) 0%, hsl(var(--primary) / 0.1) 100%)',
                       transform: 'translateZ(4px)'
                     }}
                   />
                   <Icon 
                     size={28} 
-                    className="relative text-white/70 group-hover:text-gold transition-colors duration-500"
+                    className="relative text-white/70 group-hover:text-primary transition-colors duration-500"
                     style={{
                       filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3))',
                       transform: 'translateZ(16px) scale(1)',
@@ -99,8 +99,8 @@ const CategoriesSection = () => {
                     }}
                   />
                 </div>
-                <span className="text-sm font-medium text-white group-hover:text-gold transition-colors duration-300 text-center">{cat.label}</span>
-                <span className="text-xs text-white/50">{cat.count} محصول</span>
+                <span className="text-sm font-medium text-white group-hover:text-primary transition-colors duration-300 text-center">{cat.label}</span>
+                <span className="text-xs text-muted-foreground">{cat.count} محصول</span>
               </div>
             );
           })}

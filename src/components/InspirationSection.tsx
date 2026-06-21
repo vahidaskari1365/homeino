@@ -36,13 +36,13 @@ const InspirationSection = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
           <div>
-            <span className="text-gold text-sm font-semibold tracking-[0.2em] uppercase">الهام دکوراسیون</span>
+            <span className="text-primary text-sm font-semibold tracking-[0.2em] uppercase">الهام دکوراسیون</span>
             <h2 className="text-4xl md:text-6xl font-black text-foreground mt-3 tracking-tight">ایده بگیرید، خلق کنید</h2>
             <p className="text-muted-foreground mt-4 max-w-lg text-lg">
               هزاران ایدهٔ واقعی از خانه‌های ایرانی — ذخیره کنید و الهام بگیرید.
             </p>
           </div>
-          <a href="#" className="group flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all mt-5 md:mt-0">
+          <a href="#" className="group flex items-center gap-2 text-primary font-semibold hover:gap-3 transition-all mt-5 md:mt-0">
             <span>مشاهده همه</span>
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           </a>
@@ -57,7 +57,7 @@ const InspirationSection = () => {
               className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
                 active === style
                   ? "gradient-gold text-primary-foreground shadow-luxury"
-                  : "bg-card border border-border text-muted-foreground hover:border-gold/40 hover:text-gold"
+                  : "bg-card border border-border text-muted-foreground hover:border-gold/40 hover:text-primary"
               }`}
             >
               {style}
@@ -66,19 +66,19 @@ const InspirationSection = () => {
         </div>
 
         {/* Pinterest-style masonry board with beautiful hover reveals */}
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-5 [column-fill:_auto] space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {visible.map((pin, idx) => {
             const isSaved = !!saved[idx];
             return (
               <article
                 key={pin.title}
-                className="group relative break-inside-avoid inline-block w-full rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-gold/30 shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-1 cursor-pointer"
+                className="group relative w-full aspect-square sm:aspect-[4/5] rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-primary/30 shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-1 cursor-pointer flex flex-col"
               >
                 <img
                   src={pin.image}
                   alt={pin.title}
                   loading="lazy"
-                  className="w-full h-auto block object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
                 />
 
                 {/* Hover glassmorphic scrim overlay */}
@@ -97,7 +97,7 @@ const InspirationSection = () => {
                     aria-label="ذخیره"
                     className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
                       isSaved
-                        ? "gradient-gold text-charcoal"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-white/90 text-charcoal hover:bg-white"
                     }`}
                   >
@@ -108,7 +108,7 @@ const InspirationSection = () => {
 
                 {/* Trend/popular badge on top left when NOT hovered */}
                 {pin.tag && (
-                  <span className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity duration-300 bg-gold text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md z-20">
+                  <span className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity duration-300 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md z-20">
                     {pin.tag}
                   </span>
                 )}
@@ -121,7 +121,7 @@ const InspirationSection = () => {
                       <Heart size={12} className="fill-current text-red-400" />
                       {pin.saves} پسند
                     </span>
-                    <span className="text-[10px] bg-gold/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
+                    <span className="text-[10px] bg-primary/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
                       الهام بگیرید
                     </span>
                   </div>

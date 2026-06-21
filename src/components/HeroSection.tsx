@@ -136,7 +136,7 @@ const HeroSection = () => {
               className="cine-chip flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15"
               style={{ opacity: i === 0 ? 1 : 0 }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               <span className="text-white/90 text-xs sm:text-sm font-semibold">{s.label}</span>
               <span className="text-white/45 text-[11px] hidden sm:inline">· {s.caption}</span>
             </div>
@@ -148,23 +148,23 @@ const HeroSection = () => {
           <div ref={contentRef} className="cine-content max-w-5xl text-center flex flex-col items-center justify-center">
             {/* Kicker */}
             <div className="hero-word inline-flex items-center justify-center gap-3 mb-7" style={{ animationDelay: "0.05s" }}>
-              <span className="h-px w-10 bg-gold/70" />
-              <span className="hero-kicker text-gold text-xs sm:text-sm font-semibold uppercase tracking-wider">
+              <span className="h-px w-10 bg-primary/70" />
+              <span className="hero-kicker text-primary text-xs sm:text-sm font-semibold uppercase tracking-wider">
                 مرجع تخصصی دکوراسیون و طراحی داخلی
               </span>
-              <span className="h-px w-10 bg-gold/70" />
+              <span className="h-px w-10 bg-primary/70" />
             </div>
 
             {/* Strictly single-line centered oversized 3D headline */}
             <h1 className="w-full text-center py-4 select-none pointer-events-none drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
               <span className="block whitespace-nowrap overflow-visible text-[clamp(1.8rem,6vw,5.5rem)] leading-none font-black">
                 <span className="text-3d-luxury mr-2">خانه رویایی‌تان را</span>
-                <span className="text-3d-luxury-gold"> طراحی کنید</span>
+                <span className="text-3d-luxury"> طراحی کنید</span>
               </span>
             </h1>
 
             {/* Animated gold rule */}
-            <div className="hero-rule h-[3px] w-40 sm:w-64 bg-gold mt-7 mx-auto rounded-full" style={{ animationDelay: "0.9s" }} />
+            <div className="hero-rule h-[3px] w-40 sm:w-64 bg-primary mt-7 mx-auto rounded-full" style={{ animationDelay: "0.9s" }} />
 
             {/* Subhead */}
             <p className="hero-word mt-8 text-base sm:text-2xl text-white/95 max-w-3xl mx-auto leading-relaxed font-medium drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" style={{ animationDelay: "1.0s" }}>
@@ -173,7 +173,7 @@ const HeroSection = () => {
 
             {/* Search — the marketplace CTA */}
             <div className="hero-word mt-10 max-w-2xl mx-auto" style={{ animationDelay: "1.1s" }}>
-              <div className="flex items-center bg-white/[0.07] backdrop-blur-xl border border-white/15 rounded-full overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/50 focus-within:border-gold/60">
+              <div className="flex items-center bg-white/[0.07] backdrop-blur-xl border border-white/15 rounded-full overflow-hidden shadow-luxury transition-all duration-300 hover:border-primary/50 focus-within:border-gold/60">
                 <input
                   type="text"
                   aria-label="جستجوی کالا یا سبک دکوراسیون"
@@ -194,7 +194,7 @@ const HeroSection = () => {
                 {QUICK_TAGS.map((tag) => (
                   <span
                     key={tag}
-                    className="px-4 py-1.5 rounded-full border border-white/15 text-white/70 text-sm hover:border-gold/50 hover:text-gold cursor-pointer transition-all duration-300"
+                    className="px-4 py-1.5 rounded-full border border-white/15 text-white/70 text-sm hover:border-primary/50 hover:text-primary cursor-pointer transition-all duration-300"
                   >
                     {tag}
                   </span>
@@ -213,7 +213,7 @@ const HeroSection = () => {
               </a>
               <a
                 href="#complete-sets"
-                className="group text-white px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 border border-white/25 hover:border-gold/60 hover:text-gold transition-colors backdrop-blur-sm"
+                className="group text-white px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 border border-white/25 hover:border-gold/60 hover:text-primary transition-colors backdrop-blur-sm"
               >
                 ست‌های آماده دکوراسیون
                 <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -226,7 +226,7 @@ const HeroSection = () => {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 z-20">
           <span className="text-[11px] tracking-widest uppercase">اسکرول کنید</span>
           <span className="scroll-cue w-5 h-9 rounded-full border border-white/30 flex items-start justify-center p-1.5">
-            <span className="w-1 h-2 rounded-full bg-gold" />
+            <span className="w-1 h-2 rounded-full bg-primary" />
           </span>
         </div>
 

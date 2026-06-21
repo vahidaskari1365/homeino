@@ -81,10 +81,10 @@ const Index = () => {
         {BACKGROUNDS.map((bg) => (
           <div
             key={bg.id}
-            className={`immersive-bg-layer ${activeBg === bg.id ? "opacity-[0.25] scale-100" : "opacity-0 scale-[1.03]"}`}
+            className={`immersive-bg-layer ${activeBg === bg.id ? "opacity-[0.85] scale-100" : "opacity-0 scale-[1.08]"}`}
           >
             <img src={bg.src} alt="Cinematic Interior Design" loading="lazy" />
-            <div className="absolute inset-0 bg-gradient-to-b from-charcoal/80 via-transparent to-charcoal/85" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/50" />
           </div>
         ))}
       </div>

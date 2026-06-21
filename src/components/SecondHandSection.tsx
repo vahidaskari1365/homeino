@@ -22,7 +22,7 @@ const SecondHandSection = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
           <div>
-            <span className="text-gold text-sm font-semibold tracking-[0.2em] uppercase">آگهی دست دوم</span>
+            <span className="text-primary text-sm font-semibold tracking-[0.2em] uppercase">آگهی دست دوم</span>
             <h2 className="text-4xl md:text-6xl font-black text-foreground mt-3 tracking-tight">بخرید، بفروشید</h2>
             <p className="text-muted-foreground mt-4 max-w-lg text-lg">
               لوازم دست دوم خانهٔ خود را بفروشید یا با قیمت مناسب خرید کنید.
@@ -38,28 +38,28 @@ const SecondHandSection = () => {
             </button>
             <button 
               onClick={() => navigate("/second-hand")}
-              className="flex items-center gap-2 text-gold border border-gold/30 px-6 py-3 rounded-xl text-sm font-bold hover:bg-gold/5 transition-colors"
+              className="flex items-center gap-2 text-primary border border-primary/30 px-6 py-3 rounded-xl text-sm font-bold hover:bg-primary/5 transition-colors"
             >
               مشاهده همه آگهی‌ها
             </button>
           </div>
         </div>
 
-        <div className="columns-2 lg:columns-4 gap-5 space-y-5 [column-fill:_auto]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {ads.map((ad, idx) => {
             const isLiked = !!liked[idx];
             return (
               <article
                 key={idx}
                 onClick={() => navigate("/second-hand")}
-                className="group break-inside-avoid inline-block w-full mb-5 rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-gold/30 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500 cursor-pointer relative"
+                className="group w-full rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-primary/30 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500 cursor-pointer relative flex flex-col shadow-card"
               >
                 <div className="relative overflow-hidden">
                   <img
                     src={ad.image}
                     alt={ad.title}
                     loading="lazy"
-                    className="w-full aspect-[4/5] object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+                    className="w-full aspect-square sm:aspect-[4/5] object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
                   />
 
                   {/* Badges */}
@@ -75,7 +75,7 @@ const SecondHandSection = () => {
                       </span>
                     )}
                     {ad.isFeatured && (
-                      <span className="flex items-center gap-1 bg-gold text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                      <span className="flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
                         <Sparkles size={12} />
                         ویژه
                       </span>
@@ -102,10 +102,10 @@ const SecondHandSection = () => {
                       {ad.city}
                     </div>
                     <div className="flex items-center justify-between border-t border-white/20 pt-2">
-                      <span className="text-gold font-extrabold text-sm">
+                      <span className="text-primary font-extrabold text-sm">
                         {ad.price} <span className="text-[10px] text-gray-300">تومان</span>
                       </span>
-                      <span className="text-[10px] bg-gold/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
+                      <span className="text-[10px] bg-primary/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
                         مشاهده آگهی
                       </span>
                     </div>
@@ -120,7 +120,7 @@ const SecondHandSection = () => {
                       <MapPin size={12} />
                       {ad.city}
                     </div>
-                    <div className="text-gold font-bold">
+                    <div className="text-primary font-bold">
                       {ad.price} <span className="text-[10px] text-muted-foreground font-normal">تومان</span>
                     </div>
                   </div>
