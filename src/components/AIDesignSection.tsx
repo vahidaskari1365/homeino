@@ -422,7 +422,7 @@ const AIDesignSection = () => {
             {/* Design styles and filters picker */}
             <div className="mt-6 flex flex-col sm:flex-row gap-5">
               <div className="flex-1">
-                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">سبک دکوراسیون (STYLE)</div>
+                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">سبک دکوراسیون</div>
                 <div className="flex flex-wrap gap-2">
                   {STYLES.map((s) => (
                     <button
@@ -441,7 +441,7 @@ const AIDesignSection = () => {
               </div>
 
               <div className="flex-1">
-                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">وسایل مورد استفاده (ITEMS TO USE)</div>
+                <div className="text-xs font-bold text-stone-400 mb-3 tracking-widest text-right">وسایل مورد استفاده</div>
                 <div className="flex flex-wrap gap-2">
                   {furniture.map((f) => {
                     const Icon = f.icon;
