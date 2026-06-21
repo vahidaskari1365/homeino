@@ -28,7 +28,7 @@ const BACKGROUNDS = [
   { id: "ai-design", src: imgLiving }, // Sitting on sofa
   { id: "inspiration", src: sceneBedroom }, // Cozy Bedroom
   { id: "budget", src: imgBedroom }, // Study Room
-  { id: "secondhand", src: sceneKitchen }, // Sleek Kitchen
+  { id: "secondhand", src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80" }, // Sleek Kitchen
 ];
 
 const Index = () => {

@@ -35,7 +35,7 @@ const CategoriesSection = () => {
           <h2 className="text-3xl md:text-5xl font-black text-foreground mt-3 tracking-tight">
             همه نیازهای خانه شما
           </h2>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-base sm:text-lg">
+          <p className="text-white mt-4 max-w-xl mx-auto text-base sm:text-lg">
             از مبلمان تا دکور، از روشنایی تا پرده و فرش — هر آنچه برای زیبایی خانه نیاز دارید
           </p>
         </div>
