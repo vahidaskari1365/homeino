@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { MapPin, Phone, Globe, Package, Store, BadgeCheck, CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
@@ -49,6 +49,8 @@ const ALL = "all";
 const PAGE_SIZE = 12;
 
 const Shops = () => {
+  const [searchParams] = useSearchParams();
+  const catParam = searchParams.get("category");
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -74,10 +76,19 @@ const Shops = () => {
   useEffect(() => {
     const loadCategories = async () => {
       const { data } = await supabase.from("producer_categories").select("id, name, slug").order("name");
-      setCategories((data as Category[]) ?? []);
+      const fetchedCategories = (data as Category[]) ?? [];
+      setCategories(fetchedCategories);
+
+      if (catParam) {
+        const found = fetchedCategories.find(c => c.slug === catParam || c.id === catParam || c.name === catParam);
+        if (found) {
+          setCategory(found.id);
+          setActiveTab("products");
+        }
+      }
     };
     loadCategories();
-  }, []);
+  }, [catParam]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -368,40 +379,60 @@ const Shops = () => {
             ) : (
               <>
                 <div className="columns-1 sm:columns-2 lg:columns-4 gap-6 [column-fill:_auto] space-y-6">
-                  {products.map((p) => (
-                    <Link to={`/product/${p.id}`} key={p.id} className="block break-inside-avoid mb-6">
-                      <Card className="overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg rounded-2xl h-full bg-card">
+                                    {products.map((p) => (
+                    <Link to={`/product/${p.id}`} key={p.id} className="block break-inside-avoid mb-6 group">
+                      <Card className="relative overflow-hidden border border-border/50 hover:border-gold/50 transition-all duration-300 hover:shadow-luxury rounded-2xl h-full bg-card">
                         <div className="relative bg-muted overflow-hidden">
                           {p.image_url ? (
                             <OptimizedImage 
                               src={p.image_url} 
                               alt={p.name}
-                              className="w-full h-auto max-h-[350px] object-cover hover:scale-105 transition-transform duration-500" 
+                              className="w-full h-auto max-h-[400px] object-cover transition-transform duration-500 group-hover:scale-105" 
                             />
                           ) : (
-                            <div className="aspect-[4/3] w-full flex items-center justify-center text-muted-foreground">
+                            <div className="aspect-[4/3] w-full flex items-center justify-center text-muted-foreground bg-muted">
                               <Package size={40} />
                             </div>
                           )}
-                        </div>
-                        <CardContent className="p-4 space-y-2">
-                          <h3 className="font-bold text-base line-clamp-1">{p.name}</h3>
-                          <p className="text-xs text-muted-foreground font-semibold">{p.profiles?.brand_name}</p>
-                          <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                            {p.price ? (
-                              <span className="text-gold font-extrabold text-base">
-                                {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+
+                          {/* Hover Info Overlay */}
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 text-white z-10">
+                            <span className="text-[10px] text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-full w-fit mb-2">
+                              {p.profiles?.city || "هومینور"}
+                            </span>
+                            <h3 className="font-bold text-base line-clamp-2 mb-1">{p.name}</h3>
+                            <p className="text-xs text-gray-300 font-medium mb-3">{p.profiles?.brand_name}</p>
+
+                            <div className="flex items-center justify-between border-t border-white/20 pt-2 mt-1">
+                              {p.price ? (
+                                <span className="text-gold font-extrabold text-sm">
+                                  {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                                </span>
+                              ) : (
+                                <span className="text-gray-300 text-xs font-semibold">استعلام قیمت</span>
+                              )}
+                              <span className="text-[11px] font-bold text-white bg-gold/80 px-2.5 py-1 rounded-lg">
+                                مشاهده جزئیات
                               </span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>
-                            )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Static content under card (visible normally) */}
+                        <div className="p-4 space-y-2">
+                          <h3 className="font-bold text-sm text-foreground line-clamp-1">{p.name}</h3>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{p.profiles?.brand_name}</span>
                             {p.profiles?.city && (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
                                 <MapPin size={12} />{p.profiles.city}
                               </span>
                             )}
                           </div>
-                        </CardContent>
+                          <div className="text-gold font-bold text-xs pt-1 border-t border-border/40 mt-1">
+                            {p.price ? `${new Intl.NumberFormat("fa-IR").format(p.price)} تومان` : "استعلام قیمت"}
+                          </div>
+                        </div>
                       </Card>
                     </Link>
                   ))}

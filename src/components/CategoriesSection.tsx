@@ -1,19 +1,32 @@
+import { useNavigate } from "react-router-dom";
 import { Armchair, Lamp, Palette, Flower2, Frame, Bed, Megaphone, Store } from "lucide-react";
 
 const categories = [
-  { icon: Armchair, label: "مبلمان", count: "۲,۴۰۰+" },
-  { icon: Palette, label: "فرش و قالی", count: "۱,۸۰۰+" },
-  { icon: Lamp, label: "لوستر و آباژور", count: "۹۵۰+" },
-  { icon: Frame, label: "پرده", count: "۱,۲۰۰+" },
-  { icon: Bed, label: "کالای خواب", count: "۸۰۰+" },
-  { icon: Palette, label: "دکور و کالای چوبی", count: "۶۵۰+" },
-  { icon: Frame, label: "تابلو و آثار هنری", count: "۴۲۰+" },
-  { icon: Flower2, label: "گل و گیاه", count: "۳۴۰+" },
-  { icon: Store, label: "فروشگاه‌ها", count: "۲۸۰+" },
-  { icon: Megaphone, label: "آگهی دست دوم", count: "۳,۵۰۰+" },
+  { icon: Armchair, label: "مبلمان", slug: "furniture", count: "۲,۴۰۰+" },
+  { icon: Palette, label: "فرش و قالی", slug: "carpet", count: "۱,۸۰۰+" },
+  { icon: Lamp, label: "لوستر و آباژور", slug: "lighting", count: "۹۵۰+" },
+  { icon: Frame, label: "پرده", slug: "curtain", count: "۱,۲۰۰+" },
+  { icon: Bed, label: "کالای خواب", slug: "bedding", count: "۸۰۰+" },
+  { icon: Palette, label: "دکور و کالای چوبی", slug: "wood-decor", count: "۶۵۰+" },
+  { icon: Frame, label: "تابلو و آثار هنری", slug: "art", count: "۴۲۰+" },
+  { icon: Flower2, label: "گل و گیاه", slug: "plants", count: "۳۴۰+" },
+  { icon: Store, label: "فروشگاه‌ها", slug: "shops", count: "۲۸۰+" },
+  { icon: Megaphone, label: "آگهی دست دوم", slug: "second-hand", count: "۳,۵۰۰+" },
 ];
 
 const CategoriesSection = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (slug: string) => {
+    if (slug === "shops") {
+      navigate("/shops");
+    } else if (slug === "second-hand") {
+      navigate("/second-hand");
+    } else {
+      navigate(`/shops?category=${slug}`);
+    }
+  };
+
   return (
     <section id="categories" className="py-24 bg-background">
       <div className="container mx-auto px-6">
@@ -27,12 +40,13 @@ const CategoriesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4" style={{ perspective: '1500px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-4" style={{ perspective: '1500px' }}>
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
               <div
                 key={cat.label}
+                onClick={() => handleCategoryClick(cat.slug)}
                 className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-gold/40 cursor-pointer transition-all duration-500"
                 style={{ 
                   transformStyle: 'preserve-3d',
@@ -50,8 +64,7 @@ const CategoriesSection = () => {
                       inset 0 2px 6px rgba(255, 255, 255, 0.4),
                       inset 0 -2px 6px rgba(0, 0, 0, 0.15),
                       inset 2px 0 4px rgba(255, 255, 255, 0.2),
-                      inset -2px 0 4px rgba(0, 0, 0, 0.05)
-                    `,
+                      inset -2px 0 4px rgba(0, 0, 0, 0.05)\n                    `,
                     transform: 'translateZ(32px) rotateX(-8deg)',
                     transformStyle: 'preserve-3d'
                   }}

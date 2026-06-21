@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import PromoteListingDialog from "@/components/PromoteListingDialog";
-import { Loader2, MapPin, Tag, Plus, Flame, Sparkles, Trash2, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, MapPin, Tag, Plus, Flame, Sparkles, Trash2, ChevronRight, ChevronLeft, Phone } from "lucide-react";
 import SEO from "@/components/SEO";
 
 type Listing = {
@@ -56,6 +56,8 @@ const SecondHand = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", price: "", city: "", phone: "", image_url: "" });
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   
   // Pagination
   const [page, setPage] = useState(0);
@@ -126,24 +128,77 @@ const SecondHand = () => {
     const isFeatured = l.is_featured && (!l.featured_until || new Date(l.featured_until).getTime() > now);
     const isUrgent = l.is_urgent && (!l.urgent_until || new Date(l.urgent_until).getTime() > now);
     return (
-      <Card key={l.id} className={`break-inside-avoid mb-4 inline-block w-full overflow-hidden transition rounded-2xl ${isFeatured ? "border-gold ring-1 ring-gold/40 shadow-lg" : "hover:border-gold/40"}`}>
-        <div className="relative">
+      <Card 
+        key={l.id} 
+        onClick={() => { setSelectedListing(l); setIsDetailOpen(true); }}
+        className={`break-inside-avoid mb-4 inline-block w-full overflow-hidden transition-all duration-300 rounded-2xl cursor-pointer border border-border/50 hover:border-gold/50 hover:shadow-luxury group relative bg-card ${isFeatured ? "border-gold ring-1 ring-gold/40 shadow-md" : ""}`}
+      >
+        <div className="relative overflow-hidden">
           {l.image_url ? (
-            <img src={l.image_url} alt={l.title} className="w-full h-auto max-h-[320px] min-h-[160px] object-cover" />
+            <img 
+              src={l.image_url} 
+              alt={l.title} 
+              className="w-full h-auto max-h-[350px] min-h-[160px] object-cover transition-transform duration-500 group-hover:scale-105" 
+            />
           ) : (
-            <div className="w-full h-44 bg-muted flex items-center justify-center"><Tag size={32} className="text-muted-foreground/30" /></div>
+            <div className="w-full h-44 bg-muted flex items-center justify-center">
+              <Tag size={32} className="text-muted-foreground/30" />
+            </div>
           )}
-          <div className="absolute top-2 right-2 flex flex-col gap-1">
-            {isFeatured && <Badge className="bg-gold text-primary-foreground"><Sparkles size={12} className="ml-1" />ویژه</Badge>}
-            {isUrgent && <Badge variant="destructive"><Flame size={12} className="ml-1" />فوری</Badge>}
+
+          {/* Badge overlays on top corner */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+            {isFeatured && <Badge className="bg-gold text-primary-foreground"><Sparkles size={10} className="ml-1" />ویژه</Badge>}
+            {isUrgent && <Badge variant="destructive" className="bg-red-500"><Flame size={10} className="ml-1" />فوری</Badge>}
+          </div>
+
+          {/* Pinterest-style Hover Info Overlay */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 text-white z-20">
+            <h3 className="font-bold text-base line-clamp-2 mb-1">{l.title}</h3>
+            {l.city && (
+              <div className="flex items-center gap-1 text-xs text-gray-300 mb-2">
+                <MapPin size={12} />
+                {l.city}
+              </div>
+            )}
+            {l.description && (
+              <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed">
+                {l.description}
+              </p>
+            )}
+            <div className="flex items-center justify-between border-t border-white/20 pt-2">
+              {l.price ? (
+                <span className="text-gold font-extrabold text-sm">
+                  {Number(l.price).toLocaleString("fa-IR")} تومان
+                </span>
+              ) : (
+                <span className="text-gray-300 text-xs">توافقی</span>
+              )}
+              <span className="text-[10px] bg-gold/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
+                مشاهده جزئیات
+              </span>
+            </div>
           </div>
         </div>
-        <CardContent className="pt-4 space-y-2">
-          <h3 className="font-bold">{l.title}</h3>
-          {l.city && <div className="flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={14} />{l.city}</div>}
-          {l.price && <div className="text-gold font-bold">{Number(l.price).toLocaleString("fa-IR")} تومان</div>}
+
+        {/* Regular static content underneath (visible on mobile / when not hovered) */}
+        <CardContent className="p-4 space-y-2 group-hover:md:opacity-80 transition-opacity duration-300">
+          <h3 className="font-bold text-foreground line-clamp-1">{l.title}</h3>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            {l.city && (
+              <div className="flex items-center gap-1">
+                <MapPin size={12} />
+                {l.city}
+              </div>
+            )}
+            {l.price ? (
+              <div className="text-gold font-bold">{Number(l.price).toLocaleString("fa-IR")} تومان</div>
+            ) : (
+              <div className="text-muted-foreground">توافقی</div>
+            )}
+          </div>
           {mineMode && (
-            <div className="flex flex-col gap-2 pt-2 border-t">
+            <div className="flex flex-col gap-2 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
               <div className="text-xs text-muted-foreground">
                 وضعیت: {l.approval_status === "approved" ? "تأیید شده" : l.approval_status === "pending" ? "در انتظار تأیید" : "رد شده"}
               </div>
@@ -260,6 +315,76 @@ const SecondHand = () => {
         )}
       </main>
       <Footer />
+
+      {/* Listing Detail Dialog */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="sm:max-w-[550px] overflow-hidden rounded-3xl border border-border/40 bg-card p-0" dir="rtl">
+          {selectedListing && (
+            <div className="flex flex-col">
+              {/* Image Header */}
+              <div className="relative w-full h-64 bg-muted overflow-hidden">
+                {selectedListing.image_url ? (
+                  <img 
+                    src={selectedListing.image_url} 
+                    alt={selectedListing.title} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <Tag size={48} className="text-muted-foreground/30" />
+                  </div>
+                )}
+                {/* Badges */}
+                <div className="absolute top-4 right-4 flex flex-col gap-1">
+                  {selectedListing.is_featured && <Badge className="bg-gold text-primary-foreground"><Sparkles size={12} className="ml-1" />آگهی ویژه</Badge>}
+                  {selectedListing.is_urgent && <Badge variant="destructive" className="bg-red-500"><Flame size={12} className="ml-1" />آگهی فوری</Badge>}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground leading-snug">{selectedListing.title}</h2>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+                    <MapPin size={14} />
+                    <span>{selectedListing.city || "تهران"}</span>
+                    <span className="text-border/60">•</span>
+                    <span>ثبت شده در: {new Date(selectedListing.created_at).toLocaleDateString("fa-IR")}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/30 pt-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">قیمت</span>
+                    <span className="text-xl font-black text-gold mt-1">
+                      {selectedListing.price ? `${Number(selectedListing.price).toLocaleString("fa-IR")} تومان` : "توافقی"}
+                    </span>
+                  </div>
+
+                  {selectedListing.phone && (
+                    <a 
+                      href={`tel:${selectedListing.phone}`}
+                      className="flex items-center gap-2 bg-emerald-brand hover:bg-emerald-brand/90 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-colors"
+                    >
+                      <Phone size={16} />
+                      تماس: {selectedListing.phone}
+                    </a>
+                  )}
+                </div>
+
+                {selectedListing.description && (
+                  <div className="border-t border-border/30 pt-4">
+                    <h4 className="text-sm font-bold text-foreground mb-2">توضیحات آگهی</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {selectedListing.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
