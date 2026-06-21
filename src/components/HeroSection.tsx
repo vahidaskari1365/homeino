@@ -155,7 +155,7 @@ const HeroSection = () => {
             </div>
 
             {/* Oversized kinetic headline */}
-            <h1 className="flex flex-wrap justify-end items-end gap-x-[0.28em] font-black text-white tracking-[-0.03em] leading-[0.95] text-[clamp(2.75rem,11vw,8.5rem)] drop-shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
+            <h1 className="flex flex-wrap justify-end items-end gap-x-[0.22em] font-extrabold text-white tracking-[-0.02em] leading-[1.08] text-[clamp(2rem,5.5vw,4.5rem)] drop-shadow-[0_6px_30px_rgba(0,0,0,0.4)]">
               {HEADLINE.map((w, i) => (
                 <span key={i} className="contents">
                   {w.break && <span className="basis-full h-0" />}
