@@ -47,7 +47,7 @@ const CategoriesSection = () => {
               <div
                 key={cat.label}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className="group relative overflow-hidden aspect-[3/4] rounded-[2rem] cursor-pointer shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-2 border border-border/40"
+                className="group relative overflow-hidden aspect-[3/4] rounded-[2rem] cursor-pointer shadow-lg hover:shadow-luxury transition-all duration-500 hover:-translate-y-2.5 border border-stone-200/80 dark:border-stone-800/80"
               >
                 {/* Real High-End Interior Image */}
                 <img
@@ -65,17 +65,17 @@ const CategoriesSection = () => {
                   <span className="text-[10px] font-bold text-white tracking-widest">HOMEINO</span>
                 </div>
 
-                {/* Glassmorphic Bottom Panel containing Labels */}
-                <div className="absolute inset-x-3 bottom-3 p-4 rounded-[1.4rem] bg-white/85 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-white/5 flex flex-col gap-0.5 transition-all duration-300 group-hover:bg-white/95">
+                {/* High-Contrast Luxury Dark Stone Bottom Panel */}
+                <div className="absolute inset-x-3 bottom-3 p-4 rounded-[1.4rem] bg-stone-900/90 dark:bg-stone-950/95 backdrop-blur-md border border-white/10 flex flex-col gap-0.5 transition-all duration-500 group-hover:bg-primary group-hover:border-primary/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                    <span className="text-base font-bold text-white transition-colors duration-300">
                       {cat.label}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-primary transition-all duration-300">
                       <Icon size={15} />
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-stone-300 transition-colors duration-300 group-hover:text-white/80">
                     {cat.count} کالا
                   </span>
                 </div>

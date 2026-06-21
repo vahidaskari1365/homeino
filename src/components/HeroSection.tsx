@@ -107,7 +107,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="cine-hero" style={{ height: "230vh" }}>
+    <section ref={sectionRef} className="cine-hero" style={{ height: "120vh" }}>
       <div className="cine-stage flex items-center">
         {/* Cinematic scene layers (cross-fade on scroll) */}
         {SCENES.map((s, i) => (
