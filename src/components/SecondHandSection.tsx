@@ -45,14 +45,14 @@ const SecondHandSection = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="columns-2 lg:columns-4 gap-5 space-y-5 [column-fill:_auto]">
           {ads.map((ad, idx) => {
             const isLiked = !!liked[idx];
             return (
               <article
                 key={idx}
                 onClick={() => navigate("/second-hand")}
-                className="group rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-gold/30 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500 cursor-pointer relative"
+                className="group break-inside-avoid inline-block w-full mb-5 rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-gold/30 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500 cursor-pointer relative"
               >
                 <div className="relative overflow-hidden">
                   <img
