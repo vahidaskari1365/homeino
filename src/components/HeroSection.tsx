@@ -143,44 +143,36 @@ const HeroSection = () => {
           ))}
         </div>
 
-        {/* Foreground content */}
-        <div className="relative z-10 container mx-auto px-6 sm:px-10">
-          <div ref={contentRef} className="cine-content max-w-5xl text-right">
+        {/* Foreground content - perfectly centered, single-line 3D text */}
+        <div className="relative z-10 container mx-auto px-6 sm:px-10 flex items-center justify-center min-h-[85vh]">
+          <div ref={contentRef} className="cine-content max-w-5xl text-center flex flex-col items-center justify-center">
             {/* Kicker */}
-            <div className="hero-word inline-flex items-center gap-3 mb-7" style={{ animationDelay: "0.05s" }}>
+            <div className="hero-word inline-flex items-center justify-center gap-3 mb-7" style={{ animationDelay: "0.05s" }}>
               <span className="h-px w-10 bg-gold/70" />
-              <span className="hero-kicker text-gold text-[11px] sm:text-xs font-semibold uppercase">
+              <span className="hero-kicker text-gold text-xs sm:text-sm font-semibold uppercase tracking-wider">
                 مرجع تخصصی دکوراسیون و طراحی داخلی
               </span>
+              <span className="h-px w-10 bg-gold/70" />
             </div>
 
-            {/* Oversized kinetic headline */}
-            <h1 className="flex flex-wrap justify-end items-end gap-x-[0.22em] font-extrabold text-white tracking-[-0.02em] leading-[1.08] text-[clamp(2rem,5.5vw,4.5rem)] drop-shadow-[0_6px_30px_rgba(0,0,0,0.4)]">
-              {HEADLINE.map((w, i) => (
-                <span key={i} className="contents">
-                  {w.break && <span className="basis-full h-0" />}
-                  <span className="hero-mask">
-                    <span
-                      className={`hero-word ${w.gold ? "text-gold" : "text-white"}`}
-                      style={{ animationDelay: `${0.2 + i * 0.12}s` }}
-                    >
-                      {w.text}
-                    </span>
-                  </span>
-                </span>
-              ))}
+            {/* Strictly single-line centered oversized 3D headline */}
+            <h1 className="w-full text-center py-4 select-none pointer-events-none drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
+              <span className="block whitespace-nowrap overflow-visible text-[clamp(1.8rem,6vw,5.5rem)] leading-none font-black">
+                <span className="text-3d-luxury mr-2">خانه رویایی‌تان را</span>
+                <span className="text-3d-luxury-gold"> طراحی کنید</span>
+              </span>
             </h1>
 
             {/* Animated gold rule */}
-            <div className="hero-rule h-[3px] w-40 sm:w-64 bg-gold mt-7 ml-auto rounded-full" style={{ animationDelay: "0.9s" }} />
+            <div className="hero-rule h-[3px] w-40 sm:w-64 bg-gold mt-7 mx-auto rounded-full" style={{ animationDelay: "0.9s" }} />
 
             {/* Subhead */}
-            <p className="hero-word mt-8 text-base sm:text-xl text-white/80 max-w-2xl ml-auto leading-relaxed" style={{ animationDelay: "1s" }}>
+            <p className="hero-word mt-8 text-base sm:text-2xl text-white/95 max-w-3xl mx-auto leading-relaxed font-medium drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" style={{ animationDelay: "1.0s" }}>
               از الهام گرفتن تا خرید، از طراحی با هوش مصنوعی تا تجهیز کامل خانه — همه چیز در یک پلتفرم.
             </p>
 
             {/* Search — the marketplace CTA */}
-            <div className="hero-word mt-10 max-w-2xl ml-auto" style={{ animationDelay: "1.1s" }}>
+            <div className="hero-word mt-10 max-w-2xl mx-auto" style={{ animationDelay: "1.1s" }}>
               <div className="flex items-center bg-white/[0.07] backdrop-blur-xl border border-white/15 rounded-full overflow-hidden shadow-luxury transition-all duration-300 hover:border-gold/50 focus-within:border-gold/60">
                 <input
                   type="text"
@@ -198,7 +190,7 @@ const HeroSection = () => {
               </div>
 
               {/* Quick tags */}
-              <div className="flex flex-wrap justify-end gap-2.5 mt-5">
+              <div className="flex flex-wrap justify-center gap-2.5 mt-5">
                 {QUICK_TAGS.map((tag) => (
                   <span
                     key={tag}
@@ -211,7 +203,7 @@ const HeroSection = () => {
             </div>
 
             {/* CTAs */}
-            <div className="hero-word flex flex-col sm:flex-row gap-4 justify-end mt-10" style={{ animationDelay: "1.2s" }}>
+            <div className="hero-word flex flex-col sm:flex-row gap-4 justify-center mt-10" style={{ animationDelay: "1.2s" }}>
               <a
                 href="#ai-design"
                 className="group gradient-gold text-charcoal px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:scale-[1.03] transition-transform shadow-luxury"

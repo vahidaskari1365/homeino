@@ -15,15 +15,15 @@ const styles = ["همه", "مدرن", "کلاسیک", "مینیمال", "لوک�
 type Pin = { image: string; title: string; style: string; saves: string; tag?: string };
 
 const pins: Pin[] = [
-  { image: imgLiving, title: "نشیمن مدرن با نور طلایی", style: "مدرن", saves: "۲٫۴k", tag: "ترند" },
-  { image: imgBath, title: "حمام لوکس با سنگ مرمر", style: "لوکس", saves: "۱٫۱k" },
+  { image: imgLiving, title: "نشیمن مدرن با نور طلایی", style: "مدرن", saves: "۲.۴k", tag: "ترند" },
+  { image: imgBath, title: "حمام لوکس با سنگ مرمر", style: "لوکس", saves: "۱.۱k" },
   { image: imgOffice, title: "گوشهٔ کار دنج و سبز", style: "مینیمال", saves: "۹۸۰" },
-  { image: imgClassic, title: "پذیرایی کلاسیک با فرش دست‌باف", style: "کلاسیک", saves: "۳٫۲k", tag: "محبوب" },
-  { image: imgKitchen, title: "آشپزخانهٔ طراحی‌شده", style: "مدرن", saves: "۱٫۸k" },
+  { image: imgClassic, title: "پذیرایی کلاسیک با فرش دست‌باف", style: "کلاسیک", saves: "۳.۲k", tag: "محبوب" },
+  { image: imgKitchen, title: "آشپزخانهٔ طراحی‌شده", style: "مدرن", saves: "۱.۸k" },
   { image: imgDecor, title: "میز کنسول و دکور دست‌ساز", style: "مینیمال", saves: "۷۴۰" },
-  { image: imgBedroom, title: "اتاق خواب آرام و روشن", style: "مدرن", saves: "۲٫۱k" },
-  { image: imgKitchen2, title: "آشپزخانهٔ شیک با جزئیات طلایی", style: "لوکس", saves: "۱٫۳k" },
-  { image: imgBedroom2, title: "اتاق خواب با چوب گرم", style: "سنتی", saves: "۸۶۰" },
+  { image: imgBedroom, title: "اتاق خواب آرام و روشن", style: "مدرن", saves: "۲.۱k" },
+  { image: imgKitchen2, title: "آشپزخانهٔ شیک با جزیره سنگی", style: "لوکس", saves: "۱.۵k" },
+  { image: imgBedroom2, title: "اتاق خواب رویایی با نور گرم", style: "لوکس", saves: "۲.۷k", tag: "ویژه" },
 ];
 
 const InspirationSection = () => {
@@ -65,28 +65,28 @@ const InspirationSection = () => {
           ))}
         </div>
 
-        {/* Pinterest-style masonry board */}
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-5 [column-fill:_balance]">
+        {/* Pinterest-style masonry board with beautiful hover reveals */}
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-5 [column-fill:_auto] space-y-4">
           {visible.map((pin, idx) => {
             const isSaved = !!saved[idx];
             return (
               <article
                 key={pin.title}
-                className="group relative mb-4 md:mb-5 break-inside-avoid rounded-[1.4rem] overflow-hidden bg-card shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-1 cursor-pointer"
+                className="group relative break-inside-avoid inline-block w-full rounded-[1.4rem] overflow-hidden bg-card border border-border/50 hover:border-gold/30 shadow-card hover:shadow-luxury transition-all duration-500 hover:-translate-y-1 cursor-pointer"
               >
                 <img
                   src={pin.image}
                   alt={pin.title}
                   loading="lazy"
-                  className="w-full h-auto block object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"
+                  className="w-full h-auto block object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
                 />
 
-                {/* Hover scrim */}
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/10 to-charcoal/20 opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                {/* Hover glassmorphic scrim overlay */}
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 text-white z-10" />
 
-                {/* Top row: style badge + save button */}
-                <div className="absolute top-3 right-3 left-3 flex items-start justify-between">
-                  <span className="bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Overlaid items on top */}
+                <div className="absolute top-3 right-3 left-3 flex items-start justify-between z-20 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <span className="bg-white/20 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold px-3 py-1 rounded-full">
                     {pin.style}
                   </span>
                   <button
@@ -95,34 +95,46 @@ const InspirationSection = () => {
                       setSaved((s) => ({ ...s, [idx]: !s[idx] }));
                     }}
                     aria-label="ذخیره"
-                    className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
                       isSaved
                         ? "gradient-gold text-charcoal"
-                        : "bg-white/90 text-charcoal opacity-0 group-hover:opacity-100 hover:bg-white"
+                        : "bg-white/90 text-charcoal hover:bg-white"
                     }`}
                   >
-                    <Bookmark size={15} className={isSaved ? "fill-current" : ""} />
+                    <Bookmark size={13} className={isSaved ? "fill-current" : ""} />
                     {isSaved ? "ذخیره شد" : "ذخیره"}
                   </button>
                 </div>
 
-                {/* Trend/popular pill */}
+                {/* Trend/popular badge on top left when NOT hovered */}
                 {pin.tag && (
-                  <span className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity duration-300 bg-gold text-charcoal text-[11px] font-bold px-3 py-1 rounded-full shadow-luxury">
+                  <span className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity duration-300 bg-gold text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md z-20">
                     {pin.tag}
                   </span>
                 )}
 
-                {/* Bottom info */}
-                <div className="absolute bottom-0 right-0 left-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-400">
-                  <h3 className="text-white font-bold leading-snug mb-2">{pin.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-white/80 text-xs">
-                      <Heart size={13} className="fill-current text-gold" />
-                      {pin.saves} ذخیره
+                {/* Overlaid items on bottom */}
+                <div className="absolute bottom-3 right-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col gap-1.5 text-white">
+                  <h3 className="font-bold text-sm leading-snug line-clamp-2">{pin.title}</h3>
+                  <div className="flex items-center justify-between border-t border-white/20 pt-2 mt-1">
+                    <span className="flex items-center gap-1 text-[11px] text-gray-300">
+                      <Heart size={12} className="fill-current text-red-400" />
+                      {pin.saves} پسند
                     </span>
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white hover:bg-white/25 transition-colors">
-                      <Share2 size={14} />
+                    <span className="text-[10px] bg-gold/90 text-primary-foreground font-bold px-2.5 py-1 rounded-lg">
+                      الهام بگیرید
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fallback Static Card Content under pin (visible on mobile / when not hovered) */}
+                <div className="p-3.5 flex flex-col gap-1 md:hidden">
+                  <h3 className="font-bold text-xs text-foreground line-clamp-1">{pin.title}</h3>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1">
+                    <span>{pin.style}</span>
+                    <span className="flex items-center gap-1">
+                      <Heart size={11} className="fill-current text-red-500" />
+                      {pin.saves}
                     </span>
                   </div>
                 </div>

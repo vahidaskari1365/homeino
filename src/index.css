@@ -403,3 +403,71 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .tilt-card { transition: none !important; transform: none !important; }
 }
+
+/* Premium 3D Typography Depth - act like a $20k agency designer */
+.text-3d-luxury {
+  color: #ffffff;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  transform: translateZ(50px);
+  text-shadow: 
+    0 1px 0 #dfdfdf,
+    0 2px 0 #d5d5d5,
+    0 3px 0 #cccccc,
+    0 4px 0 #c0c0c0,
+    0 5px 0 #b5b5b5,
+    0 6px 1px rgba(0,0,0,0.1),
+    0 0 5px rgba(0,0,0,0.1),
+    0 1px 3px rgba(0,0,0,0.2),
+    0 3px 5px rgba(0,0,0,0.2),
+    0 5px 10px rgba(0,0,0,0.25),
+    0 10px 10px rgba(0,0,0,0.2),
+    0 20px 20px rgba(0,0,0,0.15);
+}
+
+.text-3d-luxury-gold {
+  color: #dfad56;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  transform: translateZ(50px);
+  text-shadow: 
+    0 1px 0 #c29548,
+    0 2px 0 #b38a3c,
+    0 3px 0 #a37d32,
+    0 4px 0 #947228,
+    0 5px 0 #85661d,
+    0 6px 1px rgba(0,0,0,0.2),
+    0 0 5px rgba(0,0,0,0.15),
+    0 1px 3px rgba(0,0,0,0.3),
+    0 3px 5px rgba(0,0,0,0.25),
+    0 5px 10px rgba(0,0,0,0.3),
+    0 10px 10px rgba(0,0,0,0.25),
+    0 20px 20px rgba(0,0,0,0.2);
+}
+
+/* Immersive background transition container */
+.immersive-scrolling-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background: #111111;
+}
+
+.immersive-bg-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+}
+
+.immersive-bg-layer img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

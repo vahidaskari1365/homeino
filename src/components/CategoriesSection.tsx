@@ -1,16 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { Armchair, Lamp, Palette, Flower2, Frame, Bed, Megaphone, Store } from "lucide-react";
+import { Armchair, Lamp, Palette, Flower2, Frame, Bed, Megaphone, Store, Bath, Star } from "lucide-react";
 
 const categories = [
   { icon: Armchair, label: "مبلمان", slug: "furniture", count: "۲,۴۰۰+" },
   { icon: Palette, label: "فرش و قالی", slug: "carpet", count: "۱,۸۰۰+" },
-  { icon: Lamp, label: "لوستر و آباژور", slug: "lighting", count: "۹۵۰+" },
+  { icon: Lamp, label: "لوستر و روشنایی", slug: "lighting", count: "۹۵۰+" },
   { icon: Frame, label: "پرده", slug: "curtain", count: "۱,۲۰۰+" },
   { icon: Bed, label: "کالای خواب", slug: "bedding", count: "۸۰۰+" },
   { icon: Palette, label: "دکور و کالای چوبی", slug: "wood-decor", count: "۶۵۰+" },
   { icon: Frame, label: "تابلو و آثار هنری", slug: "art", count: "۴۲۰+" },
-  { icon: Flower2, label: "گل و گیاه", slug: "plants", count: "۳۴۰+" },
-  { icon: Store, label: "فروشگاه‌ها", slug: "shops", count: "۲۸۰+" },
+  { icon: Bath, label: "سرویس بهداشتی و حمام", slug: "bathroom", count: "۳۴۰+" },
+  { icon: Star, label: "اکسسوری خانه", slug: "accessories", count: "۲۸۰+" },
   { icon: Megaphone, label: "آگهی دست دوم", slug: "second-hand", count: "۳,۵۰۰+" },
 ];
 
@@ -28,14 +28,14 @@ const CategoriesSection = () => {
   };
 
   return (
-    <section id="categories" className="py-24 bg-background">
+    <section id="categories" className="py-24 bg-transparent relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="text-gold text-sm font-medium tracking-wider">دسته‌بندی‌ها</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mt-3">
+          <span className="text-gold text-sm font-semibold tracking-wider">دسته‌بندی‌ها</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mt-3">
             همه نیازهای خانه شما
           </h2>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
+          <p className="text-white/70 mt-4 max-w-xl mx-auto">
             از مبلمان تا دکور، از روشنایی تا گل و گیاه — هر آنچه برای زیبایی خانه نیاز دارید
           </p>
         </div>
@@ -47,7 +47,7 @@ const CategoriesSection = () => {
               <div
                 key={cat.label}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-gold/40 cursor-pointer transition-all duration-500"
+                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card/65 backdrop-blur-md border border-white/10 hover:border-gold/40 cursor-pointer transition-all duration-500 hover:shadow-luxury"
                 style={{ 
                   transformStyle: 'preserve-3d',
                   transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
@@ -56,32 +56,28 @@ const CategoriesSection = () => {
                 <div 
                   className="relative w-16 h-16 rounded-2xl flex items-center justify-center group-hover:text-gold transition-all duration-500"
                   style={{
-                    background: 'linear-gradient(145deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.7) 50%, hsl(var(--accent) / 0.5) 100%)',
+                    background: 'linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
                     boxShadow: `
-                      0 12px 24px -6px hsl(var(--accent) / 0.5),
-                      0 6px 12px -3px hsl(var(--accent) / 0.4),
-                      0 3px 6px -2px hsl(var(--accent) / 0.3),
-                      inset 0 2px 6px rgba(255, 255, 255, 0.4),
-                      inset 0 -2px 6px rgba(0, 0, 0, 0.15),
-                      inset 2px 0 4px rgba(255, 255, 255, 0.2),
-                      inset -2px 0 4px rgba(0, 0, 0, 0.05)\n                    `,
+                      0 12px 24px -6px rgba(0,0,0,0.3),
+                      inset 0 2px 6px rgba(255, 255, 255, 0.1),
+                      inset 0 -2px 6px rgba(0, 0, 0, 0.2)\n                    `,
                     transform: 'translateZ(32px) rotateX(-8deg)',
                     transformStyle: 'preserve-3d'
                   }}
                 >
                   {/* Top highlight for 3D effect */}
                   <div 
-                    className="absolute inset-x-2 top-1 h-1/3 rounded-lg opacity-60"
+                    className="absolute inset-x-2 top-1 h-1/3 rounded-lg opacity-40"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%)',
+                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
                       transform: 'translateZ(2px)'
                     }}
                   />
                   {/* Bottom shadow for depth */}
                   <div 
-                    className="absolute inset-x-2 bottom-1 h-1/4 rounded-lg opacity-40"
+                    className="absolute inset-x-2 bottom-1 h-1/4 rounded-lg opacity-30"
                     style={{
-                      background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)',
+                      background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%)',
                       transform: 'translateZ(2px)'
                     }}
                   />
@@ -95,16 +91,16 @@ const CategoriesSection = () => {
                   />
                   <Icon 
                     size={28} 
-                    className="relative text-muted-foreground group-hover:text-gold transition-colors duration-500"
+                    className="relative text-white/70 group-hover:text-gold transition-colors duration-500"
                     style={{
-                      filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))',
+                      filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3))',
                       transform: 'translateZ(16px) scale(1)',
                       transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
                     }}
                   />
                 </div>
-                <span className="text-sm font-medium text-foreground text-center">{cat.label}</span>
-                <span className="text-xs text-muted-foreground">{cat.count} محصول</span>
+                <span className="text-sm font-medium text-white group-hover:text-gold transition-colors duration-300 text-center">{cat.label}</span>
+                <span className="text-xs text-white/50">{cat.count} محصول</span>
               </div>
             );
           })}
