@@ -36,7 +36,8 @@ const SecondHandSection = () => {
                     src={ad.image}
                     alt={ad.title}
                     loading="lazy"
-                    className="w-full aspect-square sm:aspect-[4/5] object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+                    className="w-full aspect-square sm:aspect-[4/5] object-cover transition-transform ease-out group-hover:scale-105"
+                    style={{ transitionDuration: '900ms' }}
                   />
 
                   {/* Badges */}

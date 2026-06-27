@@ -113,8 +113,8 @@ const Index = () => {
         {BACKGROUNDS.map((bg) => (
           <div
             key={bg.id}
-            className="absolute inset-0 transition-all duration-[1300ms] ease-out will-change-transform-opacity"
-            style={getBgStyle(bg.id)}
+            className="absolute inset-0 transition-all ease-out will-change-transform-opacity"
+            style={{ transitionDuration: '1300ms', ...getBgStyle(bg.id) }}
           >
             <img src={bg.src} alt="Cinematic Interior Design Journey" className="w-full h-full object-cover" />
             {/* Elegant luxury cream-to-transparent overlay wash */}

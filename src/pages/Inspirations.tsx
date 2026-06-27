@@ -158,7 +158,8 @@ const Inspirations = () => {
                       src={item.image_url}
                       alt={item.title_fa || item.title}
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform ease-out group-hover:scale-105"
+                      style={{ transitionDuration: '900ms' }}
                     />
 
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 text-white z-10" />

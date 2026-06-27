@@ -31,9 +31,10 @@ const HeroSection = () => {
         {SCENES.map((s, i) => (
           <div
             key={i}
-            className={`absolute inset-0 transition-all duration-[1500ms] ease-in-out ${
+            className={`absolute inset-0 transition-all ease-in-out ${
               activeScene === i ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-105 blur-[2px]"
             }`}
+            style={{ transitionDuration: '1500ms' }}
           >
             <img src={s.src} alt={s.label} className="w-full h-full object-cover" />
           </div>
