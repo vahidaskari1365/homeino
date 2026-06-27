@@ -2,3 +2,12 @@ project_id = "nkxvkemsjajwvzxweucj"
 
 [functions.ai-redesign]
 verify_jwt = false
+
+[functions.inspiration-crawler]
+verify_jwt = false
+
+[functions.inspiration-ai-processor]
+verify_jwt = false
+
+[functions.inspiration-cron]
+verify_jwt = false

@@ -25,6 +25,8 @@ import SiteVisits from "./pages/SiteVisits.tsx";
 import Designers from "./pages/Designers.tsx";
 import SecondHand from "./pages/SecondHand.tsx";
 import AIDesign from "./pages/AIDesign.tsx";
+import Inspirations from "./pages/Inspirations.tsx";
+import InspirationDetail from "./pages/InspirationDetail.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -60,6 +62,8 @@ const App = () => (
                   <Route path="/designers" element={<Designers />} />
                   <Route path="/second-hand" element={<SecondHand />} />
                   <Route path="/ai-design" element={<AIDesign />} />
+                  <Route path="/inspirations" element={<Inspirations />} />
+                  <Route path="/inspirations/:id" element={<InspirationDetail />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/budget-estimator" element={<BudgetEstimator />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
