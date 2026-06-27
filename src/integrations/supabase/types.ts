@@ -177,6 +177,186 @@ export type Database = {
           },
         ]
       }
+      inspirations: {
+        Row: {
+          ai_processed: boolean | null
+          ai_translated: boolean | null
+          budget_range_max: number | null
+          budget_range_min: number | null
+          color_palette: Json | null
+          created_at: string | null
+          description: string | null
+          description_fa: string | null
+          id: string
+          image_url: string
+          room_type: Database["public"]["Enums"]["inspiration_room_type"] | null
+          save_count: number | null
+          source_name: string | null
+          source_rss_feed: string | null
+          source_url: string | null
+          style: Database["public"]["Enums"]["inspiration_style"] | null
+          tags: string[] | null
+          title: string
+          title_fa: string | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          ai_processed?: boolean | null
+          ai_translated?: boolean | null
+          budget_range_max?: number | null
+          budget_range_min?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          description?: string | null
+          description_fa?: string | null
+          id?: string
+          image_url: string
+          room_type?: Database["public"]["Enums"]["inspiration_room_type"] | null
+          save_count?: number | null
+          source_name?: string | null
+          source_rss_feed?: string | null
+          source_url?: string | null
+          style?: Database["public"]["Enums"]["inspiration_style"] | null
+          tags?: string[] | null
+          title: string
+          title_fa?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          ai_processed?: boolean | null
+          ai_translated?: boolean | null
+          budget_range_max?: number | null
+          budget_range_min?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          description?: string | null
+          description_fa?: string | null
+          id?: string
+          image_url?: string
+          room_type?: Database["public"]["Enums"]["inspiration_room_type"] | null
+          save_count?: number | null
+          source_name?: string | null
+          source_rss_feed?: string | null
+          source_url?: string | null
+          style?: Database["public"]["Enums"]["inspiration_style"] | null
+          tags?: string[] | null
+          title?: string
+          title_fa?: string | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      collection_items: {
+        Row: {
+          collection_id: string | null
+          created_at: string | null
+          id: string
+          inspiration_id: string | null
+        }
+        Insert: {
+          collection_id?: string | null
+          created_at?: string | null
+          id?: string
+          inspiration_id?: string | null
+        }
+        Update: {
+          collection_id?: string | null
+          created_at?: string | null
+          id?: string
+          inspiration_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "user_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_inspiration_id_fkey"
+            columns: ["inspiration_id"]
+            isOneToOne: false
+            referencedRelation: "inspirations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      inspiration_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          inspiration_id: string | null
+          product_id: string | null
+          x_position: number
+          y_position: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inspiration_id?: string | null
+          product_id?: string | null
+          x_position: number
+          y_position: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inspiration_id?: string | null
+          product_id?: string | null
+          x_position?: number
+          y_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_products_inspiration_id_fkey"
+            columns: ["inspiration_id"]
+            isOneToOne: false
+            referencedRelation: "inspirations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspiration_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_collections: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       designer_portfolio: {
         Row: {
           created_at: string
@@ -1251,6 +1431,23 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      inspiration_room_type:
+        | "living"
+        | "bedroom"
+        | "kitchen"
+        | "bathroom"
+        | "office"
+        | "dining"
+        | "outdoor"
+      inspiration_style:
+        | "modern"
+        | "classic"
+        | "minimal"
+        | "luxury"
+        | "traditional"
+        | "industrial"
+        | "scandinavian"
+        | "bohemian"
       promotion_status: "pending" | "active" | "expired" | "cancelled"
       promotion_type: "urgent" | "featured" | "bump"
       quote_request_type: "product" | "set" | "custom"
@@ -1428,6 +1625,25 @@ export const Constants = {
         "shipped",
         "delivered",
         "cancelled",
+      ],
+      inspiration_room_type: [
+        "living",
+        "bedroom",
+        "kitchen",
+        "bathroom",
+        "office",
+        "dining",
+        "outdoor",
+      ],
+      inspiration_style: [
+        "modern",
+        "classic",
+        "minimal",
+        "luxury",
+        "traditional",
+        "industrial",
+        "scandinavian",
+        "bohemian",
       ],
       promotion_status: ["pending", "active", "expired", "cancelled"],
       promotion_type: ["urgent", "featured", "bump"],

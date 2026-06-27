@@ -11,12 +11,12 @@ import type { Session } from "@supabase/supabase-js";
 import logo from "@/assets/homeino-logo.jpg";
 
 const navLinks = [
-  { label: "خانه", href: "#" },
-  { label: "دسته‌بندی‌ها", href: "#categories" },
-  { label: "الهام دکوراسیون", href: "#inspiration" },
+  { label: "خانه", href: "/" },
+  { label: "دسته‌بندی‌ها", href: "/#categories" },
+  { label: "الهام دکوراسیون", href: "/inspirations" },
   { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
   { label: "فروشگاه‌ها", href: "/shops" },
-  { label: "آگهی دست دوم", href: "#secondhand" },
+  { label: "آگهی دست دوم", href: "/second-hand" },
 ];
 
 const Navbar = () => {
@@ -47,13 +47,13 @@ const Navbar = () => {
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
-              href={link.href}
+              to={link.href}
               className="text-muted-foreground hover:text-gold transition-colors duration-300 text-sm font-medium"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -127,14 +127,14 @@ const Navbar = () => {
       {isOpen && (
         <div className="lg:hidden bg-background border-t border-border py-6 px-6">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
-              href={link.href}
+              to={link.href}
               className="block py-3 text-muted-foreground hover:text-gold transition-colors text-base"
               onClick={() => setIsOpen(false)}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
       )}
