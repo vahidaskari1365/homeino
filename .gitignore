@@ -3,6 +3,8 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+.npm_cache/
+package-lock.json
 
 # next.js
 /.next/
