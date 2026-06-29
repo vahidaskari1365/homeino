@@ -30,6 +30,7 @@ import InspirationDetail from "./pages/InspirationDetail.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
 import VisualSearch from "./pages/VisualSearch.tsx";
+import Projects from "./pages/Projects.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ const App = () => (
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/budget-estimator" element={<BudgetEstimator />} />
                   <Route path="/visual-search" element={<VisualSearch />} />
+                  <Route path="/projects" element={<Projects />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
