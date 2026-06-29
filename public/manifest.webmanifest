@@ -1,0 +1,52 @@
+{
+  "name": "هومینو | Homeino - مرجع دکوراسیون و لوازم خانه",
+  "short_name": "هومینو",
+  "description": "پلتفرم جامع دکوراسیون داخلی: طراحی با هوش مصنوعی، خرید مستقیم از تولیدکنندگان، ست‌های آماده دکوراسیون",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#155449",
+  "theme_color": "#155449",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "lifestyle", "home"],
+  "screenshots": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "صفحه اصلی هومینو"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "طراحی با AI",
+      "short_name": "AI",
+      "description": "طراحی دکوراسیون با هوش مصنوعی",
+      "url": "/ai-design",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64" }]
+    },
+    {
+      "name": "فروشگاه‌ها",
+      "short_name": "فروشگاه",
+      "description": "مشاهده فروشگاه‌های معتبر",
+      "url": "/shops",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64" }]
+    }
+  ]
+}

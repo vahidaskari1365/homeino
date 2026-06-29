@@ -1,0 +1,3 @@
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS contact_published BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS contact_published_at TIMESTAMPTZ;

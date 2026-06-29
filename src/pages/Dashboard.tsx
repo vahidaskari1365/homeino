@@ -1,0 +1,974 @@
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import {
+  Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
+  Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
+  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check,
+} from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { CustomerDashboard } from "@/components/CustomerDashboard";
+
+interface Category { id: string; name: string; slug: string; }
+interface Profile {
+  id: string; brand_name: string; contact_name: string | null;
+  phone: string | null; city: string | null; address: string | null;
+  description: string | null; website: string | null;
+  contact_published: boolean; contact_published_at: string | null;
+}
+interface Product {
+  id: string; name: string; description: string | null;
+  price: number | null; stock: number; image_url: string | null;
+  is_active: boolean; category_id: string | null;
+}
+
+type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+interface OrderItem {
+  id: string; product_name: string; unit_price: number; quantity: number;
+}
+interface Order {
+  id: string; recipient_name: string; phone: string; city: string | null;
+  address: string; note: string | null; status: OrderStatus;
+  total_amount: number; created_at: string; order_items: OrderItem[];
+}
+interface Inquiry {
+  id: string; name: string; phone: string; message: string;
+  is_read: boolean; created_at: string; product_id: string | null;
+}
+interface DailyView { day: string; views: number; }
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "در انتظار",
+  confirmed: "تأیید شده",
+  shipped: "ارسال شده",
+  delivered: "تحویل داده شده",
+  cancelled: "لغو شده",
+};
+const STATUS_COLOR: Record<OrderStatus, string> = {
+  pending: "bg-gold/15 text-gold border-gold/30",
+  confirmed: "bg-primary/15 text-primary border-primary/30",
+  shipped: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  delivered: "bg-emerald-brand/15 text-emerald-brand border-emerald-brand/30",
+  cancelled: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+const profileSchema = z.object({
+  brand_name: z.string().trim().min(1, "نام برند الزامی است").max(120),
+  contact_name: z.string().trim().max(120).optional().or(z.literal("")),
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  city: z.string().trim().max(80).optional().or(z.literal("")),
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  description: z.string().trim().max(1000).optional().or(z.literal("")),
+  website: z.string().trim().max(255).optional().or(z.literal("")),
+});
+
+const productSchema = z.object({
+  name: z.string().trim().min(1, "نام محصول الزامی است").max(150),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  price: z.coerce.number().min(0).max(999999999).optional(),
+  stock: z.coerce.number().int().min(0).max(999999),
+  category_id: z.string().nullable().optional(),
+  is_active: z.boolean(),
+});
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [viewMode, setViewMode] = useState<"producer" | "customer">("producer");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
+  const [dailySales, setDailySales] = useState<{ day: string; amount: number }[]>([]);
+  const [productViews, setProductViews] = useState<Record<string, number>>({});
+
+  // product dialog
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [pName, setPName] = useState("");
+  const [pDesc, setPDesc] = useState("");
+  const [pPrice, setPPrice] = useState<string>("");
+  const [pStock, setPStock] = useState<string>("0");
+  const [pCat, setPCat] = useState<string>("none");
+  const [pActive, setPActive] = useState(true);
+  const [pImageFile, setPImageFile] = useState<File | null>(null);
+  const [pImageUrl, setPImageUrl] = useState<string>("");
+
+  // ---- bootstrap ----
+  useEffect(() => {
+    let mounted = true;
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { navigate("/auth", { replace: true }); return; }
+      if (!mounted) return;
+      setUserId(session.user.id);
+      await loadAll(session.user.id);
+      setLoading(false);
+    };
+    init();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!s) navigate("/auth", { replace: true });
+    });
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadAll = async (uid: string) => {
+    const [{ data: prof }, { data: cats }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
+      supabase.from("producer_categories").select("id, name, slug").order("name"),
+    ]);
+    if (cats) setCategories(cats);
+    if (prof) {
+      setProfile(prof as Profile);
+      setViewMode("producer");
+      const [{ data: pc }, { data: prods }] = await Promise.all([
+        supabase.from("profile_categories").select("category_id").eq("profile_id", prof.id),
+        supabase.from("products").select("*").eq("profile_id", prof.id).order("created_at", { ascending: false }),
+      ]);
+      if (pc) setSelectedCats(pc.map((r) => r.category_id));
+      if (prods) setProducts(prods as Product[]);
+      await loadSellerData(prof.id);
+    } else {
+      setViewMode("customer");
+    }
+  };
+
+  const loadSellerData = async (profileId: string) => {
+    const [ordersRes, inqRes, dailyRes, totalsRes] = await Promise.all([
+      supabase.from("orders")
+        .select("id, recipient_name, phone, city, address, note, status, total_amount, created_at, order_items(id, product_name, unit_price, quantity)")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false }),
+      supabase.from("inquiries")
+        .select("*").eq("profile_id", profileId).order("created_at", { ascending: false }),
+      supabase.from("product_daily_views")
+        .select("day, views").eq("profile_id", profileId).order("day", { ascending: true }),
+      supabase.from("product_views")
+        .select("product_id").eq("profile_id", profileId),
+    ]);
+
+    if (ordersRes.data) {
+      const ordersData = ordersRes.data as unknown as Order[];
+      setOrders(ordersData);
+      
+      // Calculate daily sales for the last 30 days
+      const salesMap = new Map<string, number>();
+      ordersData.forEach(o => {
+        const day = o.created_at.split('T')[0];
+        salesMap.set(day, (salesMap.get(day) ?? 0) + o.total_amount);
+      });
+      const salesArr = Array.from(salesMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, amount]) => ({ day, amount }));
+      setDailySales(salesArr);
+    }
+    if (inqRes.data) setInquiries(inqRes.data as Inquiry[]);
+
+    if (dailyRes.data) {
+      // Aggregate across products per day
+      const map = new Map<string, number>();
+      for (const r of dailyRes.data as { day: string; views: number }[]) {
+        map.set(r.day, (map.get(r.day) ?? 0) + r.views);
+      }
+      const arr = [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, views]) => ({ day, views }));
+      setDailyViews(arr);
+    }
+
+    if (totalsRes.data) {
+      const counts: Record<string, number> = {};
+      for (const r of totalsRes.data as { product_id: string }[]) {
+        counts[r.product_id] = (counts[r.product_id] ?? 0) + 1;
+      }
+      setProductViews(counts);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    toast({ title: "وضعیت به‌روز شد" });
+  };
+
+  const markInquiryRead = async (id: string, is_read: boolean) => {
+    const { error } = await supabase.from("inquiries").update({ is_read }).eq("id", id);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, is_read } : i));
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // ---- profile save ----
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    const result = profileSchema.safeParse(profile);
+    if (!result.success) {
+      toast({ title: "خطا", description: result.error.issues[0].message, variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        brand_name: profile.brand_name,
+        contact_name: profile.contact_name || null,
+        phone: profile.phone || null,
+        city: profile.city || null,
+        address: profile.address || null,
+        description: profile.description || null,
+        website: profile.website || null,
+      })
+      .eq("id", profile.id);
+
+    // sync categories: delete missing, add new
+    if (!error) {
+      const { data: current } = await supabase
+        .from("profile_categories").select("category_id").eq("profile_id", profile.id);
+      const currentIds = new Set((current ?? []).map((r) => r.category_id));
+      const desiredIds = new Set(selectedCats);
+      const toAdd = selectedCats.filter((id) => !currentIds.has(id));
+      const toRemove = [...currentIds].filter((id) => !desiredIds.has(id));
+      if (toAdd.length) {
+        await supabase.from("profile_categories").insert(
+          toAdd.map((category_id) => ({ profile_id: profile.id, category_id }))
+        );
+      }
+      if (toRemove.length) {
+        await supabase.from("profile_categories").delete()
+          .eq("profile_id", profile.id).in("category_id", toRemove);
+      }
+    }
+    setSaving(false);
+    if (error) toast({ title: "خطا در ذخیره", description: error.message, variant: "destructive" });
+    else toast({ title: "ذخیره شد", description: "اطلاعات پروفایل به‌روزرسانی شد" });
+  };
+
+  // ---- contact info completeness & publish ----
+  const contactFields = profile
+    ? [
+        { key: "phone", label: "شماره تماس", value: profile.phone },
+        { key: "city", label: "شهر", value: profile.city },
+        { key: "address", label: "آدرس", value: profile.address },
+        { key: "website", label: "وب‌سایت", value: profile.website },
+      ]
+    : [];
+  const filledCount = contactFields.filter((f) => f.value && f.value.trim().length > 0).length;
+  const isContactComplete = filledCount === contactFields.length;
+
+  const togglePublish = async (publish: boolean) => {
+    if (!profile) return;
+    if (publish && !isContactComplete) {
+      toast({
+        title: "اطلاعات ناقص است",
+        description: "برای انتشار، تمام فیلدهای تماس را تکمیل و ذخیره کنید.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        contact_published: publish,
+        contact_published_at: publish ? new Date().toISOString() : null,
+      })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    setProfile({
+      ...profile,
+      contact_published: publish,
+      contact_published_at: publish ? new Date().toISOString() : null,
+    });
+    toast({
+      title: publish ? "اطلاعات منتشر شد" : "انتشار لغو شد",
+      description: publish ? "اطلاعات تماس شما اکنون در سایت نمایش داده می‌شود" : "اطلاعات تماس از سایت حذف شد",
+    });
+  };
+
+  const resetProductForm = () => {
+    setEditing(null); setPName(""); setPDesc(""); setPPrice("");
+    setPStock("0"); setPCat("none"); setPActive(true);
+    setPImageFile(null); setPImageUrl("");
+  };
+
+  const openNewProduct = () => { resetProductForm(); setDialogOpen(true); };
+  const openEditProduct = (p: Product) => {
+    setEditing(p);
+    setPName(p.name); setPDesc(p.description ?? "");
+    setPPrice(p.price?.toString() ?? ""); setPStock(p.stock.toString());
+    setPCat(p.category_id ?? "none"); setPActive(p.is_active);
+    setPImageUrl(p.image_url ?? ""); setPImageFile(null);
+    setDialogOpen(true);
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!userId) return null;
+    const ext = file.name.split(".").pop();
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, file);
+    if (error) {
+      toast({ title: "خطا در آپلود", description: error.message, variant: "destructive" });
+      return null;
+    }
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const saveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    const parsed = productSchema.safeParse({
+      name: pName, description: pDesc, price: pPrice || undefined,
+      stock: pStock, category_id: pCat === "none" ? null : pCat, is_active: pActive,
+    });
+    if (!parsed.success) {
+      toast({ title: "خطا", description: parsed.error.issues[0].message, variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    let imageUrl = pImageUrl || null;
+    if (pImageFile) {
+      const uploaded = await uploadImage(pImageFile);
+      if (uploaded) imageUrl = uploaded;
+    }
+
+    const payload = {
+      name: parsed.data.name,
+      description: parsed.data.description || null,
+      price: parsed.data.price ?? null,
+      stock: parsed.data.stock,
+      category_id: parsed.data.category_id ?? null,
+      is_active: parsed.data.is_active,
+      image_url: imageUrl,
+      profile_id: profile.id,
+    };
+
+    const { error } = editing
+      ? await supabase.from("products").update(payload).eq("id", editing.id)
+      : await supabase.from("products").insert(payload);
+
+    setSaving(false);
+    if (error) {
+      toast({ title: "خطا", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: editing ? "محصول ویرایش شد" : "محصول اضافه شد" });
+    setDialogOpen(false);
+    resetProductForm();
+    await loadAll(userId!);
+  };
+
+  const deleteProduct = async (p: Product) => {
+    if (!confirm(`حذف محصول «${p.name}»؟`)) return;
+    const { error } = await supabase.from("products").delete().eq("id", p.id);
+    if (error) toast({ title: "خطا", description: error.message, variant: "destructive" });
+    else { toast({ title: "حذف شد" }); setProducts((prev) => prev.filter((x) => x.id !== p.id)); }
+  };
+
+  const updateProfileField = useCallback(<K extends keyof Profile>(key: K, val: Profile[K]) => {
+    setProfile((prev) => prev ? { ...prev, [key]: val } : prev);
+  }, []);
+
+  const toggleCat = (id: string) => {
+    setSelectedCats((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-gold" size={32} />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background py-10 px-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-brand/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold text-sm mb-2">
+                <ArrowRight size={16} /> بازگشت به خانه
+              </Link>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">حساب کاربری من</h1>
+            </div>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2 self-start">
+              <LogOut size={16} /> خروج
+            </Button>
+          </div>
+
+          <CustomerDashboard userId={userId!} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background py-10 px-4 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-brand/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold text-sm mb-2">
+              <ArrowRight size={16} /> بازگشت به خانه
+            </Link>
+            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-2">
+              <Sparkles size={14} className="text-gold" />
+              <span className="text-gold text-xs font-medium">داشبورد تولیدکننده</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{profile.brand_name}</h1>
+          </div>
+          <div className="flex gap-2 self-start">
+            <Button 
+              variant="outline" 
+              onClick={() => setViewMode(viewMode === "producer" ? "customer" : "producer")}
+              className="gap-2"
+            >
+              {viewMode === "producer" ? <User size={16} /> : <Sparkles size={16} />}
+              {viewMode === "producer" ? "پنل مشتری" : "پنل فروشنده"}
+            </Button>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut size={16} /> خروج
+            </Button>
+          </div>
+        </div>
+
+        {viewMode === "customer" ? (
+          <CustomerDashboard userId={userId!} />
+        ) : (
+          <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 md:max-w-3xl mb-6 h-auto">
+            <TabsTrigger value="profile" className="text-xs md:text-sm">پروفایل</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs md:text-sm">محصولات ({products.length})</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm gap-1">
+              <ShoppingCart size={14} />سفارش‌ها ({orders.filter((o) => o.status === "pending").length})
+            </TabsTrigger>
+            <TabsTrigger value="inquiries" className="text-xs md:text-sm gap-1">
+              <MessageSquare size={14} />درخواست‌ها ({inquiries.filter((i) => !i.is_read).length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm gap-1">
+              <BarChart3 size={14} />آمار
+            </TabsTrigger>
+          </TabsList>
+
+          {/* PROFILE TAB */}
+          <TabsContent value="profile">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <form onSubmit={saveProfile} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>نام برند <span className="text-destructive">*</span></Label>
+                    <Input value={profile.brand_name}
+                      onChange={(e) => updateProfileField("brand_name", e.target.value)} maxLength={120} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نام مسئول</Label>
+                    <Input value={profile.contact_name ?? ""}
+                      onChange={(e) => updateProfileField("contact_name", e.target.value)} maxLength={120} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>شماره تماس</Label>
+                    <Input dir="ltr" value={profile.phone ?? ""}
+                      onChange={(e) => updateProfileField("phone", e.target.value)} maxLength={30} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>شهر</Label>
+                    <Input value={profile.city ?? ""}
+                      onChange={(e) => updateProfileField("city", e.target.value)} maxLength={80} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>آدرس</Label>
+                    <Input value={profile.address ?? ""}
+                      onChange={(e) => updateProfileField("address", e.target.value)} maxLength={300} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>وب‌سایت</Label>
+                    <Input dir="ltr" placeholder="https://" value={profile.website ?? ""}
+                      onChange={(e) => updateProfileField("website", e.target.value)} maxLength={255} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>درباره برند</Label>
+                    <Textarea rows={4} value={profile.description ?? ""}
+                      onChange={(e) => updateProfileField("description", e.target.value)} maxLength={1000} />
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-4 border-t border-border">
+                  <Label>دسته‌های فعالیت</Label>
+                  <p className="text-xs text-muted-foreground">می‌توانید چند دسته انتخاب کنید</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto p-3 rounded-lg border border-border bg-background">
+                    {categories.map((cat) => {
+                      const checked = selectedCats.includes(cat.id);
+                      return (
+                        <label key={cat.id}
+                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                            checked ? "bg-gold/15 border border-gold/40 text-foreground"
+                                    : "border border-transparent hover:bg-accent text-muted-foreground"
+                          }`}>
+                          <Checkbox checked={checked} onCheckedChange={() => toggleCat(cat.id)} />
+                          <span>{cat.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Contact info status & publish */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label className="text-base">وضعیت اطلاعات تماس</Label>
+                    {profile.contact_published ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                        <CheckCircle2 size={14} /> منتشر شده
+                      </span>
+                    ) : isContactComplete ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
+                        <CheckCircle2 size={14} /> آماده انتشار
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-destructive/15 text-destructive border border-destructive/30">
+                        <AlertCircle size={14} /> ناقص ({filledCount}/{contactFields.length})
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {contactFields.map((f) => {
+                      const ok = !!(f.value && f.value.trim());
+                      return (
+                        <div key={f.key}
+                          className={`flex items-center gap-1.5 p-2 rounded-md border ${
+                            ok ? "border-emerald-brand/30 bg-emerald-brand/5 text-foreground"
+                               : "border-border bg-muted/30 text-muted-foreground"
+                          }`}>
+                          {ok ? <CheckCircle2 size={12} className="text-emerald-brand" />
+                              : <AlertCircle size={12} />}
+                          <span>{f.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    اطلاعات تماس فقط بعد از تأیید و انتشار، در صفحه عمومی فروشگاه شما نمایش داده می‌شود.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button type="submit" disabled={saving}
+                    className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
+                    {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    ذخیره تغییرات
+                  </Button>
+                  {profile.contact_published ? (
+                    <Button type="button" variant="outline" disabled={saving} onClick={() => togglePublish(false)} className="gap-2">
+                      <EyeOff size={16} /> لغو انتشار
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" disabled={saving || !isContactComplete}
+                      onClick={() => togglePublish(true)} className="gap-2 border-gold/40 text-gold hover:bg-gold/10">
+                      <Send size={16} /> تأیید و انتشار اطلاعات
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </Card>
+          </TabsContent>
+
+          {/* PRODUCTS TAB */}
+          <TabsContent value="products">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Package size={20} className="text-gold" /> محصولات شما
+                </h2>
+                <Button onClick={openNewProduct}
+                  className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
+                  <Plus size={18} /> افزودن محصول
+                </Button>
+              </div>
+
+              {products.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                  <Package size={40} className="mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground mb-4">هنوز محصولی اضافه نکرده‌اید</p>
+                  <Button onClick={openNewProduct} variant="outline" className="gap-2">
+                    <Plus size={16} /> افزودن اولین محصول
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.map((p) => (
+                    <Card key={p.id} className="overflow-hidden border-border bg-background hover:shadow-luxury transition-shadow">
+                      <div className="aspect-square bg-muted relative overflow-hidden">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <ImageIcon size={36} />
+                          </div>
+                        )}
+                        {!p.is_active && (
+                          <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded">
+                            غیرفعال
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <h3 className="font-bold text-foreground line-clamp-1">{p.name}</h3>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gold font-bold">
+                            {p.price ? `${p.price.toLocaleString("fa-IR")} تومان` : "—"}
+                          </span>
+                          <span className="text-muted-foreground text-xs">موجودی: {p.stock}</span>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" variant="outline" className="flex-1 gap-1" onClick={() => openEditProduct(p)}>
+                            <Pencil size={14} /> ویرایش
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => deleteProduct(p)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* ORDERS TAB */}
+          <TabsContent value="orders">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
+                <ShoppingCart size={20} className="text-gold" /> سفارش‌ها ({orders.length})
+              </h2>
+              {orders.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                  <ShoppingCart size={40} className="mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">هنوز سفارشی ثبت نشده است</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((o) => (
+                    <Card key={o.id} className="p-4 bg-background border-border">
+                      <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
+                        <div>
+                          <p className="font-bold text-foreground">{o.recipient_name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                            <span className="flex items-center gap-1"><Phone size={12} /> {o.phone}</span>
+                            <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(o.created_at)}</span>
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLOR[o.status]}`}>
+                          {STATUS_LABEL[o.status]}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-start gap-1 mb-3">
+                        <MapPin size={12} className="mt-0.5 flex-shrink-0" />
+                        <span>{o.city ? `${o.city} — ` : ""}{o.address}</span>
+                      </div>
+                      {o.note && <p className="text-xs text-muted-foreground italic mb-3">یادداشت: {o.note}</p>}
+                      <div className="border-t border-border pt-3 space-y-1.5">
+                        {o.order_items.map((it) => (
+                          <div key={it.id} className="flex justify-between text-sm">
+                            <span className="text-foreground">{it.product_name} �� {it.quantity}</span>
+                            <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("fa-IR")} ت</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-border">
+                        <span className="text-sm font-bold">جمع کل:</span>
+                        <span className="text-gold font-bold">{o.total_amount.toLocaleString("fa-IR")} تومان</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-border items-center">
+                        <Label className="text-xs text-muted-foreground">تغییر وضعیت:</Label>
+                        <Select value={o.status} onValueChange={(v) => updateOrderStatus(o.id, v as OrderStatus)}>
+                          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(STATUS_LABEL) as OrderStatus[]).map((s) => (
+                              <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* INQUIRIES TAB */}
+          <TabsContent value="inquiries">
+            <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
+                <MessageSquare size={20} className="text-gold" /> درخواست‌های مشتری ({inquiries.length})
+              </h2>
+              {inquiries.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                  <MessageSquare size={40} className="mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">درخواستی از مشتری‌ها دریافت نکرده‌اید</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {inquiries.map((inq) => {
+                    const product = inq.product_id ? products.find((p) => p.id === inq.product_id) : null;
+                    return (
+                      <Card key={inq.id} className={`p-4 bg-background border ${inq.is_read ? "border-border" : "border-gold/50 bg-gold/5"}`}>
+                        <div className="flex items-start justify-between flex-wrap gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-bold text-foreground">{inq.name}</p>
+                              {!inq.is_read && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">جدید</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
+                              <a href={`tel:${inq.phone}`} className="flex items-center gap-1 hover:text-gold"><Phone size={12} /> {inq.phone}</a>
+                              <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(inq.created_at)}</span>
+                            </p>
+                            {product && (
+                              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                                <Package size={12} /> درباره: {product.name}
+                              </p>
+                            )}
+                            <p className="text-sm text-foreground whitespace-pre-wrap">{inq.message}</p>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => markInquiryRead(inq.id, !inq.is_read)} className="gap-1">
+                            <Check size={14} /> {inq.is_read ? "علامت ناخوانده" : "خوانده شد"}
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* ANALYTICS TAB */}
+          <TabsContent value="analytics">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">کل بازدیدها (۳۰ روز)</span>
+                  <Eye size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {dailyViews.reduce((s, d) => s + d.views, 0).toLocaleString("fa-IR")}
+                </p>
+              </Card>
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">کل فروش</span>
+                  <ShoppingCart size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {orders.reduce((s, o) => s + o.total_amount, 0).toLocaleString("fa-IR")} <span className="text-xs">تومان</span>
+                </p>
+              </Card>
+              <Card className="p-5 bg-card border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">درخواست‌های خوانده‌نشده</span>
+                  <MessageSquare size={16} className="text-gold" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {inquiries.filter((i) => !i.is_read).length.toLocaleString("fa-IR")}
+                </p>
+              </Card>
+            </div>
+
+            <Card className="p-6 shadow-luxury bg-card border-border mb-6">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 size={18} className="text-gold" /> فروش روزانه (۳۰ روز اخیر)
+              </h3>
+              {dailySales.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">هنوز فروشی ثبت نشده است</p>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11}
+                        tickFormatter={(v) => v.slice(5)} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} 
+                        tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
+                      <Tooltip
+                        formatter={(v: number) => [`${v.toLocaleString("fa-IR")} تومان`, "فروش"]}
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Line type="monotone" dataKey="amount" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-6 shadow-luxury bg-card border-border mb-6">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 size={18} className="text-gold" /> بازدید روزانه محصولات (۳۰ روز اخیر)
+              </h3>
+              {dailyViews.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">هنوز بازدیدی ثبت نشده است</p>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyViews} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11}
+                        tickFormatter={(v) => v.slice(5)} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Line type="monotone" dataKey="views" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-6 shadow-luxury bg-card border-border">
+              <h3 className="font-bold text-foreground mb-4">بازدید تک‌تک محصولات</h3>
+              {products.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">محصولی ندارید</p>
+              ) : (
+                <div className="space-y-2">
+                  {[...products]
+                    .map((p) => ({ p, v: productViews[p.id] ?? 0 }))
+                    .sort((a, b) => b.v - a.v)
+                    .map(({ p, v }) => (
+                      <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
+                        <span className="text-foreground text-sm line-clamp-1">{p.name}</span>
+                        <span className="text-sm font-bold text-gold flex items-center gap-1">
+                          <Eye size={14} /> {v.toLocaleString("fa-IR")}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+          </Tabs>
+          )}
+          </div>
+
+          {/* Product Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetProductForm(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? "ویرایش محصول" : "افزودن محصول جدید"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveProduct} className="space-y-4">
+            <div className="space-y-2">
+              <Label>نام محصول <span className="text-destructive">*</span></Label>
+              <Input value={pName} onChange={(e) => setPName(e.target.value)} maxLength={150} required />
+            </div>
+            <div className="space-y-2">
+              <Label>توضیحات</Label>
+              <Textarea rows={3} value={pDesc} onChange={(e) => setPDesc(e.target.value)} maxLength={2000} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>قیمت (تومان)</Label>
+                <Input type="number" min="0" dir="ltr" value={pPrice} onChange={(e) => setPPrice(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>موجودی</Label>
+                <Input type="number" min="0" dir="ltr" value={pStock} onChange={(e) => setPStock(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>دسته‌بندی</Label>
+              <Select value={pCat} onValueChange={setPCat}>
+                <SelectTrigger><SelectValue placeholder="انتخاب دسته" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">بدون دسته</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>تصویر محصول</Label>
+              {pImageUrl && !pImageFile && (
+                <img src={pImageUrl} alt="" className="w-24 h-24 object-cover rounded-lg border border-border" />
+              )}
+              <Input type="file" accept="image/*"
+                onChange={(e) => setPImageFile(e.target.files?.[0] ?? null)} />
+              {pImageFile && <p className="text-xs text-muted-foreground">{pImageFile.name}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="active" checked={pActive} onCheckedChange={(v) => setPActive(v === true)} />
+              <Label htmlFor="active" className="cursor-pointer">محصول فعال (در فروشگاه نمایش داده شود)</Label>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>انصراف</Button>
+              <Button type="submit" disabled={saving} className="gradient-gold text-primary-foreground hover:opacity-90 gap-2">
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                ذخیره
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Dashboard;
