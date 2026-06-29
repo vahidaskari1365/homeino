@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette, Camera } from "lucide-react";
 
 import CartButton from "./CartButton";
 import NotificationBell from "./NotificationBell";
@@ -17,6 +17,7 @@ const navLinks = [
   { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
   { label: "فروشگاه‌ها", href: "/shops" },
   { label: "آگهی دست دوم", href: "/second-hand" },
+  { label: "جستجوی تصویری", href: "/visual-search" },
 ];
 
 const Navbar = () => {
