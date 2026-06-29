@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { User, Menu } from "lucide-react";
 import Link from "next/link";
 
@@ -18,6 +17,7 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
           <Link href="/" className="hover:text-[#1A365D] transition-colors">خانه</Link>
           <Link href="/projects" className="hover:text-[#1A365D] transition-colors">پروژه‌ها</Link>
+          <Link href="/visual-search" className="hover:text-[#1A365D] transition-colors">جستجوی بصری</Link>
           <Link href="/community" className="hover:text-[#1A365D] transition-colors">جامعه</Link>
           <Link href="/designer" className="text-[#D4AF37] hover:opacity-80 transition-opacity">حالت طراح</Link>
         </nav>

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Camera, Image as ImageIcon, ShoppingBag } from "lucide-react";
+import Link from "next/link";
 import Header from "@/components/Header";
 
 export default function Home() {
@@ -26,21 +27,22 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { title: "عکس خانه", icon: Camera, color: "bg-blue-50" },
-            { title: "عکس الهام", icon: ImageIcon, color: "bg-amber-50" },
-            { title: "انتخاب محصول", icon: ShoppingBag, color: "bg-teal-50" },
+            { title: "عکس خانه", icon: Camera, color: "bg-blue-50", href: "#" },
+            { title: "عکس الهام", icon: ImageIcon, color: "bg-amber-50", href: "/visual-search" },
+            { title: "انتخاب محصول", icon: ShoppingBag, color: "bg-teal-50", href: "#" },
           ].map((card, index) => (
-            <motion.div
-              key={index}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`${card.color} p-8 rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex flex-col items-center space-y-4`}
-            >
-              <div className="p-4 bg-white rounded-full shadow-sm">
-                <card.icon className="w-8 h-8 text-[#1A365D]" />
-              </div>
-              <h3 className="text-xl font-semibold">{card.title}</h3>
-            </motion.div>
+            <Link href={card.href} key={index} className="block">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`${card.color} p-8 rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex flex-col items-center space-y-4 h-full`}
+              >
+                <div className="p-4 bg-white rounded-full shadow-sm">
+                  <card.icon className="w-8 h-8 text-[#1A365D]" />
+                </div>
+                <h3 className="text-xl font-semibold">{card.title}</h3>
+              </motion.div>
+            </Link>
           ))}
         </div>
       </motion.div>
