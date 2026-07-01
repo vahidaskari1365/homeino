@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sparkles, Wallet, Palette, Users, Dog, Heart, ArrowLeft, ShoppingBag,
@@ -12,6 +12,44 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+// ---- Types از دیتابیس واقعی ----
+interface MarketplaceProduct {
+  id: string;
+  name: string;
+  price: number | null;
+  image_url: string | null;
+  category_id: string | null;
+  profile_id: string;
+  stock: number;
+}
+
+interface MarketplaceStore {
+  id: string;
+  brand_name: string;
+  city: string | null;
+}
+
+interface RecommendationProduct {
+  id: string;
+  name: string;
+  price: number;
+  store_name: string;
+  profile_id: string;
+  image_url: string;
+  category: string;
+}
+
+interface Recommendation {
+  id: string;
+  name: string;
+  desc: string;
+  products: RecommendationProduct[];
+  totalCost: number;
+  focus: string;
+}
 
 const STYLES = [
   { id: "modern", label: "مدرن", icon: "🏠" },
@@ -54,16 +92,6 @@ const COLORS = [
 
 const fmt = (n: number) => n.toLocaleString("fa-IR") + " تومان";
 
-interface Recommendation {
-  id: string;
-  name: string;
-  desc: string;
-  image: string;
-  products: { name: string; price: number; store: string; image: string }[];
-  totalCost: number;
-  focus: string;
-}
-
 const AIAdvisor = () => {
   const navigate = useNavigate();
   const [budget, setBudget] = useState("");
@@ -76,6 +104,60 @@ const AIAdvisor = () => {
   const [priority, setPriority] = useState("");
   const [generating, setGenerating] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+
+  // ---- داده‌های واقعی از دیتابیس ----
+  const [allProducts, setAllProducts] = useState<MarketplaceProduct[]>([]);
+  const [stores, setStores] = useState<Record<string, MarketplaceStore>>({});
+  const [categories, setCategories] = useState<Record<string, { name: string; slug: string }>>({});
+  const [loadingData, setLoadingData] = useState(true);
+
+  // بارگذاری محصولات واقعی از دیتابیس
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingData(true);
+
+        // دریافت دسته‌بندی‌ها
+        const { data: cats } = await supabase
+          .from("producer_categories")
+          .select("id, name, slug");
+        const catMap: Record<string, { name: string; slug: string }> = {};
+        (cats || []).forEach((c) => { catMap[c.id] = c; });
+        setCategories(catMap);
+
+        // دریافت محصولات فعال از دیتابیس
+        const { data: prods } = await supabase
+          .from("products")
+          .select("id, name, price, image_url, category_id, profile_id, stock")
+          .eq("is_active", true)
+          .not("image_url", "is", null)
+          .not("price", "is", null)
+          .order("price", { ascending: true })
+          .limit(200);
+
+        setAllProducts((prods || []) as MarketplaceProduct[]);
+
+        // دریافت اطلاعات فروشگاه‌ها
+        const profileIds = [...new Set((prods || []).map((p) => p.profile_id))];
+        if (profileIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, brand_name, city")
+            .in("id", profileIds);
+
+          const storeMap: Record<string, MarketplaceStore> = {};
+          (profiles || []).forEach((s) => {
+            storeMap[s.id] = s as MarketplaceStore;
+          });
+          setStores(storeMap);
+        }
+      } catch (e) {
+        console.error("خطا در بارگذاری داده‌ها:", e);
+      } finally {
+        setLoadingData(false);
+      }
+    })();
+  }, []);
 
   const numericBudget = useMemo(() => {
     const parsed = Number(budget.replace(/,/g, ""));
@@ -90,60 +172,119 @@ const AIAdvisor = () => {
 
   const isFormValid = budget && style && size && priority;
 
+  // ---- تولید پیشنهادات بر اساس محصولات واقعی بازار ----
   const generateRecommendations = () => {
     if (!isFormValid) return;
+
+    if (allProducts.length === 0) {
+      toast.error("متأسفانه محصولی در بازار موجود نیست. لطفاً بعداً مراجعه کنید.");
+      return;
+    }
+
     setGenerating(true);
 
+    // شبیه‌سازی زمان تحلیل (همان UX قبلی)
     setTimeout(() => {
-      const styleLabel = STYLES.find((s) => s.id === style)?.label || "";
+      try {
+        const styleLabel = STYLES.find((s) => s.id === style)?.label || "";
+        const budgetAmount = numericBudget;
 
-      const results: Recommendation[] = [
-        {
-          id: "rec-1",
-          name: `چیدمان ${styleLabel} مقرون‌به‌صرفه`,
-          desc: "ترکیبی از محصولات اقتصادی با حفظ سبک و کیفیت مناسب",
-          image: "https://picsum.photos/seed/rec1/600/400",
-          products: [
-            { name: "مبل راحتی سه نفره", price: 12500000, store: "مبل شاپ سنتر", image: "https://picsum.photos/seed/r1p1/100/100" },
-            { name: "میز عسلی ام‌دی‌اف", price: 1800000, store: "چوب‌آرایان", image: "https://picsum.photos/seed/r1p2/100/100" },
-            { name: "فرش ماشینی ۶ متری", price: 4500000, store: "فرش هیراد", image: "https://picsum.photos/seed/r1p3/100/100" },
-            { name: "آباژور ایستاده ساده", price: 1200000, store: "نورگان", image: "https://picsum.photos/seed/r1p4/100/100" },
-          ],
-          totalCost: 20000000,
-          focus: "قیمت مناسب",
-        },
-        {
-          id: "rec-2",
-          name: `چیدمان ${styleLabel} متعادل`,
-          desc: "ترکیب بهینه‌ای از محصولات با کیفیت و قیمت مناسب",
-          image: "https://picsum.photos/seed/rec2/600/400",
-          products: [
-            { name: "مبل شیک پارچه‌ای", price: 18500000, store: "دکوراسیون مدرن", image: "https://picsum.photos/seed/r2p1/100/100" },
-            { name: "میز عسلی چوب گردو", price: 4200000, store: "چوب‌آرایان", image: "https://picsum.photos/seed/r2p2/100/100" },
-            { name: "فرش دستبافت نیمه‌ابریشم", price: 15000000, store: "قالی‌سرای ایرانیان", image: "https://picsum.photos/seed/r2p3/100/100" },
-            { name: "لوستر مدرن ۵ شاخه", price: 3500000, store: "نورگان", image: "https://picsum.photos/seed/r2p4/100/100" },
-          ],
-          totalCost: 41200000,
-          focus: "قیمت و کیفیت",
-        },
-        {
-          id: "rec-3",
-          name: `چیدمان ${styleLabel} لوکس`,
-          desc: "محصولات لوکس و باکیفیت برای فضایی بی‌نظیر",
-          image: "https://picsum.photos/seed/rec3/600/400",
-          products: [
-            { name: "مبل سلطنتی چرم", price: 35000000, store: "مبلمان پارس", image: "https://picsum.photos/seed/r3p1/100/100" },
-            { name: "میز عسلی مرمر", price: 12000000, store: "دکوراسیون لوکس", image: "https://picsum.photos/seed/r3p2/100/100" },
-            { name: "فرش دستبافت ابریشم", price: 32000000, store: "قالی‌سرای ایرانیان", image: "https://picsum.photos/seed/r3p3/100/100" },
-            { name: "لوستر کریستالی", price: 8500000, store: "نورگان", image: "https://picsum.photos/seed/r3p4/100/100" },
-          ],
-          totalCost: 87500000,
-          focus: "کیفیت بالا",
-        },
-      ];
+        // مرتب‌سازی محصولات بر اساس قیمت
+        const sortedByPrice = [...allProducts].sort((a, b) => (a.price || 0) - (b.price || 0));
+        const totalProducts = sortedByPrice.length;
 
-      setRecommendations(results);
-      setGenerating(false);
+        // تقسیم محصولات به سه گروه قیمتی از داده‌های واقعی
+        const third = Math.floor(totalProducts / 3);
+        const cheapProducts = sortedByPrice.slice(0, third);
+        const midProducts = sortedByPrice.slice(third, third * 2);
+        const expensiveProducts = sortedByPrice.slice(third * 2);
+
+        // انتخاب محصولات برای هر پیشنهاد
+        const pickProducts = (
+          pool: MarketplaceProduct[],
+          count: number,
+          targetBudget?: number
+        ): RecommendationProduct[] => {
+          const shuffled = [...pool].sort(() => Math.random() - 0.5);
+          const picked: RecommendationProduct[] = [];
+          let total = 0;
+
+          for (const p of shuffled) {
+            if (picked.length >= count) break;
+            const price = Number(p.price) || 0;
+            if (targetBudget && total + price > targetBudget && picked.length > 0) break;
+
+            const catInfo = p.category_id ? categories[p.category_id] : null;
+            const storeInfo = p.profile_id ? stores[p.profile_id] : null;
+
+            picked.push({
+              id: p.id,
+              name: p.name,
+              price: price,
+              store_name: storeInfo?.brand_name || "فروشگاه",
+              profile_id: p.profile_id,
+              image_url: p.image_url || "",
+              category: catInfo?.name || "عمومی",
+            });
+            total += price;
+          }
+
+          return picked;
+        };
+
+        // ---- سه پیشنهاد واقعی از محصولات بازار ----
+        const results: Recommendation[] = [];
+
+        // پیشنهاد اقتصادی: محصولات ارزان
+        const ecoProducts = pickProducts(cheapProducts, 4, budgetAmount);
+        if (ecoProducts.length > 0) {
+          results.push({
+            id: "rec-eco",
+            name: `چیدمان ${styleLabel} مقرون‌به‌صرفه`,
+            desc: "ترکیبی از محصولات اقتصادی با حفظ سبک و کیفیت مناسب",
+            products: ecoProducts,
+            totalCost: ecoProducts.reduce((s, p) => s + p.price, 0),
+            focus: "قیمت مناسب",
+          });
+        }
+
+        // پیشنهاد متعادل: محصولات میان‌قیمت
+        const balancedProducts = pickProducts(midProducts, 4, budgetAmount);
+        if (balancedProducts.length > 0) {
+          results.push({
+            id: "rec-balanced",
+            name: `چیدمان ${styleLabel} متعادل`,
+            desc: "ترکیب بهینه‌ای از محصولات با کیفیت و قیمت مناسب",
+            products: balancedProducts,
+            totalCost: balancedProducts.reduce((s, p) => s + p.price, 0),
+            focus: "قیمت و کیفیت",
+          });
+        }
+
+        // پیشنهاد لوکس: محصولات گران
+        const luxProducts = pickProducts(expensiveProducts, 4, budgetAmount * 1.5);
+        if (luxProducts.length > 0) {
+          results.push({
+            id: "rec-lux",
+            name: `چیدمان ${styleLabel} لوکس`,
+            desc: "محصولات لوکس و باکیفیت برای فضایی بی‌نظیر",
+            products: luxProducts,
+            totalCost: luxProducts.reduce((s, p) => s + p.price, 0),
+            focus: "کیفیت بالا",
+          });
+        }
+
+        setRecommendations(results);
+
+        if (results.length === 0) {
+          toast.error("محصول کافی برای پیشنهاد وجود ندارد");
+        }
+      } catch (e) {
+        console.error("خطا در تولید پیشنهادات:", e);
+        toast.error("خطا در تولید پیشنهادات");
+      } finally {
+        setGenerating(false);
+      }
     }, 2000);
   };
 
@@ -166,7 +307,7 @@ const AIAdvisor = () => {
           </div>
           <h1 className="text-2xl md:text-4xl font-bold">مشاور خرید هوشمند</h1>
           <p className="text-muted-foreground text-sm mt-2 max-w-2xl">
-            با وارد کردن اطلاعات زیر، سه پیشنهاد خرید هوشمند بر اساس نیازهای شما دریافت کنید
+            با وارد کردن اطلاعات زیر، سه پیشنهاد خرید هوشمند از {allProducts.length} محصول واقعی بازار دریافت کنید
           </p>
         </div>
 
@@ -356,15 +497,23 @@ const AIAdvisor = () => {
 
                 <Button
                   onClick={generateRecommendations}
-                  disabled={!isFormValid || generating}
+                  disabled={!isFormValid || generating || loadingData || allProducts.length === 0}
                   className="w-full h-12 rounded-xl bg-accent text-accent-foreground font-bold text-base shadow-lg shadow-accent/20 hover:bg-accent/90 transition-all"
                 >
-                  {generating ? (
+                  {loadingData ? (
+                    <><Loader2 className="animate-spin ml-2" size={18} /> در حال بارگذاری محصولات...</>
+                  ) : generating ? (
                     <><Loader2 className="animate-spin ml-2" size={18} /> در حال تحلیل...</>
                   ) : (
                     <><Sparkles size={18} className="ml-2" /> دریافت پیشنهادات خرید</>
                   )}
                 </Button>
+
+                {allProducts.length === 0 && !loadingData && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    هیچ محصولی در بازار موجود نیست
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -375,7 +524,7 @@ const AIAdvisor = () => {
               <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="animate-spin text-accent mb-4" size={48} />
                 <p className="text-lg font-bold text-foreground mb-1">در حال تحلیل اطلاعات...</p>
-                <p className="text-sm text-muted-foreground">هوش مصنوعی در حال محاسبه بهترین گزینه‌ها برای شماست</p>
+                <p className="text-sm text-muted-foreground">هوش مصنوعی در حال محاسبه بهترین گزینه‌ها از {allProducts.length} محصول واقعی بازار برای شماست</p>
                 <div className="mt-6 flex gap-2">
                   {[1, 2, 3].map((i) => (
                     <div
@@ -395,6 +544,10 @@ const AIAdvisor = () => {
                 <p className="text-sm text-muted-foreground max-w-md">
                   اطلاعات مورد نیاز را در بخش سمت راست وارد کنید و روی دکمه «دریافت پیشنهادات خرید» کلیک کنید
                 </p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Store size={12} />
+                  <span>{allProducts.length} محصول واقعی در بازار موجود است</span>
+                </div>
               </div>
             )}
 
@@ -404,45 +557,49 @@ const AIAdvisor = () => {
                 className="overflow-hidden border-border/60 shadow-sm transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
                 style={{ animationDelay: `${idx * 0.15}s` }}
               >
-                {/* Header with image */}
-                <div className="relative">
-                  <img
-                    src={rec.image}
-                    alt={rec.name}
-                    className="h-48 w-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-3 right-4 left-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary" className="bg-accent/90 text-accent-foreground border-0 text-[10px]">
-                        پیشنهاد {idx + 1}
-                      </Badge>
-                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-[10px] backdrop-blur-sm">
-                        {rec.focus}
-                      </Badge>
-                    </div>
-                    <h3 className="text-white font-bold text-lg">{rec.name}</h3>
-                    <p className="text-white/80 text-xs">{rec.desc}</p>
+                {/* Header with store info */}
+                <div className="relative bg-gradient-to-l from-accent/10 to-accent/5 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="secondary" className="bg-accent/90 text-accent-foreground border-0 text-[10px]">
+                      پیشنهاد {idx + 1}
+                    </Badge>
+                    <Badge variant="secondary" className="bg-white/20 text-foreground border-border/40 text-[10px]">
+                      {rec.focus}
+                    </Badge>
                   </div>
+                  <h3 className="text-foreground font-bold text-lg mt-2">{rec.name}</h3>
+                  <p className="text-muted-foreground text-xs">{rec.desc}</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    {rec.products.length} محصول از {new Set(rec.products.map(p => p.store_name)).size} فروشگاه
+                  </p>
                 </div>
 
                 <CardContent className="p-4 space-y-4">
-                  {/* Products */}
+                  {/* Products - همه از دیتابیس واقعی */}
                   <div className="space-y-2">
                     {rec.products.map((p, pi) => (
-                      <div key={pi} className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-2">
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
-                          loading="lazy"
-                        />
+                      <div key={`${rec.id}-${pi}`} className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-2">
+                        <div className="h-12 w-12 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+                          {p.image_url ? (
+                            <img
+                              src={p.image_url}
+                              alt={p.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                              📦
+                            </div>
+                          )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-bold line-clamp-1">{p.name}</p>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                             <Store size={10} />
-                            <span>{p.store}</span>
+                            <span>{p.store_name}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{p.category}</span>
                           </div>
                         </div>
                         <span className="flex-shrink-0 text-sm font-bold text-accent">
@@ -454,7 +611,7 @@ const AIAdvisor = () => {
 
                   <Separator />
 
-                  {/* Total */}
+                  {/* Total - محاسبه شده از محصولات واقعی */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ShoppingBag size={16} className="text-accent" />

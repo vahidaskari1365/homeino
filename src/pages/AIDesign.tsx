@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers, Target, Edit3, Save, RotateCcw, Search, Package2 } from "lucide-react";
+import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers, Target, Edit3, Save, RotateCcw, Search, Package2, Store, BadgePercent } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -286,13 +286,21 @@ const AIDesign = () => {
     startStageProgression();
 
     try {
+      // ارسال محصولات با شناسه‌های واقعی از دیتابیس
       const payloadProducts = selectedList.map((p) => {
         const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
         const cat = CATEGORIES.find((c) => c.slug === slug)?.label;
-        return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
+        return {
+          id: p.id,
+          name: p.name,
+          category: cat,
+          imageUrl: p.image_url || undefined,
+          price: p.price ?? undefined,
+          profile_id: p.profile_id,
+        };
       });
 
-      // Use Silicon Flow API instead of Supabase function
+      // استفاده از سرویس هوش مصنوعی با اعتبارسنجی مارکت‌پلیس
       const data = await redesignRoom(
         currentImage,
         style,
@@ -318,9 +326,18 @@ const AIDesign = () => {
       if (data.analytics) setRoomAnalytics(data.analytics);
       
       // Store products that were used for "Buy the Look" post-generation
+      // فقط محصولات معتبر از مارکت‌پلیس ذخیره می‌شوند
       setGeneratedProducts([...selectedList]);
       
-      toast.success("طراحی جدید آماده شد");
+      // نمایش گزارش محصولات استفاده شده
+      if (data.productUsage) {
+        toast.success(
+          `${data.productUsage.productCount} محصول از ${data.productUsage.storeCount} فروشگاه در طراحی استفاده شد`,
+          { description: `هزینه کل: ${new Intl.NumberFormat("fa-IR").format(data.productUsage.totalCost)} تومان` }
+        );
+      }
+      
+      toast.success("طراحی جدید با محصولات بازار آماده شد");
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
@@ -840,21 +857,46 @@ const AIDesign = () => {
                   )}
                   <p className="text-xs text-muted-foreground mb-4">
                     {designConfirmed
-                      ? "طراحی مورد تأیید شماست. محصولات زیر در این طرح استفاده شده‌اند:"
+                      ? "طراحی مورد تأیید شماست. محصولات واقعی زیر از بازار هومینو در این طرح استفاده شده‌اند:"
                       : "طراحی خود را تأیید کنید و سپس محصولات را به سبد خرید اضافه نمایید."}
                   </p>
+                  
+                  {/* Product Usage Summary */}
+                  {generatedProducts.length > 0 && (
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4 bg-muted/30 rounded-xl p-3">
+                      <BadgePercent size={14} className="text-accent" />
+                      <span>
+                        <strong className="text-foreground">{generatedProducts.length}</strong> محصول از بازار
+                      </span>
+                      <span className="opacity-30">|</span>
+                      <Store size={12} className="text-accent" />
+                      <span>
+                        <strong className="text-foreground">
+                          {new Set(generatedProducts.map(p => p.profile_id)).size}
+                        </strong> فروشنده
+                      </span>
+                      <span className="opacity-30">|</span>
+                      <span className="text-accent font-bold">
+                        {fmt(generatedProducts.reduce((s, p) => s + (Number(p.price) || 0), 0))}
+                      </span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {generatedProducts.map((p) => (
                       <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden group">
                         <div className="aspect-square relative overflow-hidden">
                           {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />}
-                          {/* Match confidence badge */}
-                          <Badge variant="secondary" className="absolute top-2 right-2 text-[10px] bg-black/60 text-white border-0">
-                            {Math.floor(75 + Math.random() * 20)}% تطابق
+                          {/* Product ID badge - نشان می‌دهد محصول از بازار است */}
+                          <Badge variant="secondary" className="absolute top-2 right-2 text-[10px] bg-accent/90 text-accent-foreground border-0">
+                            محصول بازار
                           </Badge>
                         </div>
                         <div className="p-4">
                           <h4 className="font-bold text-sm mb-1 line-clamp-1">{p.name}</h4>
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
+                            <Store size={10} />
+                            <span>فروشنده: {p.profile_id ? `...${p.profile_id.slice(-6)}` : "نامشخص"}</span>
+                          </div>
                           <div className="text-accent font-bold text-sm mb-3">{fmt(p.price)}</div>
                           <button 
                             onClick={() => {

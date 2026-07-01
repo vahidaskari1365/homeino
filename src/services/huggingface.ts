@@ -4,7 +4,12 @@
 // برای افزودن سرویس جدید، فقط یک آبجکت تازه به آرایه‌ی زیر اضافه کن.
 // سرویس‌ها به ترتیب امتحان می‌شوند؛ اولین لینکِ فعال (enabled) استفاده
 // می‌شود و اگر شکست خورد، خودکار سراغ لینک بعدی می‌رود.
+//
+// قانون مهم: هوش مصنوعی هرگز نباید محصول ساختگی تولید کند.
+// همه محصولات باید از دیتابیس مارکت‌پلیس بیایند.
 // ====================================================================
+
+import { validateAllProductsFromMarketplace, findClosestProducts } from "./marketplace";
 
 interface AIEndpoint {
   name: string;
@@ -50,6 +55,25 @@ interface SiliconFlowResponse {
   }[];
 }
 
+// ---- Product Tracking Types ----
+// این تایپ‌ها برای ردیابی محصولات استفاده شده در طراحی هستند
+export interface ProductUsageInfo {
+  productId: string;
+  productName: string;
+  storeId: string;
+  storeName: string;
+  price: number;
+  category: string;
+}
+
+export interface ProductUsageReport {
+  products: ProductUsageInfo[];
+  totalCost: number;
+  storeCount: number;
+  categoryCount: number;
+  productCount: number;
+}
+
 export interface RedesignResult {
   image?: string;
   tip?: string;
@@ -59,7 +83,50 @@ export interface RedesignResult {
     styleMatch?: number;
     spatialAdvice?: string;
   };
+  productUsage?: ProductUsageReport; // گزارش محصولات استفاده شده
   error?: string;
+}
+
+// ---- Validation ----
+
+/**
+ * اعتبارسنجی محصولات قبل از ارسال به هوش مصنوعی
+ * تضمین می‌کند همه محصولات از مارکت‌پلیس هستند
+ */
+async function validateProducts(
+  products: { id?: string; name: string; category?: string; imageUrl?: string; price?: number }[]
+): Promise<{ valid: boolean; error?: string; validatedProducts: typeof products }> {
+  // If no products selected, that's fine - user can generate without products
+  if (products.length === 0) {
+    return { valid: true, validatedProducts: [] };
+  }
+
+  // Check if products have IDs (from marketplace)
+  const productsWithIds = products.filter(p => p.id);
+  const productsWithoutIds = products.filter(p => !p.id);
+
+  if (productsWithoutIds.length > 0) {
+    console.warn("محصولات بدون شناسه رد شدند:", productsWithoutIds.map(p => p.name));
+    return {
+      valid: false,
+      error: `محصولات زیر از بازار نیستند: ${productsWithoutIds.map(p => p.name).join("، ")}. لطفاً فقط از محصولات سایت استفاده کنید.`,
+      validatedProducts: productsWithIds,
+    };
+  }
+
+  // Validate all IDs exist in marketplace
+  const ids = productsWithIds.map(p => p.id!);
+  const { valid, invalidIds } = await validateAllProductsFromMarketplace(ids);
+
+  if (!valid) {
+    return {
+      valid: false,
+      error: `${invalidIds.length} محصول نامعتبر در طراحی یافت شد. لطفاً محصولات را از بازار انتخاب کنید.`,
+      validatedProducts: productsWithIds.filter(p => !invalidIds.includes(p.id!)),
+    };
+  }
+
+  return { valid: true, validatedProducts: products };
 }
 
 /**
@@ -220,10 +287,18 @@ export async function redesignRoom(
   imageBase64: string,
   style: string,
   prompt: string,
-  products: { name: string; category?: string; imageUrl?: string; price?: number }[],
+  products: { id?: string; name: string; category?: string; imageUrl?: string; price?: number; profile_id?: string }[],
   maskBase64?: string,
   isPolish?: boolean
 ): Promise<RedesignResult> {
+  // === اعتبارسنجی: محصولات فقط از مارکت‌پلیس ===
+  const validation = await validateProducts(products);
+  if (!validation.valid) {
+    console.warn("هشدار: محصولات غیرمجاز رد شدند:", validation.error);
+    // Still continue with valid products only
+  }
+  const validProducts = validation.validatedProducts;
+
   // Remove data:image prefix if present
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
@@ -241,22 +316,24 @@ export async function redesignRoom(
 
   const styleLabel = styleLabels[style] || style;
 
-  const productList = products.length > 0
-    ? products.map(p => `- ${p.name}${p.category ? ` (${p.category})` : ""}`).join("\n")
+  const productList = validProducts.length > 0
+    ? validProducts.map(p => `- ${p.name}${p.category ? ` (${p.category})` : ""}`).join("\n")
     : "بدون محصول خاص";
 
   const userPrompt = `تصویر یک اتاق را دریافت کرده‌ام. لطفاً این اتاق را با سبک ${styleLabel} بازطراحی کن.
 
 ${prompt ? `درخواست کاربر: ${prompt}\n` : ""}
 
-محصولات انتخاب شده برای چیدمان:
+محصولات واقعی از بازار هومینو که برای چیدمان انتخاب شده‌اند:
 ${productList}
 
 لطفاً یک تصویر با کیفیت بالا از اتاق بازطراحی شده تولید کن که:
 1. سبک ${styleLabel} را داشته باشد
-2. محصولات انتخاب شده به خوبی در آن قرار گرفته باشند
+2. محصولات مارکت‌پلیس انتخاب شده به خوبی در آن قرار گرفته باشند
 3. نورپردازی طبیعی و واقع‌گرایانه باشد
 4. رنگ‌ها و متریال‌ها با سبک ${styleLabel} هماهنگ باشند
+
+توجه: فقط و فقط از محصولات ذکر شده استفاده کن. هیچ محصول دیگری به تصویر اضافه نکن.
 
 همچنین یک نکته طراحی داخلی کوتاه (tip) به زبان فارسی ارائه بده.`;
 
@@ -326,6 +403,9 @@ ${productList}
         productList
       );
 
+      // Build product usage report
+      const productUsage = buildProductUsageReport(validProducts);
+
       return {
         image: imageResult,
         tip,
@@ -334,7 +414,8 @@ ${productList}
           colorPalette: getColorPaletteForStyle(style),
           styleMatch: 85,
           spatialAdvice: "محصولات انتخاب شده در بهترین موقعیت قرار گرفتند"
-        }
+        },
+        productUsage,
       };
 
     } catch (error) {
@@ -348,6 +429,35 @@ ${productList}
   return { error: lastError };
 }
 
+/**
+ * ساختن گزارش محصولات استفاده شده در طراحی
+ */
+function buildProductUsageReport(
+  products: { id?: string; name: string; category?: string; imageUrl?: string; price?: number; profile_id?: string }[]
+): ProductUsageReport | undefined {
+  if (products.length === 0) return undefined;
+
+  const usageInfo: ProductUsageInfo[] = products.map(p => ({
+    productId: p.id || "unknown",
+    productName: p.name,
+    storeId: p.profile_id || "unknown",
+    storeName: "", // Will be filled by the UI
+    price: p.price || 0,
+    category: p.category || "عمومی",
+  }));
+
+  const storeIds = new Set(usageInfo.map(u => u.storeId));
+  const categories = new Set(usageInfo.map(u => u.category));
+
+  return {
+    products: usageInfo,
+    totalCost: usageInfo.reduce((sum, u) => sum + u.price, 0),
+    storeCount: storeIds.size,
+    categoryCount: categories.size,
+    productCount: usageInfo.length,
+  };
+}
+
 async function generateImage(
   endpoint: AIEndpoint,
   imageBase64: string,
@@ -357,7 +467,7 @@ async function generateImage(
 ): Promise<string> {
   const prompt = `Redesign this room interior in ${styleLabel} style.
 ${userPrompt ? `User request: ${userPrompt}` : ""}
-Include these products naturally in the scene: ${productList}
+Include ONLY these marketplace products naturally in the scene: ${productList}
 Professional interior design photography, natural lighting, high quality, realistic.`;
 
   try {

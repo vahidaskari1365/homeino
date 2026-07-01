@@ -1,23 +1,29 @@
-import { useState, useMemo } from "react";
-import { Sparkles, BadgePercent, TrendingDown, TrendingUp, ArrowLeft, CheckCircle, RefreshCw } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Sparkles, BadgePercent, TrendingDown, TrendingUp, ArrowLeft, CheckCircle, RefreshCw, Store } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
+// ---- Types ----
 interface Product {
   id: string;
   name: string;
   price: number | null;
   image_url: string | null;
+  category_id?: string | null;
+  profile_id?: string;
 }
 
-interface ProductAlt {
+interface MarketplaceAlt {
   id: string;
   name: string;
-  price: number;
-  image_url: string;
+  price: number | null;
+  image_url: string | null;
+  profile_id: string;
+  store_name?: string;
 }
 
 interface EconomyPremiumToggleProps {
@@ -29,42 +35,15 @@ interface EconomyPremiumToggleProps {
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
-// Mock economy alternatives (cheaper)
-const economyAlts: Record<string, ProductAlt[]> = {
-  "مبل شیک مدرن": [
-    { id: "eco-1", name: "مبل ساده و شیک", price: 12500000, image_url: "https://picsum.photos/seed/eco-sofa/200/200" },
-    { id: "eco-2", name: "مبل تاشو مدرن", price: 9800000, image_url: "https://picsum.photos/seed/eco-sofa2/200/200" },
-  ],
-  "میز عسلی چوبی": [
-    { id: "eco-3", name: "میز عسلی ام‌دی‌اف", price: 2200000, image_url: "https://picsum.photos/seed/eco-table/200/200" },
-  ],
-  "آباژور ایستاده": [
-    { id: "eco-4", name: "چراغ رومیزی ساده", price: 1200000, image_url: "https://picsum.photos/seed/eco-lamp/200/200" },
-  ],
-  "فرش دستبافت ابریشم": [
-    { id: "eco-5", name: "فرش ماشینی طرح ابریشم", price: 8500000, image_url: "https://picsum.photos/seed/eco-rug/200/200" },
-  ],
-};
-
-// Mock premium alternatives (more expensive)
-const premiumAlts: Record<string, ProductAlt[]> = {
-  "مبل شیک مدرن": [
-    { id: "pre-1", name: "مبل سلطنتی چرم", price: 35000000, image_url: "https://picsum.photos/seed/pre-sofa/200/200" },
-    { id: "pre-2", name: "مبل دکوراتیو ایتالیایی", price: 42000000, image_url: "https://picsum.photos/seed/pre-sofa2/200/200" },
-  ],
-  "میز عسلی چوبی": [
-    { id: "pre-3", name: "میز عسلی چوب گردو", price: 8500000, image_url: "https://picsum.photos/seed/pre-table/200/200" },
-  ],
-  "آباژور ایستاده": [
-    { id: "pre-4", name: "لوستر کریستالی مدرن", price: 6500000, image_url: "https://picsum.photos/seed/pre-lamp/200/200" },
-  ],
-  "فرش دستبافت ابریشم": [
-    { id: "pre-5", name: "فرش دستبافت ابریشم نفیس", price: 55000000, image_url: "https://picsum.photos/seed/pre-rug/200/200" },
-  ],
-};
-
 type VersionType = "original" | "economy" | "premium";
 
+/**
+ * EconomyPremiumToggle - جایگزینی محصولات با محصولات واقعی بازار
+ * 
+ * به جای دیتای ساختگی، از دیتابیس محصولات واقعی را دریافت می‌کند:
+ * - نسخه اقتصادی: محصولات ارزان‌تر از همان دسته‌بندی
+ * - نسخه لوکس: محصولات گران‌تر از همان دسته‌بندی
+ */
 export default function EconomyPremiumToggle({
   currentProducts,
   onReplace,
@@ -72,15 +51,112 @@ export default function EconomyPremiumToggle({
 }: EconomyPremiumToggleProps) {
   const [activeVersion, setActiveVersion] = useState<VersionType>("original");
   const [animating, setAnimating] = useState(false);
+  const [economyAlts, setEconomyAlts] = useState<Record<string, MarketplaceAlt[]>>({});
+  const [premiumAlts, setPremiumAlts] = useState<Record<string, MarketplaceAlt[]>>({});
+  const [loadingAlts, setLoadingAlts] = useState(false);
+  const [storeNames, setStoreNames] = useState<Record<string, string>>({});
+
+  // بارگذاری جایگزین‌های واقعی از دیتابیس
+  const loadAlternatives = useCallback(async () => {
+    if (currentProducts.length === 0) return;
+
+    setLoadingAlts(true);
+    const ecoMap: Record<string, MarketplaceAlt[]> = {};
+    const preMap: Record<string, MarketplaceAlt[]> = {};
+    const allProfileIds = new Set<string>();
+
+    try {
+      for (const product of currentProducts) {
+        const categoryId = product.category_id;
+
+        if (!categoryId) continue;
+
+        // محصولات ارزان‌تر (اقتصادی)
+        const { data: cheaper } = await supabase
+          .from("products")
+          .select("id, name, price, image_url, profile_id")
+          .eq("is_active", true)
+          .eq("category_id", categoryId)
+          .not("image_url", "is", null)
+          .not("price", "is", null)
+          .lt("price", Number(product.price) || 0)
+          .neq("id", product.id)
+          .order("price", { ascending: false })
+          .limit(3);
+
+        if (cheaper && cheaper.length > 0) {
+          ecoMap[product.id] = cheaper as MarketplaceAlt[];
+          cheaper.forEach((p) => allProfileIds.add(p.profile_id));
+        }
+
+        // محصولات گران‌تر (لوکس)
+        const { data: expensive } = await supabase
+          .from("products")
+          .select("id, name, price, image_url, profile_id")
+          .eq("is_active", true)
+          .eq("category_id", categoryId)
+          .not("image_url", "is", null)
+          .not("price", "is", null)
+          .gt("price", Number(product.price) || 0)
+          .neq("id", product.id)
+          .order("price", { ascending: true })
+          .limit(3);
+
+        if (expensive && expensive.length > 0) {
+          preMap[product.id] = expensive as MarketplaceAlt[];
+          expensive.forEach((p) => allProfileIds.add(p.profile_id));
+        }
+      }
+
+      // دریافت نام فروشگاه‌ها
+      if (allProfileIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, brand_name")
+          .in("id", [...allProfileIds]);
+
+        const nameMap: Record<string, string> = {};
+        (profiles || []).forEach((p) => {
+          nameMap[p.id] = p.brand_name || "فروشگاه";
+        });
+        setStoreNames(nameMap);
+
+        // اضافه کردن نام فروشگاه به جایگزین‌ها
+        for (const key of Object.keys(ecoMap)) {
+          ecoMap[key] = ecoMap[key].map((alt) => ({
+            ...alt,
+            store_name: nameMap[alt.profile_id] || "فروشگاه",
+          }));
+        }
+        for (const key of Object.keys(preMap)) {
+          preMap[key] = preMap[key].map((alt) => ({
+            ...alt,
+            store_name: nameMap[alt.profile_id] || "فروشگاه",
+          }));
+        }
+      }
+
+      setEconomyAlts(ecoMap);
+      setPremiumAlts(preMap);
+    } catch (e) {
+      console.error("خطا در بارگذاری جایگزین‌ها:", e);
+    } finally {
+      setLoadingAlts(false);
+    }
+  }, [currentProducts]);
+
+  useEffect(() => {
+    loadAlternatives();
+  }, [loadAlternatives]);
 
   const originalTotal = useMemo(
     () => currentProducts.reduce((s, p) => s + (Number(p.price) || 0), 0),
     [currentProducts],
   );
 
-  const findAlt = (product: Product, version: "economy" | "premium"): ProductAlt | null => {
+  const findAlt = (product: Product, version: "economy" | "premium"): MarketplaceAlt | null => {
     const alts = version === "economy" ? economyAlts : premiumAlts;
-    const matches = alts[product.name] || [];
+    const matches = alts[product.id] || [];
     return matches.length > 0 ? matches[0] : null;
   };
 
@@ -88,37 +164,39 @@ export default function EconomyPremiumToggle({
     let total = 0;
     for (const p of currentProducts) {
       const alt = findAlt(p, "economy");
-      total += alt ? alt.price : (Number(p.price) || 0);
+      total += alt ? (Number(alt.price) || 0) : (Number(p.price) || 0);
     }
     return total;
-  }, [currentProducts]);
+  }, [currentProducts, economyAlts]);
 
   const premiumTotal = useMemo(() => {
     let total = 0;
     for (const p of currentProducts) {
       const alt = findAlt(p, "premium");
-      total += alt ? alt.price : (Number(p.price) || 0);
+      total += alt ? (Number(alt.price) || 0) : (Number(p.price) || 0);
     }
     return total;
-  }, [currentProducts]);
+  }, [currentProducts, premiumAlts]);
 
   const handleApply = (version: "economy" | "premium") => {
     setAnimating(true);
     setActiveVersion(version);
 
-    // Simulate replacement delay
+    const alts = version === "economy" ? economyAlts : premiumAlts;
+
+    // شبیه‌سازی زمان جستجو
     setTimeout(() => {
-      const alts = version === "economy" ? economyAlts : premiumAlts;
       const replaced: Product[] = currentProducts.map((p) => {
-        const matches = alts[p.name];
+        const matches = alts[p.id];
         if (matches && matches.length > 0) {
           const alt = matches[0];
           return {
             ...p,
             id: alt.id,
             name: alt.name,
-            price: alt.price,
+            price: alt.price ? Number(alt.price) : null,
             image_url: alt.image_url,
+            profile_id: alt.profile_id,
           };
         }
         return p;
@@ -132,14 +210,16 @@ export default function EconomyPremiumToggle({
     setAnimating(true);
     setTimeout(() => {
       setActiveVersion("original");
-      // Reset back to original products by calling onReplace with the original products
-      // Since we don't have the original reference, we just toggle the UI state
       setAnimating(false);
     }, 300);
   };
 
   const currentTotal = activeVersion === "economy" ? economyTotal : activeVersion === "premium" ? premiumTotal : originalTotal;
   const diff = currentTotal - originalTotal;
+
+  // تعداد جایگزین‌های موجود
+  const ecoCount = Object.values(economyAlts).flat().length;
+  const preCount = Object.values(premiumAlts).flat().length;
 
   return (
     <div className={cn("w-full", className)}>
@@ -149,6 +229,9 @@ export default function EconomyPremiumToggle({
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
           نسخه‌های جایگزین
         </h3>
+        {loadingAlts && (
+          <RefreshCw size={14} className="animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {/* Buttons */}
@@ -156,7 +239,7 @@ export default function EconomyPremiumToggle({
         {/* Economy Version */}
         <button
           onClick={() => handleApply("economy")}
-          disabled={animating}
+          disabled={animating || loadingAlts || ecoCount === 0}
           className={cn(
             "flex flex-1 items-center gap-3 rounded-xl border-2 p-4 text-right transition-all",
             activeVersion === "economy"
@@ -185,13 +268,21 @@ export default function EconomyPremiumToggle({
               <ArrowLeft size={10} className="text-emerald" />
               <span className="font-bold text-emerald">{fmt(economyTotal)}</span>
             </div>
+            {ecoCount > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {ecoCount} جایگزین اقتصادی در بازار موجود است
+              </p>
+            )}
+            {ecoCount === 0 && !loadingAlts && (
+              <p className="text-[10px] text-amber-500 mt-1">جایگزین اقتصادی یافت نشد</p>
+            )}
           </div>
         </button>
 
         {/* Premium Version */}
         <button
           onClick={() => handleApply("premium")}
-          disabled={animating}
+          disabled={animating || loadingAlts || preCount === 0}
           className={cn(
             "flex flex-1 items-center gap-3 rounded-xl border-2 p-4 text-right transition-all",
             activeVersion === "premium"
@@ -220,6 +311,14 @@ export default function EconomyPremiumToggle({
               <ArrowLeft size={10} className="text-amber-500" />
               <span className="font-bold text-amber-600">{fmt(premiumTotal)}</span>
             </div>
+            {preCount > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {preCount} جایگزین لوکس در بازار موجود است
+              </p>
+            )}
+            {preCount === 0 && !loadingAlts && (
+              <p className="text-[10px] text-amber-500 mt-1">جایگزین لوکس یافت نشد</p>
+            )}
           </div>
         </button>
       </div>
