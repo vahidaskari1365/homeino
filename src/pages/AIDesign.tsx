@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AIPromptBox from "@/components/AIPromptBox";
 import BudgetInput from "@/components/BudgetInput";
+import EconomyPremiumToggle from "@/components/EconomyPremiumToggle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { redesignRoom, replaceProductInImage } from "@/services/huggingface";
 import { saveProject, getProject, generateId } from "@/services/projects";
@@ -810,6 +811,14 @@ const AIDesign = () => {
                     <RefreshCw size={18} /> طراحی مجدد
                   </button>
                 </div>
+              )}
+
+              {/* Economy & Premium Version */}
+              {resultImage && !loading && !polishing && generatedProducts.length > 0 && (
+                <EconomyPremiumToggle
+                  currentProducts={generatedProducts}
+                  onReplace={(products) => setGeneratedProducts(products)}
+                />
               )}
 
               {/* Buy the Look - Post Generation - Enhanced */}
