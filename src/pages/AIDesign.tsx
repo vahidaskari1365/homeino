@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AIPromptBox from "@/components/AIPromptBox";
+import BudgetInput from "@/components/BudgetInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { redesignRoom, replaceProductInImage } from "@/services/huggingface";
 import { saveProject, getProject, generateId } from "@/services/projects";
@@ -78,6 +79,7 @@ const AIDesign = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [style, setStyle] = useState("modern");
+  const [budget, setBudget] = useState(0);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [polishing, setPolishing] = useState(false);
@@ -509,9 +511,14 @@ const AIDesign = () => {
               </div>
             </section>
 
-            {/* Step 3: Choose products by category */}
+            {/* Step 3: Budget */}
             <section>
-              <h2 className="font-bold mb-3 text-lg">۳. وسایلی که می‌خوای داخل خونه قرار بگیره</h2>
+              <BudgetInput value={budget} onChange={setBudget} label="۳. بودجه مورد نظر خود را وارد کنید" />
+            </section>
+
+            {/* Step 4: Choose products by category */}
+            <section>
+              <h2 className="font-bold mb-3 text-lg">۴. وسایلی که می‌خوای داخل خونه قرار بگیره</h2>
 
               {/* Category tabs */}
               <div className="flex flex-wrap gap-2 mb-4">
@@ -565,7 +572,7 @@ const AIDesign = () => {
               )}
             </section>
 
-            {/* Step 4: AIPromptBox */}
+            {/* Step 5: AIPromptBox */}
             <section>
               <AIPromptBox value={prompt} onChange={setPrompt} />
             </section>
@@ -605,6 +612,19 @@ const AIDesign = () => {
                     <span className="text-muted-foreground">مجموع</span>
                     <span className="font-bold text-accent">{fmt(total)}</span>
                   </div>
+                  {budget > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">بودجه</span>
+                      <span className={`font-bold ${total <= budget ? "text-emerald" : "text-red-500"}`}>
+                        {fmt(budget)}
+                      </span>
+                    </div>
+                  )}
+                  {budget > 0 && total > budget && (
+                    <div className="text-[10px] text-red-500 bg-red-50 dark:bg-red-950/20 rounded-lg px-2 py-1.5 text-center">
+                      مجموع محصولات از بودجه شما بیشتر است
+                    </div>
+                  )}
                   <button 
                     onClick={buyTheLook}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors"
