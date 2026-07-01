@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+const db = supabase as any;
+
 export const useSavedInspirations = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -12,7 +14,7 @@ export const useSavedInspirations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("user_collections")
         .select(`
           *,
@@ -21,7 +23,7 @@ export const useSavedInspirations = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
-      return data;
+      return (data || []) as any[];
     },
   });
 
@@ -33,8 +35,7 @@ export const useSavedInspirations = () => {
       let targetCollectionId = collectionId;
 
       if (!targetCollectionId) {
-        // Find or create default collection
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("user_collections")
           .select("id")
           .eq("user_id", user.id)
@@ -42,25 +43,25 @@ export const useSavedInspirations = () => {
           .maybeSingle();
 
         if (existing) {
-          targetCollectionId = existing.id;
+          targetCollectionId = (existing as any).id;
         } else {
-          const { data: created, error: createError } = await supabase
+          const { data: created, error: createError } = await db
             .from("user_collections")
             .insert({ user_id: user.id, name: "علاقه‌مندی‌ها" })
             .select("id")
             .single();
-          
+
           if (createError) throw createError;
-          targetCollectionId = created.id;
+          targetCollectionId = (created as any).id;
         }
       }
 
-      const { error } = await supabase
+      const { error } = await db
         .from("collection_items")
         .insert({ collection_id: targetCollectionId, inspiration_id: inspirationId });
 
       if (error) {
-        if (error.code === "23505") { // Unique violation
+        if ((error as any).code === "23505") {
           throw new Error("این مورد قبلاً در مجموعه شما ذخیره شده است");
         }
         throw error;
@@ -79,24 +80,6 @@ export const useSavedInspirations = () => {
         description: error.message,
         variant: "destructive",
       });
-    },
-  });
-
-  const unsaveInspiration = useMutation({
-    mutationFn: async (inspirationId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Find collection item
-      const { data: item } = await supabase
-        .from("collection_items")
-        .select("id")
-        .eq("inspiration_id", inspirationId)
-        .eq("collection_id", collections?.find(c => c.user_id === user.id)?.id || ""); // Simplified
-
-      if (item) {
-        // This needs a more robust way to handle multiple collections
-      }
     },
   });
 
