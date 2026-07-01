@@ -11,6 +11,16 @@ serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? ""
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 
+  // Only accept invocations that already carry the service role key
+  // (e.g., from the scheduled job or an authorized server).
+  const authHeader = req.headers.get("Authorization")
+  if (!SUPABASE_SERVICE_ROLE_KEY || authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
+  }
+
   try {
     console.log("Starting scheduled task...")
 
