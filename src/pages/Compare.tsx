@@ -29,10 +29,10 @@ const Compare = () => {
         .select("id, attributes, rating, profile_id, profiles(id, brand_name)")
         .in("id", ids);
       const map: Record<string, Enriched> = {};
-      (data || []).forEach((p: { id: string; attributes: Record<string, unknown> | null; rating: number | null; profiles: { id: string; brand_name: string | null } | null }) => {
+      (data || []).forEach((p: any) => {
         map[p.id] = {
           id: p.id,
-          attributes: p.attributes || {},
+          attributes: (p.attributes as Record<string, unknown>) || {},
           rating: Number(p.rating || 0),
           shop_id: p.profiles?.id,
           shop_name: p.profiles?.brand_name,

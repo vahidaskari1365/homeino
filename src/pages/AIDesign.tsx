@@ -1102,7 +1102,7 @@ const AIDesign = () => {
 
               {/* Economy & Premium Version */}
               {resultImage && !loading && !polishing && generatedProducts.length > 0 && (
-                <EconomyPremiumToggle currentProducts={generatedProducts} onReplace={(products) => setGeneratedProducts(products)} />
+                <EconomyPremiumToggle currentProducts={generatedProducts as any} onReplace={(products) => setGeneratedProducts(products as any)} />
               )}
 
               {/* Financial Report */}

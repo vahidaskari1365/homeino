@@ -82,7 +82,7 @@ export const useWishlist = () => {
           description: input.description ?? null,
           image_url: input.image_url ?? null,
           price: input.price ?? null,
-          metadata: input.metadata ?? {},
+          metadata: (input.metadata ?? {}) as any,
         })
         .select()
         .single();

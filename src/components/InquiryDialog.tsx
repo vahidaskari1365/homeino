@@ -21,9 +21,10 @@ interface Props {
   product_id?: string;
   label?: string;
   variant?: "default" | "outline" | "secondary";
+  size?: "default" | "sm" | "lg";
 }
 
-const InquiryDialog = ({ profile_id, product_id, label = "ارسال درخواست", variant = "outline" }: Props) => {
+const InquiryDialog = ({ profile_id, product_id, label = "ارسال درخواست", variant = "outline", size = "default" }: Props) => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
@@ -76,7 +77,7 @@ const InquiryDialog = ({ profile_id, product_id, label = "ارسال درخوا�
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} className="gap-2">
+        <Button variant={variant} size={size} className="gap-2">
           <MessageSquare size={16} /> {label}
         </Button>
       </DialogTrigger>

@@ -90,13 +90,13 @@ const DesignShopping = () => {
 
         // Fetch shop names
         const profileIds = [...new Set(prods.map((p) => p.profile_id))];
-        const { data: profiles } = await supabase
+        const { data: profiles } = await (supabase as any)
           .from("profiles")
           .select("id, display_name")
           .in("id", profileIds);
 
         const profileMap: Record<string, string> = {};
-        (profiles || []).forEach((p) => { profileMap[p.id] = p.display_name || "فروشگاه"; });
+        ((profiles || []) as any[]).forEach((p: any) => { profileMap[p.id] = p.display_name || "فروشگاه"; });
 
         const mapped: ShoppingItem[] = prods.map((p, idx) => ({
           id: p.id,

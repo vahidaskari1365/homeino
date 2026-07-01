@@ -128,8 +128,6 @@ const Index = () => {
         <CategoriesSection />
       </Reveal>
 
-      <Reveal variant="scale" delay={80}>
-      </Reveal>
 
       <Reveal variant="up" delay={0}>
         <InspirationSection />
