@@ -19,6 +19,7 @@ const navLinks = [
   { label: "فروشگاه‌ها", href: "/shops" },
   { label: "آگهی دست دوم", href: "/second-hand" },
   { label: "جستجوی تصویری", href: "/visual-search" },
+  { label: "مشاور خرید هوشمند", href: "/ai-advisor" },
 ];
 
 const Navbar = () => {
