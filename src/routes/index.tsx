@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { readFile } from "node:fs/promises";
 import ShoppingSummary from "~/components/ShoppingSummary";
 import BudgetOptimizer from "~/components/BudgetOptimizer";
+import PriceComparison from "~/components/PriceComparison";
 
 // Read the (optional) business name at request time so the placeholder can be
 // personalized by writing site.json — no rebuild needed. Resolves relative to the
@@ -54,6 +55,9 @@ function Home() {
 
       {/* Budget Optimization */}
       <BudgetOptimizer />
+
+      {/* Price Comparison */}
+      <PriceComparison />
 
       {/* Footer */}
       <footer className="mt-auto pt-8 text-sm text-gray-400 dark:text-gray-600">
