@@ -12,14 +12,12 @@ import logo from "@/assets/homeino-logo.jpg";
 
 const navLinks = [
   { label: "خانه", href: "/" },
-  { label: "دسته‌بندی‌ها", href: "/#categories" },
-  { label: "پروژه‌های من", href: "/projects" },
-  { label: "الهام دکوراسیون", href: "/inspirations" },
-  { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
+  { label: "طراحی هوش مصنوعی", href: "/ai-design" },
   { label: "فروشگاه‌ها", href: "/shops" },
-  { label: "آگهی دست دوم", href: "/second-hand" },
-  { label: "جستجوی تصویری", href: "/visual-search" },
-  { label: "مشاور خرید هوشمند", href: "/ai-advisor" },
+  { label: "الهام دکوراسیون", href: "/inspirations" },
+  { label: "مشاور خرید", href: "/ai-advisor" },
+  { label: "پروژه‌ها", href: "/projects" },
+  { label: "دسته‌بندی‌ها", href: "/#categories" },
 ];
 
 const Navbar = () => {
@@ -48,12 +46,12 @@ const Navbar = () => {
         </a>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6 overflow-x-auto flex-nowrap mx-4 scrollbar-none">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.href}
-              className="text-muted-foreground hover:text-gold transition-colors duration-300 text-sm font-medium"
+              className="text-muted-foreground hover:text-gold transition-colors duration-300 text-sm font-medium whitespace-nowrap"
             >
               {link.label}
             </Link>
