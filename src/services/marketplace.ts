@@ -105,7 +105,7 @@ export async function getMarketplaceProducts(options: {
 
   // Exclude specific IDs
   if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+    query = (query as any).not("id", "in", `(${excludeIds.join(",")})`);
   }
 
   const { data, error } = await query

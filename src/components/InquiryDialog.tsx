@@ -77,7 +77,7 @@ const InquiryDialog = ({ profile_id, product_id, label = "ارسال درخوا�
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} className="gap-2">
+        <Button variant={variant} size={size} className="gap-2">
           <MessageSquare size={16} /> {label}
         </Button>
       </DialogTrigger>
