@@ -110,7 +110,7 @@ const Checkout = () => {
     setCouponError(null);
     setCouponSuccess(null);
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await (supabase as any)
         .from("coupons")
         .select("*")
         .eq("code", couponCode.trim().toUpperCase())
@@ -118,6 +118,7 @@ const Checkout = () => {
         .maybeSingle();
 
       if (error) throw error;
+      const data: any = rawData;
 
       if (!data) {
         setCouponError("کد تخفیف معتبر نیست یا منقضی شده است");
