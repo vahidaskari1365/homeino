@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import AIPromptBox from "@/components/AIPromptBox";
 import BudgetInput from "@/components/BudgetInput";
 import EconomyPremiumToggle from "@/components/EconomyPremiumToggle";
+import FinancialReport from "@/components/FinancialReport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { redesignRoom, replaceProductInImage } from "@/services/huggingface";
 import { saveProject, getProject, generateId } from "@/services/projects";
@@ -819,6 +820,11 @@ const AIDesign = () => {
                   currentProducts={generatedProducts}
                   onReplace={(products) => setGeneratedProducts(products)}
                 />
+              )}
+
+              {/* Financial Report */}
+              {resultImage && !loading && !polishing && generatedProducts.length > 0 && (
+                <FinancialReport products={generatedProducts} />
               )}
 
               {/* Buy the Look - Post Generation - Enhanced */}
