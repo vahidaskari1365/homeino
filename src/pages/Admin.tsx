@@ -933,8 +933,8 @@ const AdsTab = () => {
       end_date: form.end_date || null,
     };
     const { error } = editing
-      ? await supabase.from("advertisements").update(payload).eq("id", editing.id)
-      : await supabase.from("advertisements").insert(payload);
+      ? await supabase.from("advertisements").update(payload as any).eq("id", editing.id)
+      : await supabase.from("advertisements").insert(payload as any);
     if (error) toast.error(error.message);
     else { toast.success(editing ? "ویرایش شد" : "اضافه شد"); setOpen(false); load(); }
   };

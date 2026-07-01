@@ -185,7 +185,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
         {reviews.length > 0 && (
           <div className="flex items-center gap-2">
             <StarRatingComponent value={Math.round(avg)} readOnly size={16} />
-            <span className="text-sm text-muted-foreground">{avg.toFixed(1).toLocaleString("fa-IR")} از ۵</span>
+            <span className="text-sm text-muted-foreground">{avg.toFixed(1)} از ۵</span>
           </div>
         )}
       </div>
@@ -197,7 +197,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               {/* Overall Score */}
               <div className="text-center md:border-l md:border-border">
-                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1).toLocaleString("fa-IR")}</span>
+                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1)}</span>
                 <div className="flex justify-center my-2">
                   <StarRatingComponent value={Math.round(avg)} readOnly size={20} />
                 </div>
@@ -283,7 +283,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
           <div className="flex items-center gap-2 text-xs">
             <ArrowUpDown size={14} className="text-muted-foreground" />
             <span className="text-muted-foreground">مرتب‌سازی براساس:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "highest" | "lowest")}>
               <SelectTrigger className="w-36 h-8 text-xs font-semibold">
                 <SelectValue placeholder="مرتب‌سازی" />
               </SelectTrigger>
