@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AIPromptBox from "@/components/AIPromptBox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { redesignRoom, replaceProductInImage } from "@/services/huggingface";
 import { saveProject, getProject, generateId } from "@/services/projects";
@@ -564,12 +565,9 @@ const AIDesign = () => {
               )}
             </section>
 
-            {/* Step 4: Optional prompt */}
+            {/* Step 4: AIPromptBox */}
             <section>
-              <h2 className="font-bold mb-3 text-lg">۴. توضیحات تکمیلی (اختیاری)</h2>
-              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-                placeholder="مثلاً: مبل سمت پنجره، فرش روشن، لوستر طلایی..."
-                className="w-full bg-card border border-border rounded-xl p-4 text-sm min-h-[90px] outline-none focus:border-accent transition-colors resize-none" />
+              <AIPromptBox value={prompt} onChange={setPrompt} />
             </section>
           </div>
 
