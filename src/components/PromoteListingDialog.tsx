@@ -1,15 +1,15 @@
-import { useState, type ComponentType } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Flame, Sparkles, ArrowUp, Loader2 } from "lucide-react";
+import { Flame, Sparkles, ArrowUp, Loader2, type LucideIcon } from "lucide-react";
 
 type PromotionType = "urgent" | "featured" | "bump";
 
-const PLANS: Record<PromotionType, { label: string; price: number; days: number; icon: ComponentType<{ className?: string; size?: number }>; desc: string; color: string }> = {
+const PLANS: Record<PromotionType, { label: string; price: number; days: number; icon: LucideIcon; desc: string; color: string }> = {
   urgent: { label: "آگهی فوری", price: 50000, days: 7, icon: Flame, desc: "نمایش با برچسب «فوری» و رنگ متفاوت در لیست", color: "text-red-500" },
   featured: { label: "آگهی ویژه", price: 150000, days: 14, icon: Sparkles, desc: "نمایش در صدر صفحه و بخش ویژه با برچسب طلایی", color: "text-gold" },
   bump: { label: "بالا آوردن", price: 20000, days: 1, icon: ArrowUp, desc: "آگهی شما به ابتدای لیست منتقل می‌شود", color: "text-emerald-500" },

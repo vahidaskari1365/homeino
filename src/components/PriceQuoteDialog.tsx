@@ -90,7 +90,7 @@ const PriceQuoteDialog = ({
       request_type,
       product_id: product_id ?? null,
       set_id: set_id ?? null,
-      items: items as unknown as Record<string, unknown>[],
+      items: items as any,
       title,
       description: parsed.data.description || null,
       customer_name: parsed.data.customer_name,

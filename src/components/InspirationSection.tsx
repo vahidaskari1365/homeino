@@ -71,7 +71,7 @@ const InspirationSection = () => {
              ))
           ) : (
             pins.map((pin) => {
-              const isSaved = collections?.some(c => c.items.some(i => i.inspiration_id === pin.id));
+              const isSaved = (collections as any[] | undefined)?.some((c: any) => c.items?.some?.((i: any) => i.inspiration_id === pin.id));
               
               return (
                 <Link
