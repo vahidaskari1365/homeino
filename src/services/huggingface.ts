@@ -24,9 +24,12 @@ interface AIEndpoint {
 
 const AI_ENDPOINTS: AIEndpoint[] = [
   {
+    // API key intentionally removed from client bundle for security.
+    // All AI image generation must be proxied through the authenticated
+    // `ai-redesign` edge function which holds the key server-side.
     name: "SiliconFlow",
-    enabled: true,
-    apiKey: "3305e9e19f7f4a3982e5cd12ed73d2a0.g7Ab9mA1XVxiUHTS",
+    enabled: false,
+    apiKey: "",
     chatUrl: "https://api.siliconflow.cn/v1/chat/completions",
     imageUrl: "https://api.siliconflow.cn/v1/images/generations",
     visionModel: "Qwen/Qwen2-VL-72B-Instruct",
