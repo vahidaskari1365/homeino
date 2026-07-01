@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import ShoppingSummary from "~/components/ShoppingSummary";
 import BudgetOptimizer from "~/components/BudgetOptimizer";
 import PriceComparison from "~/components/PriceComparison";
+import BuyDesign from "~/components/BuyDesign";
 
 // Read the (optional) business name at request time so the placeholder can be
 // personalized by writing site.json — no rebuild needed. Resolves relative to the
@@ -52,6 +53,9 @@ function Home() {
 
       {/* Shopping Summary */}
       <ShoppingSummary />
+
+      {/* Buy This Design */}
+      <BuyDesign />
 
       {/* Budget Optimization */}
       <BudgetOptimizer />
