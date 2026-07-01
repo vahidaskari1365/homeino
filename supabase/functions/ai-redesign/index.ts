@@ -30,6 +30,29 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require an authenticated user — prevents anonymous abuse of paid AI credits.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.7.1");
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authErr } = await authClient.auth.getClaims(token);
+    if (authErr || !claims?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     console.log("------------------- Zhipu AI redesign start -------------------");
 
     const body = await req.json();
@@ -38,8 +61,13 @@ Deno.serve(async (req) => {
     const style: string = (body.style || "modern").toString();
     const products: SelectedProduct[] = Array.isArray(body.products) ? body.products : [];
 
-    // Fallback/Default Zhipu AI API Key provided by user
-    const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY") || "3305e9e19f7f4a3982e5cd12ed73d2a0.g7Ab9mA1XVxiUHTS";
+    const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY");
+    if (!ZHIPU_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI service not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log("Request payload - Style:", style, "Prompt:", prompt, "Products count:", products.length);
 
