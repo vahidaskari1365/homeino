@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import CategoriesSection from "@/components/CategoriesSection";
 import InspirationSection from "@/components/InspirationSection";
-import AIDesignSection from "@/components/AIDesignSection";
 import BudgetSection from "@/components/BudgetSection";
 import ServicesSection from "@/components/ServicesSection";
 import Newsletter from "@/components/Newsletter";
@@ -130,7 +129,6 @@ const Index = () => {
       </Reveal>
 
       <Reveal variant="scale" delay={80}>
-        <AIDesignSection />
       </Reveal>
 
       <Reveal variant="up" delay={0}>
