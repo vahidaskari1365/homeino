@@ -428,11 +428,13 @@ const AIDesign = () => {
                 </p>
                 <div className="relative">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={budget}
-                    onChange={(e) => setBudget(e.target.value)}
+                    onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="مثلاً: ۵۰۰۰۰۰۰"
                     className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-accent transition-colors"
+                    dir="ltr"
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                     تومان

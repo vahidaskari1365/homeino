@@ -34,9 +34,11 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-black border border-border select-none">
-      {/* Room background image */}
-      <img src={roomImage} alt="اتاق" className="w-full object-cover" draggable={false} />
+    <div className="relative w-full rounded-2xl bg-black border border-border select-none" style={{ overflow: "visible" }}>
+      {/* Clip only the room image, not the tooltips */}
+      <div className="rounded-2xl overflow-hidden">
+        <img src={roomImage} alt="اتاق" className="w-full object-cover" draggable={false} />
+      </div>
 
       {/* Product overlays at Gemini-determined coordinates */}
       {placements.map((pl) => {
@@ -100,9 +102,9 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
         );
       })}
 
-      {/* Bottom legend bar */}
+      {/* Bottom legend bar — positioned relative to the image, not the outer wrapper */}
       {placements.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-6">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-6 rounded-b-2xl" style={{ overflow: "visible" }}>
           <div className="flex flex-wrap gap-1">
             {placements.map((pl) => {
               const product = productsMap[pl.product_id];
