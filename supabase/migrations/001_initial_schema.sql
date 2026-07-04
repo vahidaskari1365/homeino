@@ -4,8 +4,6 @@
 -- ============================================================
 
 -- 0. Extensions
-create extension if not exists "uuid-ossp";
-
 -- 1. Profiles (extends auth.users)
 create table if not exists public.profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
@@ -17,7 +15,7 @@ create table if not exists public.profiles (
 
 -- 2. Stores
 create table if not exists public.stores (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   owner_id    uuid not null references public.profiles(id) on delete cascade,
   name        text not null,
   description text,
@@ -28,7 +26,7 @@ create table if not exists public.stores (
 
 -- 3. Products
 create table if not exists public.products (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   store_id    uuid not null references public.stores(id) on delete cascade,
   name        text not null,
   category    text not null default 'other',
@@ -45,7 +43,7 @@ create table if not exists public.products (
 
 -- 4. Rooms
 create table if not exists public.rooms (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references public.profiles(id) on delete cascade,
   image_url   text not null,
   budget      bigint,
@@ -54,7 +52,7 @@ create table if not exists public.rooms (
 
 -- 5. Designs
 create table if not exists public.designs (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   room_id     uuid not null references public.rooms(id) on delete cascade,
   style       text,
   total_price bigint default 0,
@@ -64,7 +62,7 @@ create table if not exists public.designs (
 
 -- 6. Placements (product overlays on room)
 create table if not exists public.placements (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   design_id   uuid not null references public.designs(id) on delete cascade,
   product_id  uuid not null references public.products(id) on delete cascade,
   x           float not null check (x >= 0 and x <= 100),
@@ -78,7 +76,7 @@ create table if not exists public.placements (
 
 -- 7. AI Logs
 create table if not exists public.ai_logs (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references public.profiles(id) on delete cascade,
   room_id     uuid references public.rooms(id) on delete set null,
   prompt      text,
