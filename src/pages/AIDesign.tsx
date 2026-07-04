@@ -45,16 +45,16 @@ const STYLES = [
   { id: "japanese",     label: "ژاپنی"        },
 ];
 
-const CATEGORIES = [
-  { slug: "furniture",   label: "مبلمان",      icon: "🛋️" },
-  { slug: "curtain",     label: "پرده",        icon: "🪟" },
-  { slug: "carpet",      label: "فرش",         icon: "🟥" },
-  { slug: "lighting",    label: "لوستر",       icon: "💡" },
-  { slug: "bedding",     label: "تخت و خواب",  icon: "🛏️" },
-  { slug: "plants",      label: "گل و گیاه",   icon: "🪴" },
-  { slug: "art",         label: "تابلو",       icon: "🖼️" },
-  { slug: "wood-decor",  label: "دکور چوبی",   icon: "🪵" },
-  { slug: "accessories", label: "اکسسوری",     icon: "🎀" },
+const CATEGORIES: { slug: string; label: string; Icon: LucideIcon }[] = [
+  { slug: "furniture",   label: "مبلمان",     Icon: Sofa },
+  { slug: "curtain",     label: "پرده",       Icon: Blinds },
+  { slug: "carpet",      label: "فرش",        Icon: Grid3x3 },
+  { slug: "lighting",    label: "لوستر",      Icon: Lamp },
+  { slug: "bedding",     label: "تخت و خواب", Icon: BedDouble },
+  { slug: "plants",      label: "گل و گیاه",  Icon: Flower2 },
+  { slug: "art",         label: "تابلو",      Icon: ImageIcon },
+  { slug: "wood-decor",  label: "دکور چوبی",  Icon: TreePine },
+  { slug: "accessories", label: "اکسسوری",    Icon: Gem },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
