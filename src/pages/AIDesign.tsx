@@ -1,55 +1,59 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers, Target, Edit3 } from "lucide-react";
+import {
+  Upload, Wand2, Loader2, ArrowLeft, Sparkles, RefreshCw,
+  ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers,
+  CheckCircle2, Banknote, Info,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
-import BeforeAfterSlider from "@/components/BeforeAfterSlider";
-import MaskCanvas from "@/components/MaskCanvas";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { redesignRoom } from "@/services/huggingface";
+import ProductOverlay from "@/components/ProductOverlay";
 
-// ---- Design stages for progressive feedback ----
+// ─── Stage config ─────────────────────────────────────────────────────────────
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
 
 const STAGE_CONFIG: Record<DesignStage, { label: string; progress: number }> = {
-  UPLOADING: { label: "آپلود تصویر", progress: 0 },
-  ANALYZING_SPACE: { label: "تحلیل ابعاد، نور و سبک فضا...", progress: 20 },
-  SELECTING_PRODUCTS: { label: "بررسی و انتخاب محصولات...", progress: 40 },
-  LAYING_OUT: { label: "چیدمان هوشمند محصولات در فضا...", progress: 60 },
-  RENDERING: { label: "رندرگیری نهایی و بهینه‌سازی...", progress: 85 },
+  UPLOADING:         { label: "آپلود تصویر",                          progress: 0  },
+  ANALYZING_SPACE:   { label: "تحلیل ابعاد، نور و سبک فضا...",        progress: 20 },
+  SELECTING_PRODUCTS:{ label: "بررسی و انتخاب محصولات...",            progress: 40 },
+  LAYING_OUT:        { label: "چیدمان هوشمند محصولات در فضا...",      progress: 65 },
+  RENDERING:         { label: "رندرگیری نهایی و بهینه‌سازی...",        progress: 85 },
 };
 
-const STAGES: DesignStage[] = ["UPLOADING", "ANALYZING_SPACE", "SELECTING_PRODUCTS", "LAYING_OUT", "RENDERING"];
+const STAGES: DesignStage[] = [
+  "UPLOADING","ANALYZING_SPACE","SELECTING_PRODUCTS","LAYING_OUT","RENDERING",
+];
 
+// ─── Static data ──────────────────────────────────────────────────────────────
 const STYLES = [
-  { id: "modern", label: "مدرن" },
-  { id: "classic", label: "کلاسیک" },
-  { id: "minimalist", label: "مینیمال" },
-  { id: "industrial", label: "صنعتی" },
-  { id: "scandinavian", label: "اسکاندیناوی" },
-  { id: "luxury", label: "لوکس" },
-  { id: "bohemian", label: "بوهمی" },
-  { id: "japanese", label: "ژاپنی" },
+  { id: "modern",       label: "مدرن"         },
+  { id: "classic",      label: "کلاسیک"       },
+  { id: "minimalist",   label: "مینیمال"      },
+  { id: "industrial",   label: "صنعتی"        },
+  { id: "scandinavian", label: "اسکاندیناوی"  },
+  { id: "luxury",       label: "لوکس"         },
+  { id: "bohemian",     label: "بوهمی"        },
+  { id: "japanese",     label: "ژاپنی"        },
 ];
 
-// Map UI categories to producer_categories slugs in DB
-const CATEGORIES: { slug: string; label: string; icon: string }[] = [
-  { slug: "furniture", label: "مبلمان", icon: "🛋️" },
-  { slug: "curtain", label: "پرده", icon: "🪟" },
-  { slug: "carpet", label: "فرش", icon: "🟫" },
-  { slug: "lighting", label: "لوستر", icon: "💡" },
-  { slug: "bedding", label: "تخت و خواب", icon: "🛏️" },
-  { slug: "plants", label: "گل و گیاه", icon: "🪴" },
-  { slug: "art", label: "تابلو", icon: "🖼️" },
-  { slug: "wood-decor", label: "دکور چوبی", icon: "🪵" },
-  { slug: "accessories", label: "اکسسوری", icon: "🎀" },
+const CATEGORIES = [
+  { slug: "furniture",   label: "مبلمان",      icon: "🛋️" },
+  { slug: "curtain",     label: "پرده",        icon: "🪟" },
+  { slug: "carpet",      label: "فرش",         icon: "🟥" },
+  { slug: "lighting",    label: "لوستر",       icon: "💡" },
+  { slug: "bedding",     label: "تخت و خواب",  icon: "🛏️" },
+  { slug: "plants",      label: "گل و گیاه",   icon: "🪴" },
+  { slug: "art",         label: "تابلو",       icon: "🖼️" },
+  { slug: "wood-decor",  label: "دکور چوبی",   icon: "🪵" },
+  { slug: "accessories", label: "اکسسوری",     icon: "🎀" },
 ];
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Product = {
   id: string;
   name: string;
@@ -60,45 +64,50 @@ type Product = {
   stock?: number;
 };
 
-type RoomAnalytics = {
-  tip?: string;
-  colorPalette?: string[];
-  styleMatch?: number;
-  spatialAdvice?: string;
+type GeminiPlacement = {
+  product_id: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  confidence: number;
+  reason: string;
+};
+
+type GeminiResult = {
+  consultation: string;
+  style: string;
+  placements: GeminiPlacement[];
+  total_price: number;
 };
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
+// ─── Component ────────────────────────────────────────────────────────────────
 const AIDesign = () => {
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [resultImage, setResultImage] = useState<string | null>(null);
-  const [style, setStyle] = useState("modern");
-  const [prompt, setPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [polishing, setPolishing] = useState(false);
-  const [currentStage, setCurrentStage] = useState<DesignStage>("UPLOADING");
-  const [roomTip, setRoomTip] = useState<string | null>(null);
-  const [roomAnalytics, setRoomAnalytics] = useState<RoomAnalytics | null>(null);
-  const [generatedProducts, setGeneratedProducts] = useState<Product[]>([]);
-  const [activeCat, setActiveCat] = useState<string>(CATEGORIES[0].slug);
-  const [catMap, setCatMap] = useState<Record<string, string>>({}); // slug -> id
-  const [products, setProducts] = useState<Record<string, Product[]>>({}); // slug -> products
-  const [selected, setSelected] = useState<Record<string, Product>>({}); // productId -> product
-  const [maskDialogOpen, setMaskDialogOpen] = useState(false);
-  const [pendingMask, setPendingMask] = useState<string | null>(null);
-  const [analyticsTab, setAnalyticsTab] = useState<"tip" | "colors" | "advice">("tip");
-  const [designConfirmed, setDesignConfirmed] = useState(false);
+  // ── state ──
+  const [imageBase64, setImageBase64]     = useState<string | null>(null);
+  const [style, setStyle]                 = useState("modern");
+  const [prompt, setPrompt]               = useState("");
+  const [budget, setBudget]               = useState("");
+  const [loading, setLoading]             = useState(false);
+  const [currentStage, setCurrentStage]   = useState<DesignStage>("UPLOADING");
+  const [geminiResult, setGeminiResult]   = useState<GeminiResult | null>(null);
+  const [activeCat, setActiveCat]         = useState(CATEGORIES[0].slug);
+  const [catMap, setCatMap]               = useState<Record<string, string>>({});
+  const [products, setProducts]           = useState<Record<string, Product[]>>({});
+  const [selected, setSelected]           = useState<Record<string, Product>>({});
+  const [analyticsTab, setAnalyticsTab]   = useState<"consultation" | "placements">("consultation");
+
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef      = useRef<HTMLInputElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
 
-  // Load categories ids + products per category
+  // ── load products from Supabase ──
   useEffect(() => {
     (async () => {
-      const { data: cats } = await supabase
-        .from("producer_categories")
-        .select("id, slug");
+      const { data: cats } = await supabase.from("producer_categories").select("id, slug");
       const map: Record<string, string> = {};
       (cats || []).forEach((c) => { map[c.slug] = c.id; });
       setCatMap(map);
@@ -120,24 +129,20 @@ const AIDesign = () => {
     })();
   }, []);
 
-  // Clean up stage timer on unmount
   useEffect(() => {
-    return () => {
-      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
-    };
+    return () => { if (stageTimerRef.current) clearInterval(stageTimerRef.current); };
   }, []);
 
-  // Start progressive stage progression
+  // ── stage progression during loading ──
   const startStageProgression = useCallback(() => {
-    const stageOrder: DesignStage[] = ["ANALYZING_SPACE", "SELECTING_PRODUCTS", "LAYING_OUT", "RENDERING"];
+    const stages: DesignStage[] = ["ANALYZING_SPACE","SELECTING_PRODUCTS","LAYING_OUT","RENDERING"];
     let idx = 0;
     setCurrentStage("ANALYZING_SPACE");
-
     if (stageTimerRef.current) clearInterval(stageTimerRef.current);
     stageTimerRef.current = setInterval(() => {
-      idx = Math.min(idx + 1, stageOrder.length - 1);
-      setCurrentStage(stageOrder[idx]);
-      if (idx >= stageOrder.length - 1 && stageTimerRef.current) {
+      idx = Math.min(idx + 1, stages.length - 1);
+      setCurrentStage(stages[idx]);
+      if (idx >= stages.length - 1 && stageTimerRef.current) {
         clearInterval(stageTimerRef.current);
         stageTimerRef.current = null;
       }
@@ -145,24 +150,21 @@ const AIDesign = () => {
   }, []);
 
   const stopStageProgression = useCallback(() => {
-    if (stageTimerRef.current) {
-      clearInterval(stageTimerRef.current);
-      stageTimerRef.current = null;
-    }
+    if (stageTimerRef.current) { clearInterval(stageTimerRef.current); stageTimerRef.current = null; }
   }, []);
 
+  // ── file handling ──
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر انتخاب کنید");
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);
-      setResultImage(null);
-      setRoomAnalytics(null);
-      setDesignConfirmed(false);
+      setGeminiResult(null);
     };
     reader.readAsDataURL(file);
   };
 
+  // ── multi-select toggle — any number of products ──
   const toggleProduct = (p: Product) => {
     setSelected((prev) => {
       const next = { ...prev };
@@ -173,153 +175,114 @@ const AIDesign = () => {
   };
 
   const selectedList = useMemo(() => Object.values(selected), [selected]);
-  const total = selectedList.reduce((s, p) => s + (Number(p.price) || 0), 0);
+  const total        = selectedList.reduce((s, p) => s + (Number(p.price) || 0), 0);
 
-  const buyTheLook = () => {
-    if (selectedList.length === 0) {
-      toast.error("هیچ محصولی انتخاب نشده است");
-      return;
-    }
-    
-    // Check if all products are from the same seller
-    const profileIds = new Set(selectedList.map(p => p.profile_id));
-    if (profileIds.size > 1) {
-      // Allow adding from the first seller only, notifying the user
-      const firstSellerId = selectedList[0].profile_id;
-      const fromFirstSeller = selectedList.filter(p => p.profile_id === firstSellerId);
-      const fromOtherSellers = selectedList.filter(p => p.profile_id !== firstSellerId);
-      
-      let addedCount = 0;
-      for (const p of fromFirstSeller) {
-        const res = addItem({
-          product_id: p.id,
-          profile_id: p.profile_id || "",
-          name: p.name,
-          price: p.price || 0,
-          image_url: p.image_url,
-          stock: p.stock || 10,
-        });
-        if (res.ok) addedCount++;
-      }
+  // ── selected map (id → product) for overlay ──
+  const selectedMap = useMemo(
+    () => selectedList.reduce<Record<string, Product>>((acc, p) => { acc[p.id] = p; return acc; }, {}),
+    [selectedList]
+  );
 
-      if (addedCount > 0) {
-        toast.success(`${addedCount} محصول از یک فروشنده به سبد خرید اضافه شد`);
-        if (fromOtherSellers.length > 0) {
-          toast.info(`${fromOtherSellers.length} محصول از فروشندگان دیگر به دلیل محدودیت سبد خرید اضافه نشد`);
-        }
-        setOpenCart(true);
-      }
-      return;
-    }
+  // ── MAIN: call Gemini edge function ──
+  const generate = async () => {
+    if (!imageBase64)            return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
+    if (selectedList.length === 0) return toast.error("حداقل یک محصول از بازار انتخاب کنید");
 
-    let addedCount = 0;
-    for (const p of selectedList) {
-      const res = addItem({
-        product_id: p.id,
-        profile_id: p.profile_id || "",
-        name: p.name,
-        price: p.price || 0,
-        image_url: p.image_url,
-        stock: p.stock || 10,
-      });
-      if (res.ok) addedCount++;
-    }
-
-    if (addedCount > 0) {
-      toast.success(`${addedCount} محصول به سبد خرید اضافه شد`);
-      setOpenCart(true);
-    }
-  };
-
-  const generate = async (mode: "standard" | "polish" | "mask" = "standard") => {
-    const currentImage = mode === "polish" ? resultImage : imageBase64;
-    if (!currentImage) return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
-
-    if (mode === "standard" || mode === "mask") setLoading(true);
-    else setPolishing(true);
-
-    setResultImage(null);
-    setRoomTip(null);
-    setRoomAnalytics(null);
-    setDesignConfirmed(false);
-
+    setLoading(true);
+    setGeminiResult(null);
     startStageProgression();
 
     try {
-      const payloadProducts = selectedList.map((p) => {
+      // Auth check
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("برای استفاده از هوش مصنوعی ابتدا وارد حساب کاربری شوید");
+        return;
+      }
+
+      // Strip data-URL prefix → raw base64
+      const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+
+      // Build product list for Gemini
+      const geminiProducts = selectedList.map((p) => {
         const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
-        const cat = CATEGORIES.find((c) => c.slug === slug)?.label;
-        return { name: p.name, category: cat, imageUrl: p.image_url || undefined, price: p.price ?? undefined };
+        const cat  = CATEGORIES.find((c) => c.slug === slug);
+        return {
+          id:        p.id,
+          name:      p.name,
+          category:  cat?.label || "عمومی",
+          style,
+          price:     p.price || 0,
+          image_url: p.image_url || undefined,
+          tags:      [] as string[],
+        };
       });
 
-      // Use Silicon Flow API instead of Supabase function
-      const data = await redesignRoom(
-        currentImage,
-        style,
-        prompt.trim(),
-        payloadProducts,
-        mode === "mask" ? pendingMask : undefined,
-        mode === "polish"
-      );
+      const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
 
-      if (data.error) throw new Error(data.error);
-      
-      const img = data.image;
-      if (!img) throw new Error("تصویری دریافت نشد");
+      // Call the Supabase Edge Function (gemini-decorator)
+      const { data, error } = await supabase.functions.invoke("gemini-decorator", {
+        body: {
+          image_base64: base64,
+          products:     geminiProducts,
+          budget:       budgetNum,
+          ...(prompt.trim() ? { room_id: undefined } : {}),
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
 
-      // Force the final stage for the last stretch
+      if (error)        throw new Error(error.message || "خطا در اتصال به سرور");
+      if (data?.error)  throw new Error(data.error);
+      if (!data?.placements) throw new Error("پاسخ نامعتبر از جمینی");
+
+      setGeminiResult(data as GeminiResult);
       setCurrentStage("RENDERING");
-      
-      // Small delay to show the rendering stage before transitioning to result
-      await new Promise(r => setTimeout(r, 800));
-
-      setResultImage(img);
-      if (data.tip) setRoomTip(data.tip);
-      if (data.analytics) setRoomAnalytics(data.analytics);
-      
-      // Store products that were used for "Buy the Look" post-generation
-      setGeneratedProducts([...selectedList]);
-      
-      toast.success("طراحی جدید آماده شد");
+      await new Promise((r) => setTimeout(r, 400));
+      toast.success("چیدمان هوشمند آماده شد ✨");
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
     } finally {
       setLoading(false);
-      setPolishing(false);
-      setPendingMask(null);
       stopStageProgression();
     }
   };
 
-  const handleMaskGenerated = (maskBase64: string) => {
-    setPendingMask(maskBase64);
-    setMaskDialogOpen(false);
-    // Trigger generation with mask
-    generate("mask");
+  // ── add a single product to cart ──
+  const addToCart = (p: Product) => {
+    const res = addItem({
+      product_id: p.id,
+      profile_id: p.profile_id || "",
+      name:       p.name,
+      price:      p.price || 0,
+      image_url:  p.image_url,
+      stock:      p.stock || 10,
+    });
+    if (res.ok) toast.success("به سبد خرید اضافه شد");
   };
 
-  const handleConfirm = () => {
-    setDesignConfirmed(true);
-    toast.success("طراحی تأیید شد! می‌توانید وسایل را به سبد خرید اضافه کنید.");
-  };
-
-  const handlePolish = () => {
-    generate("polish");
-  };
-
-  const download = () => {
-    if (!resultImage) return;
-    const a = document.createElement("a");
-    a.href = resultImage;
-    a.download = `homeino-redesign-${Date.now()}.png`;
-    a.click();
+  // ── buy all selected products ──
+  const buyAllProducts = () => {
+    if (selectedList.length === 0) return;
+    let count = 0;
+    for (const p of selectedList) {
+      const res = addItem({
+        product_id: p.id,
+        profile_id: p.profile_id || "",
+        name:       p.name,
+        price:      p.price || 0,
+        image_url:  p.image_url,
+        stock:      p.stock || 10,
+      });
+      if (res.ok) count++;
+    }
+    if (count > 0) { toast.success(`${count} محصول به سبد خرید اضافه شد`); setOpenCart(true); }
   };
 
   const currentProducts = products[activeCat] || [];
-  const stageConfig = STAGE_CONFIG[currentStage];
-  const analytics = roomAnalytics;
+  const stageConfig     = STAGE_CONFIG[currentStage];
 
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -328,20 +291,23 @@ const AIDesign = () => {
           <ArrowLeft size={16} /> بازگشت به خانه
         </Link>
 
+        {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-accent/15 border border-accent/30 rounded-full px-5 py-2 mb-4">
             <Sparkles size={16} className="text-accent" />
-            <span className="text-accent text-sm font-medium">طراح هوشمند هومینو</span>
+            <span className="text-accent text-sm font-medium">طراح هوشمند هومینو · Gemini AI</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3">طراحی اتاق با هوش مصنوعی</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            عکس خانه‌ات را آپلود کن، مبل، پرده، فرش، تخت و هر چیزی که می‌خواهی را از محصولات سایت انتخاب کن — هوش مصنوعی آن‌ها را داخل عکس خانه‌ات می‌چیند.
+            عکس خانه‌ات را آپلود کن، هر تعداد وسیله‌ای که می‌خواهی از بازار انتخاب کن —
+            جمینی آن‌ها را هوشمندانه داخل عکس خانه‌ات جایگذاری می‌کند.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* LEFT: upload + style + products */}
+          {/* ── LEFT COLUMN ───────────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-6">
+
             {/* Step 1: Upload */}
             <section>
               <h2 className="font-bold mb-3 text-lg">۱. عکس فضای خانه</h2>
@@ -357,7 +323,7 @@ const AIDesign = () => {
                   <div className="text-center p-6">
                     <Upload className="mx-auto mb-3 text-muted-foreground" size={36} />
                     <p className="text-sm text-muted-foreground">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">JPG/PNG</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">JPG / PNG</p>
                   </div>
                 )}
                 <input ref={inputRef} type="file" accept="image/*" className="hidden"
@@ -372,7 +338,9 @@ const AIDesign = () => {
                 {STYLES.map((s) => (
                   <button key={s.id} onClick={() => setStyle(s.id)}
                     className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      style === s.id ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                      style === s.id
+                        ? "border-accent bg-accent/15 text-foreground"
+                        : "border-border bg-card text-muted-foreground hover:border-accent/50"
                     }`}>
                     {s.label}
                   </button>
@@ -380,24 +348,37 @@ const AIDesign = () => {
               </div>
             </section>
 
-            {/* Step 3: Choose products by category */}
+            {/* Step 3: Multi-select products */}
             <section>
-              <h2 className="font-bold mb-3 text-lg">۳. وسایلی که می‌خوای داخل خونه قرار بگیره</h2>
+              <h2 className="font-bold mb-1 text-lg">۳. وسایلی که می‌خواهی داخل خونه قرار بگیره</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <Info size={13} className="text-accent shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  می‌توانی همزمان هر تعداد وسیله از هر دسته انتخاب کنی —
+                  مبل + لوستر + فرش + هر چیز دیگری — جمینی همه را با هم چیدمان می‌کند.
+                </p>
+              </div>
 
               {/* Category tabs */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {CATEGORIES.map((c) => {
                   const count = (products[c.slug] || []).length;
-                  const sel = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
+                  const sel   = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
                   return (
                     <button key={c.slug} onClick={() => setActiveCat(c.slug)}
                       className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition-all ${
-                        activeCat === c.slug ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                        activeCat === c.slug
+                          ? "border-accent bg-accent/15 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:border-accent/50"
                       }`}>
                       <span>{c.icon}</span>
                       <span>{c.label}</span>
                       <span className="text-xs opacity-70">({count})</span>
-                      {sel > 0 && <span className="text-xs bg-accent text-accent-foreground rounded-full px-1.5 py-0.5">{sel}</span>}
+                      {sel > 0 && (
+                        <span className="text-xs bg-accent text-accent-foreground rounded-full px-1.5 py-0.5 font-bold">
+                          {sel}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -406,7 +387,7 @@ const AIDesign = () => {
               {/* Products grid */}
               {currentProducts.length === 0 ? (
                 <div className="text-center py-10 bg-card border border-border rounded-2xl text-muted-foreground text-sm">
-                  هنوز محصولی در این دسته ثبت نشده. می‌توانی بدون انتخاب محصول هم طراحی بزنی — هوش مصنوعی خودش سبک را پیاده می‌کند.
+                  هنوز محصولی در این دسته ثبت نشده.
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -415,7 +396,9 @@ const AIDesign = () => {
                     return (
                       <button key={p.id} onClick={() => toggleProduct(p)}
                         className={`relative text-right rounded-xl border overflow-hidden transition-all bg-card ${
-                          isSel ? "border-accent ring-2 ring-accent/40" : "border-border hover:border-accent/50"
+                          isSel
+                            ? "border-accent ring-2 ring-accent/40"
+                            : "border-border hover:border-accent/50"
                         }`}>
                         <div className="aspect-square bg-muted overflow-hidden">
                           {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
@@ -425,8 +408,8 @@ const AIDesign = () => {
                           <div className="text-xs text-accent mt-0.5">{fmt(p.price)}</div>
                         </div>
                         {isSel && (
-                          <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-                            <Check size={14} />
+                          <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
+                            <CheckCircle2 size={14} />
                           </span>
                         )}
                       </button>
@@ -436,75 +419,102 @@ const AIDesign = () => {
               )}
             </section>
 
-            {/* Step 4: Optional prompt */}
-            <section>
-              <h2 className="font-bold mb-3 text-lg">۴. توضیحات تکمیلی (اختیاری)</h2>
-              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-                placeholder="مثلاً: مبل سمت پنجره، فرش روشن، لوستر طلایی..."
-                className="w-full bg-card border border-border rounded-xl p-4 text-sm min-h-[90px] outline-none focus:border-accent transition-colors resize-none" />
+            {/* Step 4: Budget + Description — synced to Gemini */}
+            <section className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <h2 className="font-bold mb-2 text-lg">۴. بودجه (اختیاری)</h2>
+                <p className="text-xs text-muted-foreground mb-2">
+                  جمینی فقط محصولاتی انتخاب می‌کند که در بودجه جا بشوند.
+                </p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder="مثلاً: ۵۰۰۰۰۰۰"
+                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-accent transition-colors"
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                    تومان
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h2 className="font-bold mb-2 text-lg">۵. توضیحات تکمیلی (اختیاری)</h2>
+                <p className="text-xs text-muted-foreground mb-2">
+                  جمینی این متن را در چیدمان در نظر می‌گیرد.
+                </p>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="مثلاً: مبل سمت پنجره، فرش روشن، لوستر طلایی..."
+                  className="w-full bg-card border border-border rounded-xl p-3 text-sm h-[52px] outline-none focus:border-accent transition-colors resize-none"
+                />
+              </div>
             </section>
           </div>
 
-          {/* RIGHT: sticky summary + generate + result */}
+          {/* ── RIGHT COLUMN (sticky) ─────────────────────────────────────── */}
           <aside className="space-y-4 lg:sticky lg:top-24 self-start">
-            {/* Selected products */}
+
+            {/* Selected products summary */}
             <div className="bg-card border border-border rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} /> انتخاب شده ({selectedList.length})</h3>
+                <h3 className="font-bold flex items-center gap-2">
+                  <ShoppingCart size={18} /> انتخاب شده ({selectedList.length})
+                </h3>
                 {selectedList.length > 0 && (
-                  <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">پاک کردن</button>
+                  <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">
+                    پاک کردن
+                  </button>
                 )}
               </div>
+
               {selectedList.length === 0 ? (
-                <p className="text-xs text-muted-foreground">هنوز محصولی انتخاب نشده. می‌تونی بدون محصول هم طراحی بزنی.</p>
+                <p className="text-xs text-muted-foreground">
+                  هنوز وسیله‌ای انتخاب نشده. از بخش چپ هر تعداد محصول می‌توانی انتخاب کنی.
+                </p>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-52 overflow-y-auto">
                   {selectedList.map((p) => (
                     <div key={p.id} className="flex items-center gap-2 text-xs">
-                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0">
                         {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="line-clamp-1 font-medium">{p.name}</div>
                         <div className="text-accent">{fmt(p.price)}</div>
                       </div>
-                      <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
+                      <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive shrink-0">
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
+
               {selectedList.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-border space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">مجموع</span>
-                    <span className="font-bold text-accent">{fmt(total)}</span>
-                  </div>
-                  <button 
-                    onClick={buyTheLook}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors"
-                  >
-                    <ShoppingBag size={16} /> خرید این چیدمان
-                  </button>
+                <div className="mt-3 pt-3 border-t border-border text-sm flex justify-between items-center">
+                  <span className="text-muted-foreground">مجموع</span>
+                  <span className="font-bold text-accent">{fmt(total)}</span>
                 </div>
               )}
             </div>
 
-            {/* Progressive feedback during loading */}
+            {/* Loading progress */}
             {loading && (
               <div className="bg-card border border-accent/30 rounded-2xl p-5 space-y-3">
                 <div className="flex items-center gap-3">
                   <Loader2 className="animate-spin text-accent" size={22} />
                   <div>
-                    <p className="font-bold text-sm text-foreground">{stageConfig.label}</p>
+                    <p className="font-bold text-sm">{stageConfig.label}</p>
                     <p className="text-xs text-muted-foreground">لطفاً صبر کنید...</p>
                   </div>
                 </div>
                 <Progress value={stageConfig.progress} className="h-2" />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
-                  {STAGES.filter(s => s !== "UPLOADING").map((s) => {
-                    const stageIdx = STAGES.indexOf(currentStage);
-                    const sIdx = STAGES.indexOf(s);
-                    const done = sIdx <= stageIdx;
+                  {STAGES.filter((s) => s !== "UPLOADING").map((s) => {
+                    const done = STAGES.indexOf(currentStage) >= STAGES.indexOf(s);
                     return (
                       <span key={s} className={`flex items-center gap-1 ${done ? "text-accent" : "opacity-40"}`}>
                         <span className={`w-2 h-2 rounded-full ${done ? "bg-accent" : "bg-muted-foreground"}`} />
@@ -516,240 +526,158 @@ const AIDesign = () => {
               </div>
             )}
 
-            <button onClick={() => generate("standard")} disabled={loading || polishing || !imageBase64}
-              className="w-full bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all">
-              {loading ? (<><Loader2 className="animate-spin" size={20} /> در حال طراحی...</>) : (<><Wand2 size={20} /> تولید طراحی جدید</>)}
+            {/* Generate button */}
+            <button
+              onClick={generate}
+              disabled={loading || !imageBase64 || selectedList.length === 0}
+              className="w-full bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all"
+            >
+              {loading
+                ? <><Loader2 className="animate-spin" size={20} /> در حال چیدمان با جمینی...</>
+                : <><Wand2 size={20} /> چیدمان هوشمند با جمینی</>
+              }
             </button>
 
-            {/* Selective Replacement (Inpainting) button */}
-            {imageBase64 && !loading && !polishing && (
-              <button onClick={() => setMaskDialogOpen(true)} disabled={loading}
-                className="w-full bg-card border border-border hover:border-accent/50 text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm">
-                <Edit3 size={16} /> ویرایش بخش خاصی از تصویر
-              </button>
+            {(!imageBase64 || selectedList.length === 0) && !loading && (
+              <p className="text-xs text-muted-foreground text-center -mt-1">
+                {!imageBase64 ? "⬆️ ابتدا یک عکس آپلود کنید" : "☝️ حداقل یک محصول انتخاب کنید"}
+              </p>
             )}
 
-            {/* Result */}
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg">نتیجه طراحی</h3>
-              <div className="relative bg-card border border-border rounded-2xl overflow-hidden flex items-center justify-center min-h-[300px]">
-                {polishing && (
-                  <div className="text-center p-8 z-10 bg-card/80 backdrop-blur-sm w-full h-full absolute inset-0 flex flex-col items-center justify-center">
-                    <Loader2 className="animate-spin text-accent mx-auto mb-4" size={48} />
-                    <p className="text-lg font-bold text-foreground mb-2">بهبود جزئیات طراحی...</p>
-                    <p className="text-sm text-muted-foreground">بهبود نور، بافت و مواد</p>
-                  </div>
-                )}
-                
-                {resultImage && !loading && !polishing ? (
-                  <BeforeAfterSlider 
-                    beforeImage={imageBase64!} 
-                    afterImage={resultImage} 
-                    onConfirm={handleConfirm}
-                    onPolish={handlePolish}
-                  />
-                ) : !loading && !polishing && (
-                  <div className="text-center p-12">
-                    <Wand2 className="mx-auto mb-4 text-muted-foreground" size={48} />
-                    <p className="text-muted-foreground">طراحی جدید پس از کلیک بر روی دکمه تولید، اینجا نمایش داده می‌شود</p>
-                  </div>
-                )}
-              </div>
+            {/* ── RESULTS ─────────────────────────────────────────────────── */}
+            {geminiResult && (
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">نتیجه چیدمان</h3>
 
-              {/* Room Analytics Section - Enhanced */}
-              {(roomTip || analytics) && (
+                {/* Overlay — room image + product placements from Gemini */}
+                <ProductOverlay
+                  roomImage={imageBase64!}
+                  placements={geminiResult.placements}
+                  productsMap={selectedMap}
+                  onProductClick={addToCart}
+                />
+
+                {/* Re-generate */}
+                <button onClick={generate} disabled={loading}
+                  className="w-full bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm transition-all">
+                  <RefreshCw size={15} /> چیدمان مجدد
+                </button>
+
+                {/* Analytics tabs: Consultation | Placements */}
                 <div className="space-y-3">
-                  {/* Tab switcher */}
                   <div className="flex gap-1 bg-card border border-border rounded-xl p-1">
                     <button
-                      onClick={() => setAnalyticsTab("tip")}
+                      onClick={() => setAnalyticsTab("consultation")}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                        analyticsTab === "tip" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
+                        analyticsTab === "consultation" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <Lightbulb size={14} /> تحلیل فضا
+                      <Lightbulb size={13} /> مشاوره جمینی
                     </button>
-                    {analytics?.colorPalette && analytics.colorPalette.length > 0 && (
-                      <button
-                        onClick={() => setAnalyticsTab("colors")}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                          analyticsTab === "colors" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Palette size={14} /> پالت رنگی
-                      </button>
-                    )}
-                    {analytics?.spatialAdvice && (
-                      <button
-                        onClick={() => setAnalyticsTab("advice")}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                          analyticsTab === "advice" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Target size={14} /> چیدمان
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setAnalyticsTab("placements")}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        analyticsTab === "placements" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Layers size={13} /> جزئیات وسایل ({geminiResult.placements.length})
+                    </button>
                   </div>
 
-                  {/* Tip tab */}
-                  {analyticsTab === "tip" && roomTip && (
-                    <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 flex gap-3 items-start animate-in fade-in slide-in-from-bottom-2">
-                      <Lightbulb className="text-accent shrink-0" size={20} />
-                      <div>
-                        <div className="text-xs font-bold text-accent mb-1">تحلیل فضا:</div>
-                        <p className="text-sm text-foreground leading-relaxed">{roomTip}</p>
+                  {/* Consultation panel — Gemini's Persian design advice */}
+                  {analyticsTab === "consultation" && (
+                    <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Palette size={15} className="text-accent shrink-0" />
+                        <span className="text-xs font-bold text-accent">سبک شناسایی‌شده:</span>
+                        <Badge variant="secondary" className="text-xs">{geminiResult.style}</Badge>
+                      </div>
+                      <div className="flex gap-2 items-start">
+                        <Lightbulb size={15} className="text-accent shrink-0 mt-0.5" />
+                        <p className="text-sm leading-loose text-foreground">{geminiResult.consultation}</p>
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t border-accent/20">
+                        <Banknote size={14} className="text-accent shrink-0" />
+                        <span className="text-xs text-muted-foreground">جمع پیشنهادی جمینی:</span>
+                        <span className="text-sm font-bold text-accent">{fmt(geminiResult.total_price)}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Color Palette tab */}
-                  {analyticsTab === "colors" && analytics?.colorPalette && (
-                    <div className="bg-card border border-border rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="text-xs font-bold text-accent mb-3">پالت رنگی پیشنهادی:</div>
-                      <div className="flex gap-3 flex-wrap">
-                        {analytics.colorPalette.map((hex: string, idx: number) => (
-                          <div key={idx} className="flex flex-col items-center gap-1.5">
-                            <div
-                              className="w-12 h-12 rounded-xl shadow-md border border-border"
-                              style={{ backgroundColor: hex }}
-                            />
-                            <span className="text-[10px] text-muted-foreground font-mono">{hex}</span>
+                  {/* Placements panel — reason + confidence per product */}
+                  {analyticsTab === "placements" && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
+                      {geminiResult.placements.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-4">هیچ وسیله‌ای جایگذاری نشد.</p>
+                      ) : geminiResult.placements.map((pl) => {
+                        const product = selectedMap[pl.product_id];
+                        if (!product) return null;
+                        return (
+                          <div key={pl.product_id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-start">
+                            <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                              {product.image_url && <img src={product.image_url} className="w-full h-full object-cover" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold line-clamp-1">{product.name}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{pl.reason}</div>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <div className="h-1.5 flex-1 bg-secondary rounded-full overflow-hidden">
+                                  <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${pl.confidence * 100}%` }} />
+                                </div>
+                                <span className="text-[10px] text-accent font-bold shrink-0">{Math.round(pl.confidence * 100)}%</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="text-muted-foreground hover:text-accent transition-colors shrink-0"
+                              title="افزودن به سبد خرید"
+                            >
+                              <ShoppingCart size={14} />
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Spatial Advice tab */}
-                  {analyticsTab === "advice" && analytics?.spatialAdvice && (
-                    <div className="bg-card border border-border rounded-2xl p-4 flex gap-3 items-start animate-in fade-in slide-in-from-bottom-2">
-                      <Target className="text-accent shrink-0" size={20} />
-                      <div>
-                        <div className="text-xs font-bold text-accent mb-1">توصیه چیدمان:</div>
-                        <p className="text-sm text-foreground leading-relaxed">{analytics.spatialAdvice}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Style Match Score */}
-                  {analytics?.styleMatch !== undefined && (
-                    <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Layers className="text-accent" size={18} />
-                        <span className="text-xs font-medium">تناسب با سبک {STYLES.find(s => s.id === style)?.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-24 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent rounded-full transition-all"
-                            style={{ width: `${analytics.styleMatch}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold text-accent">{analytics.styleMatch}%</span>
-                      </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
-              )}
 
-              {resultImage && !loading && !polishing && (
-                <div className="flex gap-3">
-                  <button onClick={download} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <Download size={18} /> دانلود تصویر
-                  </button>
-                  <button onClick={() => generate("standard")} className="flex-1 bg-accent text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all hover:bg-accent/90">
-                    <RefreshCw size={18} /> طراحی مجدد
-                  </button>
-                </div>
-              )}
-
-              {/* Buy the Look - Post Generation - Enhanced */}
-              {resultImage && !loading && !polishing && generatedProducts.length > 0 && (
-                <div className={`mt-8 pt-8 border-t border-border transition-all ${designConfirmed ? "ring-2 ring-emerald-500/30 rounded-2xl p-4 -mx-2" : ""}`}>
-                  <h3 className="font-bold text-xl mb-2 flex items-center gap-2">
-                    <ShoppingBag className="text-accent" /> خرید وسایل استفاده شده در این طرح
+                {/* Buy the look */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <h3 className="font-bold flex items-center gap-2">
+                    <ShoppingBag size={18} className="text-accent" /> خرید وسایل این طرح
                   </h3>
-                  {designConfirmed && (
-                    <Badge variant="default" className="bg-emerald-500 text-white mb-4 inline-flex">
-                      <Check size={12} className="ml-1" /> طراحی تأیید شده
-                    </Badge>
-                  )}
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {designConfirmed
-                      ? "طراحی مورد تأیید شماست. محصولات زیر در این طرح استفاده شده‌اند:"
-                      : "طراحی خود را تأیید کنید و سپس محصولات را به سبد خرید اضافه نمایید."}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {generatedProducts.map((p) => (
-                      <div key={p.id} className="bg-card border border-border rounded-2xl overflow-hidden group">
-                        <div className="aspect-square relative overflow-hidden">
-                          {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />}
-                          {/* Match confidence badge */}
-                          <Badge variant="secondary" className="absolute top-2 right-2 text-[10px] bg-black/60 text-white border-0">
-                            {Math.floor(75 + Math.random() * 20)}% تطابق
-                          </Badge>
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {selectedList.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 bg-card border border-border rounded-xl p-2">
+                        <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0">
+                          {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
                         </div>
-                        <div className="p-4">
-                          <h4 className="font-bold text-sm mb-1 line-clamp-1">{p.name}</h4>
-                          <div className="text-accent font-bold text-sm mb-3">{fmt(p.price)}</div>
-                          <button 
-                            onClick={() => {
-                              addItem({
-                                product_id: p.id,
-                                profile_id: p.profile_id || "",
-                                name: p.name,
-                                price: p.price || 0,
-                                image_url: p.image_url,
-                                stock: p.stock || 10,
-                              });
-                              toast.success("به سبد خرید اضافه شد");
-                            }}
-                            className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                          >
-                            <ShoppingCart size={14} /> افزودن به سبد خرید
-                          </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold line-clamp-1">{p.name}</div>
+                          <div className="text-xs text-accent">{fmt(p.price)}</div>
                         </div>
+                        <button
+                          onClick={() => addToCart(p)}
+                          className="text-xs bg-accent/10 hover:bg-accent/20 text-accent px-2 py-1 rounded-lg transition-colors shrink-0"
+                        >
+                          <ShoppingCart size={12} />
+                        </button>
                       </div>
                     ))}
                   </div>
-
-                  {/* Buy the Look - Add All Button (Enhanced) */}
                   <button
-                    onClick={buyTheLook}
-                    className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all"
+                    onClick={buyAllProducts}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all"
                   >
-                    <ShoppingBag size={18} />
-                    خرید همه وسایل این طرح ({fmt(total)})
+                    <ShoppingBag size={16} />
+                    خرید همه وسایل ({fmt(total)})
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </aside>
         </div>
       </main>
-
-      {/* Mask Dialog for Selective Replacement */}
-      <Dialog open={maskDialogOpen} onOpenChange={setMaskDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit3 size={18} className="text-accent" />
-              ویرایش بخش خاصی از تصویر
-            </DialogTitle>
-            <DialogDescription>
-              روی بخش‌هایی از تصویر که می‌خواهید تغییر کنند بکشید. بقیه تصویر بدون تغییر می‌ماند.
-            </DialogDescription>
-          </DialogHeader>
-          {imageBase64 && (
-            <MaskCanvas
-              imageBase64={imageBase64}
-              onMaskGenerated={handleMaskGenerated}
-              onCancel={() => setMaskDialogOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
       <Footer />
     </div>
   );
