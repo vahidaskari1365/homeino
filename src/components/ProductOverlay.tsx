@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
+import { useOverlayGeometry } from "@/lib/overlayGeometry";
 
 interface Placement {
   product_id: string;
@@ -32,27 +33,21 @@ const fmt = (n: number | null | undefined) =>
 
 const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: ProductOverlayProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Lock the container's aspect ratio to the room image's NATURAL pixel dimensions.
-  // Gemini computes x/y placement percentages against the full, uncropped image it
-  // received. If the displayed container's aspect ratio differs from the image's
-  // natural ratio (e.g. object-cover cropping to fit a fixed-height card on mobile
-  // vs desktop), the same x%/y% value maps to a different physical spot on screen —
-  // causing placement "drift" across devices. Locking aspectRatio to the real image
-  // dimensions guarantees the rendered image is never cropped, so percentage-based
-  // coordinates always line up with what the AI actually analyzed.
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
-  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = e.currentTarget;
-    if (naturalWidth > 0 && naturalHeight > 0) {
-      setAspectRatio(naturalWidth / naturalHeight);
-    }
-  }, []);
+  // Overlay Geometry / Normalization Layer:
+  // AI x/y (0-100 %) → normalized (0-1) → pixel offset on the ACTUALLY rendered
+  // image, via ResizeObserver + the image's natural dimensions. This guarantees
+  // consistent placement across mobile/tablet/desktop regardless of container
+  // width. `aspectRatio` additionally locks the clipping box to the image's real
+  // ratio so the image itself is never cropped (object-cover would otherwise
+  // silently shift the visible area on differently-sized screens).
+  const { containerRef, onImageLoad, aspectRatio, toPixel } = useOverlayGeometry();
 
   return (
     <div className="relative w-full rounded-2xl bg-black border border-border select-none" style={{ overflow: "visible" }}>
       {/* Clip only the room image, not the tooltips */}
       <div
+        ref={containerRef}
         className="rounded-2xl overflow-hidden"
         style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
       >
@@ -61,7 +56,7 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
           alt="اتاق"
           className="w-full h-full object-cover"
           draggable={false}
-          onLoad={handleImageLoad}
+          onLoad={onImageLoad}
         />
       </div>
 
@@ -71,17 +66,24 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
         if (!product?.image_url) return null;
         const isHovered = hoveredId === pl.product_id;
 
+        // Normalize AI coordinates to actual rendered pixels; safe fallback to
+        // plain percentage positioning if the container/image haven't been
+        // measured yet (e.g. first paint before layout/onLoad fire).
+        const pixel = toPixel(pl.x, pl.y);
+        const positionStyle = pixel
+          ? { left: `${pixel.left}px`, top: `${pixel.top}px` }
+          : { left: `${pl.x}%`, top: `${pl.y}%` };
+
         return (
           <div
             key={pl.product_id}
             className="absolute cursor-pointer"
             style={{
-              left: `${pl.x}%`,
-              top: `${pl.y}%`,
+              ...positionStyle,
               width: "14%",
               zIndex: isHovered ? 30 : 10,
               transform: `translate(-50%, -50%) scale(${pl.scale}) rotate(${pl.rotation}deg)`,
-              transition: "transform 0.2s ease",
+              transition: "transform 0.2s ease, left 0.1s ease, top 0.1s ease",
             }}
             onMouseEnter={() => setHoveredId(pl.product_id)}
             onMouseLeave={() => setHoveredId(null)}

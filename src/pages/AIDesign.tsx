@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { validateGeminiResponse } from "@/lib/aiSchemas";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -231,17 +232,21 @@ const AIDesign = () => {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
-      if (error)        throw new Error(error.message || "خطا در اتصال به سرور");
-      // 429 / hard errors come back as { error }. A `fallback` flagged payload is still
-      // a valid, renderable response — never treat it as a crash.
+      if (error) throw new Error(error.message || "خطا در اتصال به سرور");
+      // A hard 429/error body (no fallback flag) is a real failure — surface it.
       if (data?.error && !data?.fallback) throw new Error(data.error);
-      if (!data || !Array.isArray(data.placements)) throw new Error("پاسخ نامعتبر از جمینی");
 
-      setGeminiResult(data as GeminiResult);
+      // ── AI OUTPUT → VALIDATION → SANITIZATION → UI ──────────────────────
+      // Never trust the Edge Function payload directly, even though it already
+      // validates on its side. Re-validate + sanitize here as a second layer
+      // so the UI can NEVER crash from a malformed/unexpected response shape.
+      const { ok, data: validated } = validateGeminiResponse(data);
+
+      setGeminiResult(validated as GeminiResult);
       setCurrentStage("RENDERING");
       await new Promise((r) => setTimeout(r, 400));
 
-      if ((data as GeminiResult & { fallback?: boolean }).fallback || data.placements.length === 0) {
+      if (!ok) {
         toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
       } else {
         toast.success("چیدمان هوشمند آماده شد ✨");
@@ -558,13 +563,28 @@ const AIDesign = () => {
               <div className="space-y-4">
                 <h3 className="font-bold text-lg">نتیجه چیدمان</h3>
 
+                {/* Empty / fallback state — AI produced no valid, in-catalog placements.
+                    The UI must never crash or show a blank overlay silently; this makes
+                    the degraded state explicit to the user. */}
+                {geminiResult.placements.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground flex items-start gap-2">
+                    <Info size={16} className="shrink-0 mt-0.5" />
+                    <span>
+                      {geminiResult.consultation ||
+                        "هوش مصنوعی نتوانست چیدمان مناسبی از میان محصولات انتخابی پیشنهاد دهد. می‌توانید دوباره تلاش کنید یا محصولات دیگری انتخاب کنید."}
+                    </span>
+                  </div>
+                )}
+
                 {/* Overlay — room image + product placements from Gemini */}
-                <ProductOverlay
-                  roomImage={imageBase64!}
-                  placements={geminiResult.placements}
-                  productsMap={selectedMap}
-                  onProductClick={addToCart}
-                />
+                {geminiResult.placements.length > 0 && (
+                  <ProductOverlay
+                    roomImage={imageBase64!}
+                    placements={geminiResult.placements}
+                    productsMap={selectedMap}
+                    onProductClick={addToCart}
+                  />
+                )}
 
                 {/* Re-generate */}
                 <button onClick={generate} disabled={loading}

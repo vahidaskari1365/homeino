@@ -21,6 +21,7 @@
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { z } from "zod";
 
 // --- Types ---
 interface ProductInput {
@@ -61,6 +62,34 @@ interface RequestBody {
   room_id?: string;
 }
 
+// ============================================================
+// STRICT SCHEMA VALIDATION (Zod)
+// ============================================================
+// Locks down the SHAPE of the raw Gemini JSON before any of it is trusted.
+// This is deliberately permissive on numeric RANGES (garbage numbers are
+// still possible from an LLM) — range clamping + product-id cross-checking
+// happens afterwards in sanitizePlacements()/computeTotalPrice(). Zod's job
+// here is to guarantee the required fields exist with the right TYPES, so a
+// structurally broken response (missing "placements", wrong types, extra
+// prose around the JSON, etc.) is rejected immediately and triggers a retry
+// instead of leaking malformed data further down the pipeline.
+const RawPlacementSchema = z.object({
+  product_id: z.string().min(1),
+  x: z.number(),
+  y: z.number(),
+  scale: z.number(),
+  rotation: z.number(),
+  confidence: z.number(),
+  reason: z.string().optional().default(""),
+});
+
+const RawGeminiResponseSchema = z.object({
+  consultation: z.string().optional().default(""),
+  style: z.string().optional().default("modern"),
+  placements: z.array(RawPlacementSchema).default([]),
+  total_price: z.number().optional().default(0),
+});
+
 // --- Config ---
 const MAX_PRODUCTS_PER_REQUEST = 50;
 const GEMINI_TIMEOUT_MS = 30_000;
@@ -90,39 +119,36 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Validates raw AI placements against the exact product catalog that was sent.
- * - Drops any placement whose product_id was NOT in the request (anti-hallucination)
- * - Clamps all numeric fields into their contractual ranges
- * - Skips malformed entries instead of throwing
+ * SANITIZATION LAYER — runs AFTER Zod has already confirmed the structural shape.
+ * This is the second, domain-specific line of defense:
+ * - Drops any placement whose product_id was NOT in the request (anti-hallucination /
+ *   Core Product Rule — the AI can only ever reference real, DB-backed products)
+ * - Clamps all numeric fields into their contractual ranges (Zod only checked "is a
+ *   number", not "is in [0,100]")
+ * - De-duplicates repeated product_ids
  */
 function sanitizePlacements(
-  rawPlacements: unknown,
+  rawPlacements: z.infer<typeof RawPlacementSchema>[],
   validProducts: Map<string, ProductInput>
 ): PlacementOutput[] {
-  if (!Array.isArray(rawPlacements)) return [];
-
   const seen = new Set<string>();
   const clean: PlacementOutput[] = [];
 
-  for (const raw of rawPlacements) {
-    if (!raw || typeof raw !== "object") continue;
-    const p = raw as Record<string, unknown>;
-    const productId = typeof p.product_id === "string" ? p.product_id : null;
-
+  for (const p of rawPlacements) {
     // CORE PRODUCT RULE: never accept a product that wasn't in the DB-backed list we sent
-    if (!productId || !validProducts.has(productId)) continue;
+    if (!validProducts.has(p.product_id)) continue;
     // Avoid duplicate placements for the same product
-    if (seen.has(productId)) continue;
-    seen.add(productId);
+    if (seen.has(p.product_id)) continue;
+    seen.add(p.product_id);
 
     clean.push({
-      product_id: productId,
-      x: clamp(Number(p.x), 0, 100),
-      y: clamp(Number(p.y), 0, 100),
-      scale: clamp(Number(p.scale), 0.5, 1.5),
-      rotation: clamp(Number(p.rotation), -15, 15),
-      confidence: clamp(Number(p.confidence), 0, 1),
-      reason: typeof p.reason === "string" && p.reason.trim() ? p.reason.trim() : "",
+      product_id: p.product_id,
+      x: clamp(p.x, 0, 100),
+      y: clamp(p.y, 0, 100),
+      scale: clamp(p.scale, 0.5, 1.5),
+      rotation: clamp(p.rotation, -15, 15),
+      confidence: clamp(p.confidence, 0, 1),
+      reason: p.reason?.trim() || "",
     });
   }
 
@@ -135,6 +161,70 @@ function computeTotalPrice(placements: PlacementOutput[], validProducts: Map<str
     const product = validProducts.get(pl.product_id);
     return sum + (product?.price || 0);
   }, 0);
+}
+
+// ============================================================
+// PRODUCT INTELLIGENCE LAYER
+// ============================================================
+// NEVER send the full product database to the model. Before this ran a naive
+// `products.slice(0, MAX)`, which silently dropped anything past index 50 and
+// ignored budget/category relevance entirely. This applies a lightweight,
+// deterministic heuristic instead:
+//   1. Category-based grouping — keep every category represented (round-robin)
+//      instead of letting one category dominate the slice.
+//   2. Price-range filtering — when a budget is provided, products priced at or
+//      under the budget are ranked ahead of over-budget ones.
+//   3. Basic similarity ranking — within a category, prefer products whose price
+//      is closest to a fair per-item share of the budget (or cheapest-first when
+//      no budget is given), as a stand-in for a full similarity/embedding search.
+function selectTopProducts(
+  products: ProductInput[],
+  budget: number | undefined,
+  max: number
+): ProductInput[] {
+  if (products.length <= max) return products;
+
+  const perItemTarget = budget && budget > 0 ? budget / Math.max(1, Math.min(max, products.length)) : null;
+
+  const scored = products.map((p) => {
+    const overBudget = typeof budget === "number" && budget > 0 && p.price > budget;
+    // Lower score = better. Over-budget items are heavily penalized but not excluded
+    // outright (the model may still combine a couple of them meaningfully).
+    const priceDistance = perItemTarget !== null ? Math.abs(p.price - perItemTarget) : p.price;
+    const score = priceDistance + (overBudget ? 1_000_000_000 : 0);
+    return { product: p, score };
+  });
+
+  // Group by category to interleave (round-robin) and guarantee category diversity.
+  const byCategory = new Map<string, typeof scored>();
+  for (const item of scored) {
+    const key = item.product.category || "other";
+    const arr = byCategory.get(key) ?? [];
+    arr.push(item);
+    byCategory.set(key, arr);
+  }
+  for (const arr of byCategory.values()) {
+    arr.sort((a, b) => a.score - b.score);
+  }
+
+  const categories = [...byCategory.keys()];
+  const result: ProductInput[] = [];
+  let round = 0;
+  while (result.length < max) {
+    let addedInRound = false;
+    for (const cat of categories) {
+      const arr = byCategory.get(cat)!;
+      if (arr[round]) {
+        result.push(arr[round].product);
+        addedInRound = true;
+        if (result.length >= max) break;
+      }
+    }
+    if (!addedInRound) break; // exhausted every category
+    round++;
+  }
+
+  return result;
 }
 
 function buildFallbackResponse(): GeminiResponse {
@@ -198,19 +288,31 @@ async function callGeminiOnce(
   const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!raw) throw new Error("Empty Gemini response");
 
-  let parsed: Record<string, unknown>;
+  let parsedJson: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsedJson = JSON.parse(raw);
   } catch (parseErr) {
     throw new Error(`Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : "Unknown"}`);
   }
 
+  // --- STRICT SCHEMA VALIDATION (Zod) ---
+  // Reject the whole response if it doesn't match the required shape. This is what
+  // triggers a retry (or the safe fallback) instead of ever letting a malformed
+  // object reach the UI.
+  const validation = RawGeminiResponseSchema.safeParse(parsedJson);
+  if (!validation.success) {
+    throw new Error(`Gemini response failed schema validation: ${validation.error.message}`);
+  }
+  const parsed = validation.data;
+
+  // --- SANITIZATION LAYER ---
+  // AI OUTPUT (Zod-validated) → SANITIZATION (range clamp + anti-hallucination) → caller
   const placements = sanitizePlacements(parsed.placements, validProducts);
   const total_price = computeTotalPrice(placements, validProducts);
 
   return {
-    consultation: typeof parsed.consultation === "string" ? parsed.consultation : "",
-    style: typeof parsed.style === "string" ? parsed.style : "modern",
+    consultation: parsed.consultation,
+    style: parsed.style,
     placements,
     total_price,
   };
@@ -283,10 +385,10 @@ serve(async (req: Request) => {
       throw new Error("At least one product is required");
     }
 
-    // --- Cost control: cap products sent to the model, prefer cheapest-first-truncation is
-    //     arbitrary — since callers already send a user-curated selection, capping simply
-    //     protects against token blowups on abusive payloads.
-    const filteredProducts = products.slice(0, MAX_PRODUCTS_PER_REQUEST);
+    // --- Cost control + Product Intelligence Layer ---
+    // Never forward the raw, unbounded product list to the model. selectTopProducts()
+    // applies category diversity + budget-aware ranking before capping at MAX.
+    const filteredProducts = selectTopProducts(products, budget, MAX_PRODUCTS_PER_REQUEST);
     const validProducts = new Map(filteredProducts.map((p) => [p.id, p]));
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
