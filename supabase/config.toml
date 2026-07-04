@@ -1,1 +1,20 @@
 project_id = "tljdihejjoepkcgftian"
+
+# ── Edge Function settings ──────────────────────────────────────────────────
+# gemini-decorator: user-facing → JWT must be verified
+[functions.gemini-decorator]
+verify_jwt = true
+
+# ai-redesign: user-facing → JWT must be verified
+[functions.ai-redesign]
+verify_jwt = true
+
+# inspiration-* functions: called internally by cron with service-role key
+[functions.inspiration-ai-processor]
+verify_jwt = false
+
+[functions.inspiration-crawler]
+verify_jwt = false
+
+[functions.inspiration-cron]
+verify_jwt = false

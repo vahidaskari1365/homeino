@@ -14,7 +14,8 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   )
 
-  const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY") || "3305e9e19f7f4a3982e5cd12ed73d2a0.g7Ab9mA1XVxiUHTS"
+  const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY")
+  if (!ZHIPU_API_KEY) throw new Error("ZHIPU_API_KEY not configured on server")
 
   try {
     // 1. Fetch unprocessed inspirations

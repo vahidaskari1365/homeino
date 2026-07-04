@@ -38,8 +38,11 @@ Deno.serve(async (req) => {
     const style: string = (body.style || "modern").toString();
     const products: SelectedProduct[] = Array.isArray(body.products) ? body.products : [];
 
-    // Fallback/Default Zhipu AI API Key provided by user
-    const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY") || "3305e9e19f7f4a3982e5cd12ed73d2a0.g7Ab9mA1XVxiUHTS";
+    // Zhipu AI API Key — must be set via: supabase secrets set ZHIPU_API_KEY=<key>
+    const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY");
+    if (!ZHIPU_API_KEY) {
+      throw new Error("ZHIPU_API_KEY not configured on server");
+    }
 
     console.log("Request payload - Style:", style, "Prompt:", prompt, "Products count:", products.length);
 
