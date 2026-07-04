@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { validateGeminiResponse } from "@/lib/aiSchemas";
+import { runAIDesignPipeline } from "@/lib/aiPipeline";
+import type { PipelineResult } from "@/lib/aiPipeline";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -65,19 +66,6 @@ type Product = {
   stock?: number;
 };
 
-type GeminiPlacement = {
-  product_id: string;
-  x: number;     // normalized 0-1
-  y: number;     // normalized 0-1
-  scale: number; // 0.5-2.0
-};
-
-type GeminiResult = {
-  consultation: string;
-  placements: GeminiPlacement[];
-  total_price: number; // always DB-computed, never trusted from AI
-};
-
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
@@ -90,7 +78,8 @@ const AIDesign = () => {
   const [budget, setBudget]               = useState("");
   const [loading, setLoading]             = useState(false);
   const [currentStage, setCurrentStage]   = useState<DesignStage>("UPLOADING");
-  const [geminiResult, setGeminiResult]   = useState<GeminiResult | null>(null);
+  const [geminiResult, setGeminiResult]   = useState<PipelineResult<Product> | null>(null);
+  const [aiError, setAiError]             = useState<string | null>(null);
   const [activeCat, setActiveCat]         = useState(CATEGORIES[0].slug);
   const [catMap, setCatMap]               = useState<Record<string, string>>({});
   const [products, setProducts]           = useState<Record<string, Product[]>>({});
@@ -187,6 +176,7 @@ const AIDesign = () => {
 
     setLoading(true);
     setGeminiResult(null);
+    setAiError(null);
     startStageProgression();
 
     try {
@@ -200,7 +190,9 @@ const AIDesign = () => {
       // Strip data-URL prefix → raw base64
       const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
 
-      // Build product list for Gemini
+      // Build product list for Gemini — this IS the "provided product_id list";
+      // the AI can never reference anything outside of it (enforced again,
+      // independently, in the pipeline's SANITIZATION layer below).
       const geminiProducts = selectedList.map((p) => {
         const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
         const cat  = CATEGORIES.find((c) => c.slug === slug);
@@ -217,7 +209,11 @@ const AIDesign = () => {
 
       const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
 
-      // Call the Supabase Edge Function (gemini-decorator)
+      // Call the Supabase Edge Function (gemini-decorator). Reliability
+      // (timeout + 2 retry attempts + fallback response) is enforced
+      // server-side; a hard failure here (network/auth/rate-limit) is a
+      // distinct condition from "AI returned no usable design" and is
+      // surfaced as a dedicated, retryable error state below.
       const { data, error } = await supabase.functions.invoke("gemini-decorator", {
         body: {
           image_base64: base64,
@@ -232,29 +228,37 @@ const AIDesign = () => {
       // A hard 429/error body (no fallback flag) is a real failure — surface it.
       if (data?.error && !data?.fallback) throw new Error(data.error);
 
-      // ── AI OUTPUT → VALIDATION → SANITIZATION → UI ──────────────────────
-      // Never trust the Edge Function payload directly, even though it already
-      // validates on its side. Re-validate + sanitize here as a second layer
-      // so the UI can NEVER crash from a malformed/unexpected response shape.
-      const { ok, data: validated } = validateGeminiResponse(data);
+      // ── AI OUTPUT → VALIDATION → SANITIZATION → NORMALIZATION → DATABASE ENRICHMENT ──
+      // The single mandatory pipeline between the Edge Function response and
+      // anything the UI Render Engine (<ProductOverlay>) is allowed to see.
+      // `selectedMap` (Supabase-backed) is BOTH the whitelist of valid
+      // product_ids AND the only source of product name/price/image — the AI
+      // response can never contribute any of that data itself.
+      const result = runAIDesignPipeline<Product>(data, selectedMap);
 
-      setGeminiResult(validated as GeminiResult);
+      setGeminiResult(result);
       setCurrentStage("RENDERING");
       await new Promise((r) => setTimeout(r, 400));
 
-      if (!ok) {
+      if (result.status !== "ok") {
         toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
       } else {
         toast.success("چیدمان هوشمند آماده شد ✨");
       }
     } catch (e) {
+      // Hard failure (network / auth / rate-limit / unexpected exception).
+      // Never let this crash the page — show a dedicated, retryable error
+      // state instead (graceful degradation).
+      const message = e instanceof Error ? e.message : "خطا در تولید طراحی";
       console.error(e);
-      toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");
+      setAiError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
       stopStageProgression();
     }
   };
+
 
   // ── add a single product to cart ──
   const addToCart = (p: Product) => {
@@ -554,30 +558,61 @@ const AIDesign = () => {
               </p>
             )}
 
-            {/* ── RESULTS ─────────────────────────────────────────────────── */}
+            {/* ── RESULTS ────────────────────────────────────────────── */}
+
+            {/* Dedicated ERROR state — hard failure (network/auth/rate-limit),
+                distinct from "AI returned an empty design". Always retryable,
+                never a silent failure or a crash. */}
+            {aiError && !loading && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm flex items-start gap-3">
+                <Info size={16} className="shrink-0 mt-0.5 text-destructive" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-destructive font-medium">خطا در تولید طراحی</p>
+                  <p className="text-muted-foreground text-xs">{aiError}</p>
+                  <button
+                    onClick={generate}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
+                  >
+                    <RefreshCw size={12} /> تلاش دوباره
+                  </button>
+                </div>
+              </div>
+            )}
+
             {geminiResult && (
               <div className="space-y-4">
                 <h3 className="font-bold text-lg">نتیجه چیدمان</h3>
 
-                {/* Empty / fallback state — AI produced no valid, in-catalog placements.
-                    The UI must never crash or show a blank overlay silently; this makes
-                    the degraded state explicit to the user. */}
-                {geminiResult.placements.length === 0 && (
+                {/* Empty / invalid state — AI produced no valid, in-catalog placements,
+                    or its response failed schema validation. The UI must never crash or
+                    show a blank overlay silently; this makes the degraded state explicit
+                    to the user ("No valid design generated"), with a one-click retry. */}
+                {geminiResult.status !== "ok" && (
                   <div className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground flex items-start gap-2">
                     <Info size={16} className="shrink-0 mt-0.5" />
-                    <span>
-                      {geminiResult.consultation ||
-                        "هوش مصنوعی نتوانست چیدمان مناسبی از میان محصولات انتخابی پیشنهاد دهد. می‌توانید دوباره تلاش کنید یا محصولات دیگری انتخاب کنید."}
-                    </span>
+                    <div className="flex-1 space-y-2">
+                      <span>
+                        {geminiResult.consultation || "No valid design generated"}
+                      </span>
+                      <div>
+                        <button
+                          onClick={generate}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
+                        >
+                          <RefreshCw size={12} /> تلاش دوباره
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* Overlay — room image + product placements from Gemini */}
-                {geminiResult.placements.length > 0 && (
+                {/* Overlay Render Engine — receives ONLY fully validated, sanitized,
+                    normalized, DB-enriched placements. It has zero knowledge of the AI
+                    response shape and never performs its own product lookups. */}
+                {geminiResult.status === "ok" && (
                   <ProductOverlay
                     roomImage={imageBase64!}
                     placements={geminiResult.placements}
-                    productsMap={selectedMap}
                     onProductClick={addToCart}
                   />
                 )}
@@ -627,24 +662,23 @@ const AIDesign = () => {
                       </div>
                       <div className="flex items-center gap-2 pt-2 border-t border-accent/20">
                         <Banknote size={14} className="text-accent shrink-0" />
-                        <span className="text-xs text-muted-foreground">جمع پیشنهادی جمینی:</span>
-                        {/* total_price is always recomputed server-side from Supabase product
-                            prices — the AI never supplies pricing data. */}
-                        <span className="text-sm font-bold text-accent">{fmt(geminiResult.total_price)}</span>
+                        <span className="text-xs text-muted-foreground">جمع قیمت (از دیتابیس):</span>
+                        {/* totalPrice is ALWAYS SUM(products.price) from Supabase, computed by
+                            the pipeline's Database Enrichment layer — never an AI value. */}
+                        <span className="text-sm font-bold text-accent">{fmt(geminiResult.totalPrice)}</span>
                       </div>
                     </div>
                   )}
 
                   {/* Placements panel — product identity/price/image come ONLY from the
-                      DB-backed selectedMap (never from the AI); the AI only ever
-                      contributed product_id + normalized x/y/scale. */}
+                      DB-enriched placement objects (never from the AI); each placement's
+                      `.product` field is the exact Supabase record. */}
                   {analyticsTab === "placements" && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
                       {geminiResult.placements.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-4">هیچ وسیله‌ای جایگذاری نشد.</p>
                       ) : geminiResult.placements.map((pl) => {
-                        const product = selectedMap[pl.product_id];
-                        if (!product) return null;
+                        const product = pl.product;
                         return (
                           <div key={pl.product_id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-center">
                             <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">

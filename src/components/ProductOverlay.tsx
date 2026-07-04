@@ -1,47 +1,36 @@
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useOverlayGeometry } from "@/lib/overlayGeometry";
+import type { EnrichedPlacement, DBProduct } from "@/lib/aiPipeline";
 
 // --- Strict layer separation ---
-// This component is the OVERLAY RENDER ENGINE. Its ONLY job is to place
-// product images on top of the room image using normalized coordinates.
-// It must NEVER receive or compute pricing/product metadata from the AI —
-// `productsMap` is always DB-backed (Supabase), and `placements` only ever
-// carries a product_id + normalized position/scale that already passed
-// through the validation + sanitization layer in the Edge Function.
-interface Placement {
-  product_id: string;
-  x: number;     // normalized 0-1 (from AI, validated + clamped server-side)
-  y: number;     // normalized 0-1 (from AI, validated + clamped server-side)
-  scale: number; // 0.5-2.0 (validated + clamped server-side)
-}
-
-interface Product {
-  id: string;
-  name: string;
-  price: number | null;
-  image_url: string | null;
-  profile_id?: string;
-  stock?: number;
-}
-
-interface ProductOverlayProps {
+// This component is the UI RENDER ENGINE — the last stage of the mandatory
+// pipeline: AI → VALIDATION → SANITIZATION → NORMALIZATION → DATABASE
+// ENRICHMENT → UI RENDER ENGINE. It receives ONLY `EnrichedPlacement` objects
+// that have already passed every prior stage (produced by
+// `runAIDesignPipeline` in src/lib/aiPipeline.ts). This component:
+// - performs ZERO product lookups of its own (no productsMap, no DB calls)
+// - performs ZERO AI-response parsing/validation
+// - trusts `pl.product` completely, because the pipeline guarantees it is a
+//   real Supabase record and `pl.xNorm/yNorm/scale` are already clamped
+// Its only remaining responsibility is converting normalized coordinates
+// into pixel-accurate, responsive screen positions.
+interface ProductOverlayProps<TProduct extends DBProduct> {
   roomImage: string;
-  placements: Placement[];
-  productsMap: Record<string, Product>;
-  onProductClick?: (product: Product) => void;
+  placements: EnrichedPlacement<TProduct>[];
+  onProductClick?: (product: TProduct) => void;
 }
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
-const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: ProductOverlayProps) => {
+function ProductOverlay<TProduct extends DBProduct>({ roomImage, placements, onProductClick }: ProductOverlayProps<TProduct>) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Overlay Geometry / Normalization Layer:
   // AI x/y (normalized 0-1) → pixel offset on the ACTUALLY rendered image, via
-  // ResizeObserver + the image's natural dimensions. This guarantees consistent
-  // placement across mobile/tablet/desktop regardless of container width.
+  // ResizeObserver + the image's natural dimensions. This guarantees consistent,
+  // deterministic placement across mobile/tablet/desktop with no visual drift.
   // `aspectRatio` additionally locks the clipping box to the image's real ratio
   // so the image itself is never cropped (object-cover would otherwise silently
   // shift the visible area on differently-sized screens).
@@ -64,21 +53,20 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
         />
       </div>
 
-      {/* Product overlays at AI-determined normalized coordinates.
-          Every visual attribute here (name, price, image) comes ONLY from
-          `productsMap` (Supabase) — never from the placement object itself. */}
+      {/* Product overlays at pipeline-normalized coordinates. Every visual
+          attribute here (name, price, image) comes from `pl.product`, which
+          the pipeline guarantees is a real, DB-backed record. */}
       {placements.map((pl) => {
-        const product = productsMap[pl.product_id];
-        if (!product?.image_url) return null;
+        if (!pl.product?.image_url) return null;
         const isHovered = hoveredId === pl.product_id;
 
-        // Normalize AI coordinates (0-1) to actual rendered pixels; safe
-        // fallback to plain percentage positioning if the container/image
-        // haven't been measured yet (e.g. first paint before onLoad fires).
-        const pixel = toPixel(pl.x, pl.y);
+        // Deterministic pixel mapping; safe fallback to plain percentage
+        // positioning if the container/image haven't been measured yet
+        // (e.g. first paint before onLoad fires) — never a broken layout.
+        const pixel = toPixel(pl.xNorm, pl.yNorm);
         const positionStyle = pixel
           ? { left: `${pixel.left}px`, top: `${pixel.top}px` }
-          : { left: `${pl.x * 100}%`, top: `${pl.y * 100}%` };
+          : { left: `${pl.xNorm * 100}%`, top: `${pl.yNorm * 100}%` };
 
         return (
           <div
@@ -93,12 +81,12 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
             }}
             onMouseEnter={() => setHoveredId(pl.product_id)}
             onMouseLeave={() => setHoveredId(null)}
-            onClick={() => onProductClick?.(product)}
+            onClick={() => onProductClick?.(pl.product)}
           >
-            {/* Product image — sourced from DB (productsMap), not the AI */}
+            {/* Product image — sourced from DB (pl.product), never the AI */}
             <img
-              src={product.image_url}
-              alt={product.name}
+              src={pl.product.image_url}
+              alt={pl.product.name}
               className="w-full h-auto object-contain drop-shadow-2xl rounded-lg"
               draggable={false}
             />
@@ -113,9 +101,9 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
                   transform: "translateX(-50%)",
                 }}
               >
-                <div className="font-bold mb-1 text-sm">{product.name}</div>
+                <div className="font-bold mb-1 text-sm">{pl.product.name}</div>
                 <div className="flex items-center justify-between">
-                  <span className="text-accent font-bold">{fmt(product.price)}</span>
+                  <span className="text-accent font-bold">{fmt(pl.product.price)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-1 text-accent/70 text-[10px]">
                   <ShoppingCart size={10} />
@@ -132,8 +120,7 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-6 rounded-b-2xl" style={{ overflow: "visible" }}>
           <div className="flex flex-wrap gap-1">
             {placements.map((pl) => {
-              const product = productsMap[pl.product_id];
-              if (!product) return null;
+              if (!pl.product) return null;
               return (
                 <button
                   key={pl.product_id}
@@ -144,9 +131,9 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
                   }`}
                   onMouseEnter={() => setHoveredId(pl.product_id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  onClick={() => onProductClick?.(product)}
+                  onClick={() => onProductClick?.(pl.product)}
                 >
-                  {product.name.length > 20 ? product.name.slice(0, 20) + "…" : product.name}
+                  {pl.product.name.length > 20 ? pl.product.name.slice(0, 20) + "…" : pl.product.name}
                 </button>
               );
             })}
@@ -155,6 +142,6 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
       )}
     </div>
   );
-};
+}
 
 export default ProductOverlay;
