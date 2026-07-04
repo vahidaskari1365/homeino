@@ -3,6 +3,8 @@ import {
   Upload, Wand2, Loader2, ArrowLeft, Sparkles, RefreshCw,
   ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers,
   CheckCircle2, Banknote, Info,
+  Sofa, Blinds, Grid3x3, Lamp, BedDouble, Flower2, Image as ImageIcon, TreePine, Gem,
+  type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
