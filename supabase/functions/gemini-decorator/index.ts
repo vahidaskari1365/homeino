@@ -4,19 +4,31 @@
 // URL: /functions/v1/gemini-decorator
 // ============================================================
 //
-// RESPONSIBILITY:
-//   - Receives a room image (base64), filtered product list, and user budget
-//   - Sends to Gemini 1.5 Flash API securely (API key in env only)
-//   - Returns structured JSON: placements, style, consultation, total_price
+// STRICT SEPARATION OF RESPONSIBILITIES (enforced end-to-end in this file):
 //
-// IMPORTANT:
-//   - API key is NEVER exposed to frontend
-//   - Does NOT modify or generate room images
-//   - Only returns placement coordinates for overlay
-//   - AI output is validated + clamped + cross-checked against the
-//     product catalog that was actually sent — hallucinated / out-of-range
-//     values are dropped, never rendered, never trusted for pricing
-//   - Never crashes on bad AI output: always falls back to a safe response
+//   1. AI LAYER (Gemini)          → ONLY: product_id, x/y (normalized 0-1),
+//                                    scale, optional Persian "notes" text.
+//                                    NEVER: price, product name/image, UI
+//                                    layout, or any rendering decision.
+//   2. VALIDATION LAYER (Zod)     → Rejects any structurally invalid response
+//                                    outright (missing/wrong-typed fields).
+//   3. SANITIZATION LAYER         → Cross-checks every product_id against the
+//                                    exact DB-backed catalog that was sent
+//                                    (anti-hallucination) and clamps every
+//                                    numeric value into its contractual range.
+//   4. DATABASE LAYER (Supabase)  → The ONLY source of truth for product
+//                                    name/price/image — never generated or
+//                                    trusted from the AI. total_price is
+//                                    always recomputed here from real DB
+//                                    prices, never from anything the AI said.
+//
+// AI → UI direct coupling is NOT allowed: the Overlay Render Engine (frontend
+// ProductOverlay component) only ever receives DB-enriched, validated,
+// sanitized data — never a raw AI response.
+//
+// Reliability: retries (2 attempts), 30s timeout per Gemini call, per-user
+// rate limiting, and a safe fallback response so invalid/failed AI output
+// can never crash the UI.
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
@@ -24,6 +36,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { z } from "zod";
 
 // --- Types ---
+
+/** DB-backed product catalog handed to the AI as its ONLY allowed choices. */
 interface ProductInput {
   id: string;
   name: string;
@@ -37,21 +51,24 @@ interface ProductInput {
   tags?: string[];
 }
 
+/**
+ * What the AI is allowed to decide, and NOTHING more: which product, where,
+ * and how big. No price, no name, no image, no rotation/confidence/free text
+ * per item — those either don't belong to the AI layer or add rendering
+ * complexity the AI has no business deciding.
+ */
 interface PlacementOutput {
   product_id: string;
-  x: number;       // 0-100 (%)
-  y: number;       // 0-100 (%)
-  scale: number;   // 0.5-1.5
-  rotation: number; // -15 to +15
-  confidence: number; // 0-1
-  reason: string;  // Persian explanation
+  x: number;     // normalized 0-1
+  y: number;     // normalized 0-1
+  scale: number; // 0.5-2.0
 }
 
+/** Final, DB-enriched response contract sent to the frontend. */
 interface GeminiResponse {
-  consultation: string;
-  style: string;
+  consultation: string;   // Persian notes (from AI, informational only — no pricing/metadata)
   placements: PlacementOutput[];
-  total_price: number;
+  total_price: number;    // ALWAYS computed from Supabase product prices, never from the AI
   fallback?: boolean;
 }
 
@@ -63,31 +80,28 @@ interface RequestBody {
 }
 
 // ============================================================
-// STRICT SCHEMA VALIDATION (Zod)
+// STRICT SCHEMA VALIDATION (Zod) — VALIDATION LAYER
 // ============================================================
-// Locks down the SHAPE of the raw Gemini JSON before any of it is trusted.
-// This is deliberately permissive on numeric RANGES (garbage numbers are
-// still possible from an LLM) — range clamping + product-id cross-checking
-// happens afterwards in sanitizePlacements()/computeTotalPrice(). Zod's job
-// here is to guarantee the required fields exist with the right TYPES, so a
-// structurally broken response (missing "placements", wrong types, extra
-// prose around the JSON, etc.) is rejected immediately and triggers a retry
-// instead of leaking malformed data further down the pipeline.
+// Locks down the raw Gemini JSON to EXACTLY the contract the AI is allowed to
+// produce: { placements: [{ product_id, x, y, scale }], notes? }. Nothing
+// else is accepted — a "price", "name", or "image_url" field appearing in the
+// AI's own JSON (hallucinated or not) is simply not part of this schema and
+// is silently dropped by Zod's default stripping behavior, never reaching
+// downstream code.
+//
+// Numeric ranges are intentionally permissive here (an LLM can still emit
+// out-of-range numbers) — hard clamping happens in the SANITIZATION layer
+// below, together with the anti-hallucination product_id cross-check.
 const RawPlacementSchema = z.object({
   product_id: z.string().min(1),
   x: z.number(),
   y: z.number(),
   scale: z.number(),
-  rotation: z.number(),
-  confidence: z.number(),
-  reason: z.string().optional().default(""),
 });
 
 const RawGeminiResponseSchema = z.object({
-  consultation: z.string().optional().default(""),
-  style: z.string().optional().default("modern"),
   placements: z.array(RawPlacementSchema).default([]),
-  total_price: z.number().optional().default(0),
+  notes: z.string().optional().default(""),
 });
 
 // --- Config ---
@@ -97,8 +111,7 @@ const MAX_GEMINI_ATTEMPTS = 2; // 1 initial call + 1 retry
 const RATE_LIMIT_MAX_REQUESTS = 15; // per window, per user
 const RATE_LIMIT_WINDOW_MINUTES = 15;
 
-const FALLBACK_CONSULTATION =
-  "متأسفانه در حال حاضر امکان تحلیل هوشمند تصویر وجود ندارد. لطفاً چند لحظه دیگر دوباره امتحان کنید یا محصولات را به‌صورت دستی در فضای خود تصور کنید.";
+const FALLBACK_CONSULTATION = "No valid design generated";
 
 // --- Helpers ---
 
@@ -118,65 +131,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * SANITIZATION LAYER — runs AFTER Zod has already confirmed the structural shape.
- * This is the second, domain-specific line of defense:
- * - Drops any placement whose product_id was NOT in the request (anti-hallucination /
- *   Core Product Rule — the AI can only ever reference real, DB-backed products)
- * - Clamps all numeric fields into their contractual ranges (Zod only checked "is a
- *   number", not "is in [0,100]")
- * - De-duplicates repeated product_ids
- */
-function sanitizePlacements(
-  rawPlacements: z.infer<typeof RawPlacementSchema>[],
-  validProducts: Map<string, ProductInput>
-): PlacementOutput[] {
-  const seen = new Set<string>();
-  const clean: PlacementOutput[] = [];
-
-  for (const p of rawPlacements) {
-    // CORE PRODUCT RULE: never accept a product that wasn't in the DB-backed list we sent
-    if (!validProducts.has(p.product_id)) continue;
-    // Avoid duplicate placements for the same product
-    if (seen.has(p.product_id)) continue;
-    seen.add(p.product_id);
-
-    clean.push({
-      product_id: p.product_id,
-      x: clamp(p.x, 0, 100),
-      y: clamp(p.y, 0, 100),
-      scale: clamp(p.scale, 0.5, 1.5),
-      rotation: clamp(p.rotation, -15, 15),
-      confidence: clamp(p.confidence, 0, 1),
-      reason: p.reason?.trim() || "",
-    });
-  }
-
-  return clean;
-}
-
-/** Recompute total price server-side from validated placements — never trust the AI's own sum */
-function computeTotalPrice(placements: PlacementOutput[], validProducts: Map<string, ProductInput>): number {
-  return placements.reduce((sum, pl) => {
-    const product = validProducts.get(pl.product_id);
-    return sum + (product?.price || 0);
-  }, 0);
-}
-
 // ============================================================
 // PRODUCT INTELLIGENCE LAYER
 // ============================================================
-// NEVER send the full product database to the model. Before this ran a naive
-// `products.slice(0, MAX)`, which silently dropped anything past index 50 and
-// ignored budget/category relevance entirely. This applies a lightweight,
-// deterministic heuristic instead:
-//   1. Category-based grouping — keep every category represented (round-robin)
-//      instead of letting one category dominate the slice.
-//   2. Price-range filtering — when a budget is provided, products priced at or
-//      under the budget are ranked ahead of over-budget ones.
-//   3. Basic similarity ranking — within a category, prefer products whose price
-//      is closest to a fair per-item share of the budget (or cheapest-first when
-//      no budget is given), as a stand-in for a full similarity/embedding search.
+// NEVER send the full product database to the model. Category-based
+// round-robin selection + budget-aware price-distance ranking, capped at
+// MAX_PRODUCTS_PER_REQUEST, keeps the request representative of the catalog
+// instead of an arbitrary array-order truncation.
 function selectTopProducts(
   products: ProductInput[],
   budget: number | undefined,
@@ -188,14 +149,11 @@ function selectTopProducts(
 
   const scored = products.map((p) => {
     const overBudget = typeof budget === "number" && budget > 0 && p.price > budget;
-    // Lower score = better. Over-budget items are heavily penalized but not excluded
-    // outright (the model may still combine a couple of them meaningfully).
     const priceDistance = perItemTarget !== null ? Math.abs(p.price - perItemTarget) : p.price;
     const score = priceDistance + (overBudget ? 1_000_000_000 : 0);
     return { product: p, score };
   });
 
-  // Group by category to interleave (round-robin) and guarantee category diversity.
   const byCategory = new Map<string, typeof scored>();
   for (const item of scored) {
     const key = item.product.category || "other";
@@ -220,24 +178,71 @@ function selectTopProducts(
         if (result.length >= max) break;
       }
     }
-    if (!addedInRound) break; // exhausted every category
+    if (!addedInRound) break;
     round++;
   }
 
   return result;
 }
 
+// ============================================================
+// SANITIZATION LAYER
+// ============================================================
+// Runs AFTER Zod has already confirmed the structural shape. This is the
+// domain-specific line of defense enforcing the STRICT PRODUCT RULE:
+// - Reject / drop any placement whose product_id is NOT in the exact
+//   DB-backed catalog that was sent (no fake products can ever appear).
+// - Clamp x/y into [0,1] and scale into [0.5,2.0] (Zod only checked "is a
+//   number", not "is in range").
+// - De-duplicate repeated product_ids.
+function sanitizePlacements(
+  rawPlacements: z.infer<typeof RawPlacementSchema>[],
+  validProducts: Map<string, ProductInput>
+): PlacementOutput[] {
+  const seen = new Set<string>();
+  const clean: PlacementOutput[] = [];
+
+  for (const p of rawPlacements) {
+    // STRICT PRODUCT RULE: unknown product_id → reject (ignore), never rendered
+    if (!validProducts.has(p.product_id)) continue;
+    if (seen.has(p.product_id)) continue;
+    seen.add(p.product_id);
+
+    clean.push({
+      product_id: p.product_id,
+      x: clamp(p.x, 0, 1),
+      y: clamp(p.y, 0, 1),
+      scale: clamp(p.scale, 0.5, 2.0),
+    });
+  }
+
+  return clean;
+}
+
+// ============================================================
+// DATABASE LAYER — price enrichment
+// ============================================================
+// Final total price = SUM(products.price from DB). The AI is never asked
+// for, and never trusted for, pricing — this is the only place total_price
+// is computed, from the DB-backed `validProducts` map (sourced from the
+// Supabase `products` table by the caller).
+function computeTotalPrice(placements: PlacementOutput[], validProducts: Map<string, ProductInput>): number {
+  return placements.reduce((sum, pl) => {
+    const product = validProducts.get(pl.product_id);
+    return sum + (product?.price || 0);
+  }, 0);
+}
+
 function buildFallbackResponse(): GeminiResponse {
   return {
     consultation: FALLBACK_CONSULTATION,
-    style: "modern",
     placements: [],
     total_price: 0,
     fallback: true,
   };
 }
 
-/** Calls Gemini once and returns the parsed+validated response, or throws on failure */
+/** Calls Gemini once and returns the parsed+validated+sanitized response, or throws on failure */
 async function callGeminiOnce(
   imageBase64: string,
   filteredProducts: ProductInput[],
@@ -264,7 +269,7 @@ async function callGeminiOnce(
       temperature: 0.4,
       topK: 32,
       topP: 0.95,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 4096,
       responseMimeType: "application/json",
     },
   };
@@ -295,10 +300,7 @@ async function callGeminiOnce(
     throw new Error(`Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : "Unknown"}`);
   }
 
-  // --- STRICT SCHEMA VALIDATION (Zod) ---
-  // Reject the whole response if it doesn't match the required shape. This is what
-  // triggers a retry (or the safe fallback) instead of ever letting a malformed
-  // object reach the UI.
+  // --- VALIDATION LAYER ---
   const validation = RawGeminiResponseSchema.safeParse(parsedJson);
   if (!validation.success) {
     throw new Error(`Gemini response failed schema validation: ${validation.error.message}`);
@@ -306,13 +308,13 @@ async function callGeminiOnce(
   const parsed = validation.data;
 
   // --- SANITIZATION LAYER ---
-  // AI OUTPUT (Zod-validated) → SANITIZATION (range clamp + anti-hallucination) → caller
   const placements = sanitizePlacements(parsed.placements, validProducts);
+
+  // --- DATABASE LAYER (price enrichment) ---
   const total_price = computeTotalPrice(placements, validProducts);
 
   return {
-    consultation: parsed.consultation,
-    style: parsed.style,
+    consultation: parsed.notes,
     placements,
     total_price,
   };
@@ -320,7 +322,6 @@ async function callGeminiOnce(
 
 // --- Main handler ---
 serve(async (req: Request) => {
-  // CORS headers
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -385,9 +386,7 @@ serve(async (req: Request) => {
       throw new Error("At least one product is required");
     }
 
-    // --- Cost control + Product Intelligence Layer ---
-    // Never forward the raw, unbounded product list to the model. selectTopProducts()
-    // applies category diversity + budget-aware ranking before capping at MAX.
+    // --- Product Intelligence Layer (cost control) ---
     const filteredProducts = selectTopProducts(products, budget, MAX_PRODUCTS_PER_REQUEST);
     const validProducts = new Map(filteredProducts.map((p) => [p.id, p]));
 
@@ -396,7 +395,7 @@ serve(async (req: Request) => {
       throw new Error("GEMINI_API_KEY not configured on server");
     }
 
-    // --- Call Gemini with retry + validation; never let a bad AI response crash the system ---
+    // --- AI LAYER call, with retry + validation; never let a bad AI response crash the system ---
     let geminiOutput: GeminiResponse | null = null;
     let lastError: unknown = null;
 
@@ -410,10 +409,13 @@ serve(async (req: Request) => {
       }
     }
 
+    // If the AI produced structurally valid but empty placements, or failed
+    // outright, this is the required "No valid design generated" fallback —
+    // never a UI crash.
     const usedFallback = geminiOutput === null;
     const finalOutput = geminiOutput ?? buildFallbackResponse();
 
-    // --- Log the AI interaction (non-fatal if it fails) ---
+    // --- Log the AI interaction (non-fatal if it fails) — required by failure-handling rules ---
     const { error: logError } = await supabase.from("ai_logs").insert({
       user_id: user.id,
       room_id: room_id || null,
@@ -430,8 +432,8 @@ serve(async (req: Request) => {
       console.error("gemini-decorator: all attempts failed, returning fallback response:", lastError);
     }
 
-    // Always return 200 with a well-formed payload — the frontend contract is
-    // "placements: []" is a valid, renderable state, never a crash.
+    // Always return 200 with a well-formed payload — "placements: []" is a
+    // valid, renderable empty state, never a crash.
     return new Response(JSON.stringify(finalOutput), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -442,8 +444,6 @@ serve(async (req: Request) => {
 
     const status = message === "Unauthorized" ? 401 : 400;
 
-    // Even on request-level errors (bad input, auth), return a fallback-shaped body
-    // when it's not an auth error, so the UI has something safe to render.
     if (status === 401) {
       return new Response(JSON.stringify({ error: message }), {
         status,
@@ -459,7 +459,7 @@ serve(async (req: Request) => {
 });
 
 // ============================================================
-// Prompt Builder
+// Prompt Builder — enforces the STRICT JSON-only AI output contract
 // ============================================================
 function buildGeminiPrompt(
   products: ProductInput[],
@@ -473,50 +473,44 @@ function buildGeminiPrompt(
     .join("\n");
 
   const budgetLine = budget
-    ? `\n\nBudget constraint: Maximum total budget is ${budget} تومان.`
+    ? `\n\nBudget context (for product selection only — you must NOT calculate or report any price): the customer's budget is around ${budget} تومان.`
     : "";
 
   return `
-You are an AI interior design assistant. Your task is to analyze the uploaded room image and recommend furniture/product placements.
+You are an AI interior design assistant. You make PLACEMENT DECISIONS ONLY.
+You do NOT render UI, you do NOT set prices, and you do NOT return product
+metadata (name, image, price) — that data lives only in the application's
+database and will be attached AFTER your response is validated.
 
-**IMPORTANT RULES:**
+**STRICT RULES:**
 1. Do NOT modify, edit, or generate the room image in any way.
-2. Do NOT generate fake or non-existent product images.
-3. Only select products from the provided list below.
-4. Do NOT create new products — only use the IDs provided, copied EXACTLY as given.
-5. You are not an image generator. You are a product placement advisor.
-6. If none of the provided products fit the room well, return an empty "placements" array rather than forcing a bad match.
+2. Only select products from the provided list below, and reference them
+   ONLY by their exact "ID" value.
+3. Do NOT invent new products or IDs.
+4. Do NOT include price, product name, image URLs, or any product metadata
+   in your response — return product_id only.
+5. Coordinates x and y MUST be normalized floats between 0 and 1 (NOT
+   percentages, NOT pixels), relative to the full uploaded image.
+6. scale MUST be a float between 0.5 and 2.0.
+7. If none of the provided products fit the room well, return an empty
+   "placements" array rather than forcing a bad match.
+8. "notes" is optional, plain Persian text only — no markdown, no pricing.
 
-**Available Products:**
+**Available Products (ID is the ONLY valid reference):**
 ${productLines}
 ${budgetLine}
 
-**Instructions:**
-1. Analyze the room image to determine its style (modern, classic, minimal, industrial, Scandinavian, bohemian, etc.).
-2. From the provided product list, select the BEST products that match the room's style and are suitable for placement in the visible room.
-3. For each selected product, determine where it should be placed in the room using percentage-based coordinates (x = 0-100% from left, y = 0-100% from top), based on the actual pixel dimensions of the uploaded image.
-4. Provide a scale factor (0.5 to 1.5) and rotation (-15 to +15 degrees) for each placement.
-5. Assign a confidence score (0-1) for each placement decision.
-6. Respect the budget constraint if provided — total_price must not exceed budget.
-7. Write the consultation in Persian (فارسی).
-8. Write each placement reason in Persian (فارسی).
-
-**Output format (JSON only, no markdown):**
+**Output format — JSON ONLY, no markdown, no extra text, no pricing fields:**
 {
-  "consultation": "Persian explanation of design recommendations",
-  "style": "detected style (e.g., modern, classic)",
   "placements": [
     {
-      "product_id": "uuid-string (must exactly match one of the IDs above)",
-      "x": 0-100,
-      "y": 0-100,
-      "scale": 0.5-1.5,
-      "rotation": -15 to 15,
-      "confidence": 0-1,
-      "reason": "Persian explanation for this placement"
+      "product_id": "must exactly match one of the IDs above",
+      "x": 0.0-1.0,
+      "y": 0.0-1.0,
+      "scale": 0.5-2.0
     }
   ],
-  "total_price": number (sum of selected product prices)
+  "notes": "optional short Persian explanation of the overall design choice"
 }
 `.trim();
 }

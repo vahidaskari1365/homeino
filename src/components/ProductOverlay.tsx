@@ -2,14 +2,18 @@ import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useOverlayGeometry } from "@/lib/overlayGeometry";
 
+// --- Strict layer separation ---
+// This component is the OVERLAY RENDER ENGINE. Its ONLY job is to place
+// product images on top of the room image using normalized coordinates.
+// It must NEVER receive or compute pricing/product metadata from the AI —
+// `productsMap` is always DB-backed (Supabase), and `placements` only ever
+// carries a product_id + normalized position/scale that already passed
+// through the validation + sanitization layer in the Edge Function.
 interface Placement {
   product_id: string;
-  x: number;        // 0-100 (%)
-  y: number;        // 0-100 (%)
-  scale: number;    // 0.5-1.5
-  rotation: number; // -15 to +15
-  confidence: number; // 0-1
-  reason: string;   // Persian explanation
+  x: number;     // normalized 0-1 (from AI, validated + clamped server-side)
+  y: number;     // normalized 0-1 (from AI, validated + clamped server-side)
+  scale: number; // 0.5-2.0 (validated + clamped server-side)
 }
 
 interface Product {
@@ -35,12 +39,12 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Overlay Geometry / Normalization Layer:
-  // AI x/y (0-100 %) → normalized (0-1) → pixel offset on the ACTUALLY rendered
-  // image, via ResizeObserver + the image's natural dimensions. This guarantees
-  // consistent placement across mobile/tablet/desktop regardless of container
-  // width. `aspectRatio` additionally locks the clipping box to the image's real
-  // ratio so the image itself is never cropped (object-cover would otherwise
-  // silently shift the visible area on differently-sized screens).
+  // AI x/y (normalized 0-1) → pixel offset on the ACTUALLY rendered image, via
+  // ResizeObserver + the image's natural dimensions. This guarantees consistent
+  // placement across mobile/tablet/desktop regardless of container width.
+  // `aspectRatio` additionally locks the clipping box to the image's real ratio
+  // so the image itself is never cropped (object-cover would otherwise silently
+  // shift the visible area on differently-sized screens).
   const { containerRef, onImageLoad, aspectRatio, toPixel } = useOverlayGeometry();
 
   return (
@@ -60,19 +64,21 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
         />
       </div>
 
-      {/* Product overlays at Gemini-determined coordinates */}
+      {/* Product overlays at AI-determined normalized coordinates.
+          Every visual attribute here (name, price, image) comes ONLY from
+          `productsMap` (Supabase) — never from the placement object itself. */}
       {placements.map((pl) => {
         const product = productsMap[pl.product_id];
         if (!product?.image_url) return null;
         const isHovered = hoveredId === pl.product_id;
 
-        // Normalize AI coordinates to actual rendered pixels; safe fallback to
-        // plain percentage positioning if the container/image haven't been
-        // measured yet (e.g. first paint before layout/onLoad fire).
+        // Normalize AI coordinates (0-1) to actual rendered pixels; safe
+        // fallback to plain percentage positioning if the container/image
+        // haven't been measured yet (e.g. first paint before onLoad fires).
         const pixel = toPixel(pl.x, pl.y);
         const positionStyle = pixel
           ? { left: `${pixel.left}px`, top: `${pixel.top}px` }
-          : { left: `${pl.x}%`, top: `${pl.y}%` };
+          : { left: `${pl.x * 100}%`, top: `${pl.y * 100}%` };
 
         return (
           <div
@@ -82,28 +88,22 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
               ...positionStyle,
               width: "14%",
               zIndex: isHovered ? 30 : 10,
-              transform: `translate(-50%, -50%) scale(${pl.scale}) rotate(${pl.rotation}deg)`,
+              transform: `translate(-50%, -50%) scale(${pl.scale})`,
               transition: "transform 0.2s ease, left 0.1s ease, top 0.1s ease",
             }}
             onMouseEnter={() => setHoveredId(pl.product_id)}
             onMouseLeave={() => setHoveredId(null)}
             onClick={() => onProductClick?.(product)}
           >
-            {/* Product image */}
+            {/* Product image — sourced from DB (productsMap), not the AI */}
             <img
               src={product.image_url}
               alt={product.name}
               className="w-full h-auto object-contain drop-shadow-2xl rounded-lg"
-              style={{ opacity: Math.max(0.75, pl.confidence) }}
               draggable={false}
             />
 
-            {/* Confidence badge */}
-            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-accent text-accent-foreground text-[9px] flex items-center justify-center font-bold shadow-lg border-2 border-background">
-              {Math.round(pl.confidence * 100)}
-            </div>
-
-            {/* Hover tooltip */}
+            {/* Hover tooltip — name + price, both DB-sourced */}
             {isHovered && (
               <div
                 className="absolute z-40 w-52 bg-black/90 backdrop-blur-sm text-white text-xs p-3 rounded-xl shadow-2xl border border-white/10 pointer-events-none"
@@ -114,10 +114,8 @@ const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: 
                 }}
               >
                 <div className="font-bold mb-1 text-sm">{product.name}</div>
-                <div className="text-white/70 leading-relaxed mb-2">{pl.reason}</div>
                 <div className="flex items-center justify-between">
                   <span className="text-accent font-bold">{fmt(product.price)}</span>
-                  <span className="text-white/50 text-[10px]">اطمینان: {Math.round(pl.confidence * 100)}%</span>
                 </div>
                 <div className="mt-2 flex items-center gap-1 text-accent/70 text-[10px]">
                   <ShoppingCart size={10} />

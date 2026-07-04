@@ -1,13 +1,13 @@
 // ============================================================
 // Homeino — Overlay Geometry / Normalization Layer
 // ============================================================
-// Converts AI-provided percentage coordinates (0-100, relative to the FULL
+// Converts AI-provided NORMALIZED coordinates (0-1, relative to the FULL
 // original image the model analyzed) into pixel-accurate positions on the
 // actually-rendered <img>, regardless of device, container size, or image
 // aspect ratio.
 //
-// Flow: AI coordinates (0-100 %) → normalized space (0-1) → pixel offset
-//       based on the CURRENT rendered image size (via ResizeObserver).
+// Flow: AI coordinates (0-1, already normalized) → pixel offset based on the
+//       CURRENT rendered image size (via ResizeObserver).
 //
 // Safe fallback: until both the container and the image have been measured
 // at least once, toPixel() returns null and callers should fall back to
@@ -32,11 +32,11 @@ export interface OverlayGeometry {
   /** true once both the container and the image have been measured */
   ready: boolean;
   /**
-   * Normalizes a 0-100 (%) AI coordinate into a pixel offset relative to the
+   * Normalizes a 0-1 AI coordinate into a pixel offset relative to the
    * rendered container. Returns null (safe fallback → use plain % CSS) if
    * measurements aren't available yet.
    */
-  toPixel: (xPercent: number, yPercent: number) => { left: number; top: number } | null;
+  toPixel: (xNormalized: number, yNormalized: number) => { left: number; top: number } | null;
 }
 
 function clamp01(v: number): number {
@@ -77,10 +77,10 @@ export function useOverlayGeometry(): OverlayGeometry {
   const ready = containerSize !== null && naturalSize !== null;
 
   const toPixel = useCallback(
-    (xPercent: number, yPercent: number): { left: number; top: number } | null => {
+    (xNormalized: number, yNormalized: number): { left: number; top: number } | null => {
       if (!containerSize) return null;
-      const nx = clamp01(xPercent / 100);
-      const ny = clamp01(yPercent / 100);
+      const nx = clamp01(xNormalized);
+      const ny = clamp01(yNormalized);
       return { left: nx * containerSize.width, top: ny * containerSize.height };
     },
     [containerSize]

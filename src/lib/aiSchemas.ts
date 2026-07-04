@@ -7,7 +7,13 @@
 // version, a future refactor, etc.). This schema is the second checkpoint in
 // the required pipeline:
 //
-//   AI OUTPUT → VALIDATION (this file) → SANITIZATION → UI
+//   AI OUTPUT → VALIDATION (edge fn) → DB ENRICHMENT → VALIDATION (this file) → UI
+//
+// Strict separation of responsibilities enforced by this schema:
+// - The AI layer may ONLY ever contribute product_id + normalized x/y/scale.
+// - There is NO price, name, image, or style field here — those always come
+//   from Supabase (via `productsMap` in the UI layer), never from the AI.
+// - `total_price` is a server-computed (DB-sourced) aggregate, not an AI value.
 //
 // If validation fails here, callers must fall back to a safe empty state
 // instead of passing unknown data into <ProductOverlay />.
@@ -17,19 +23,15 @@ import { z } from "zod";
 
 export const PlacementSchema = z.object({
   product_id: z.string().min(1),
-  x: z.number().min(0).max(100),
-  y: z.number().min(0).max(100),
-  scale: z.number().min(0.5).max(1.5),
-  rotation: z.number().min(-15).max(15),
-  confidence: z.number().min(0).max(1),
-  reason: z.string().default(""),
+  x: z.number().min(0).max(1),       // normalized 0-1
+  y: z.number().min(0).max(1),       // normalized 0-1
+  scale: z.number().min(0.5).max(2), // 0.5-2.0
 });
 
 export const GeminiDecoratorResponseSchema = z.object({
   consultation: z.string().default(""),
-  style: z.string().default("modern"),
   placements: z.array(PlacementSchema).default([]),
-  total_price: z.number().default(0),
+  total_price: z.number().default(0), // DB-computed only, never trust an AI number
   fallback: z.boolean().optional(),
 });
 
@@ -49,7 +51,6 @@ export function validateGeminiResponse(raw: unknown): { ok: boolean; data: Valid
     ok: false,
     data: {
       consultation: "متأسفانه پاسخ سرور نامعتبر بود. لطفاً دوباره تلاش کنید.",
-      style: "modern",
       placements: [],
       total_price: 0,
       fallback: true,

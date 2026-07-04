@@ -67,19 +67,15 @@ type Product = {
 
 type GeminiPlacement = {
   product_id: string;
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
-  confidence: number;
-  reason: string;
+  x: number;     // normalized 0-1
+  y: number;     // normalized 0-1
+  scale: number; // 0.5-2.0
 };
 
 type GeminiResult = {
   consultation: string;
-  style: string;
   placements: GeminiPlacement[];
-  total_price: number;
+  total_price: number; // always DB-computed, never trusted from AI
 };
 
 const fmt = (n: number | null | undefined) =>
@@ -613,13 +609,17 @@ const AIDesign = () => {
                     </button>
                   </div>
 
-                  {/* Consultation panel — Gemini's Persian design advice */}
+                  {/* Consultation panel — Gemini's Persian design notes.
+                      Style badge shows the USER-selected style (client state), never an
+                      AI-invented value — the AI layer is not allowed to emit UI metadata. */}
                   {analyticsTab === "consultation" && (
                     <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Palette size={15} className="text-accent shrink-0" />
-                        <span className="text-xs font-bold text-accent">سبک شناسایی‌شده:</span>
-                        <Badge variant="secondary" className="text-xs">{geminiResult.style}</Badge>
+                        <span className="text-xs font-bold text-accent">سبک انتخابی شما:</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {STYLES.find((s) => s.id === style)?.label || style}
+                        </Badge>
                       </div>
                       <div className="flex gap-2 items-start">
                         <Lightbulb size={15} className="text-accent shrink-0 mt-0.5" />
@@ -628,12 +628,16 @@ const AIDesign = () => {
                       <div className="flex items-center gap-2 pt-2 border-t border-accent/20">
                         <Banknote size={14} className="text-accent shrink-0" />
                         <span className="text-xs text-muted-foreground">جمع پیشنهادی جمینی:</span>
+                        {/* total_price is always recomputed server-side from Supabase product
+                            prices — the AI never supplies pricing data. */}
                         <span className="text-sm font-bold text-accent">{fmt(geminiResult.total_price)}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Placements panel — reason + confidence per product */}
+                  {/* Placements panel — product identity/price/image come ONLY from the
+                      DB-backed selectedMap (never from the AI); the AI only ever
+                      contributed product_id + normalized x/y/scale. */}
                   {analyticsTab === "placements" && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
                       {geminiResult.placements.length === 0 ? (
@@ -642,19 +646,13 @@ const AIDesign = () => {
                         const product = selectedMap[pl.product_id];
                         if (!product) return null;
                         return (
-                          <div key={pl.product_id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-start">
+                          <div key={pl.product_id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-center">
                             <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
                               {product.image_url && <img src={product.image_url} className="w-full h-full object-cover" />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-bold line-clamp-1">{product.name}</div>
-                              <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{pl.reason}</div>
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <div className="h-1.5 flex-1 bg-secondary rounded-full overflow-hidden">
-                                  <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${pl.confidence * 100}%` }} />
-                                </div>
-                                <span className="text-[10px] text-accent font-bold shrink-0">{Math.round(pl.confidence * 100)}%</span>
-                              </div>
+                              <div className="text-xs text-accent font-bold mt-0.5">{fmt(product.price)}</div>
                             </div>
                             <button
                               onClick={() => addToCart(product)}
