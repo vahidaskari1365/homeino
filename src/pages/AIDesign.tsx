@@ -581,7 +581,7 @@ const AIDesign = () => {
             <button
               onClick={generate}
               disabled={loading || !imageBase64 || selectedList.length === 0}
-              className="w-full bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all"
+              className="btn-3d w-full font-bold py-4 text-base flex items-center justify-center gap-2"
             >
               {loading
                 ? <><Loader2 className="animate-spin" size={20} /> در حال چیدمان با جمینی...</>
