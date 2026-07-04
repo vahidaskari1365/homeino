@@ -344,20 +344,30 @@ const AIDesign = () => {
 
             {/* Step 1: Upload */}
             <section>
-              <h2 className="font-bold mb-3 text-lg">۱. عکس فضای خانه</h2>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="step-medallion">۱</span>
+                <h2 className="font-bold text-lg">عکس فضای خانه</h2>
+              </div>
               <div
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
-                className="relative cursor-pointer border-2 border-dashed border-border rounded-2xl aspect-video flex items-center justify-center bg-card hover:border-accent transition-colors overflow-hidden"
+                className="relative cursor-pointer tile-3d aspect-video flex items-center justify-center overflow-hidden"
+                style={{
+                  backgroundImage: imageBase64
+                    ? undefined
+                    : "repeating-linear-gradient(135deg, transparent 0 12px, hsl(var(--accent) / 0.04) 12px 24px)",
+                }}
               >
                 {imageBase64 ? (
                   <img src={imageBase64} alt="فضای آپلود شده" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="text-center p-6">
-                    <Upload className="mx-auto mb-3 text-muted-foreground" size={36} />
-                    <p className="text-sm text-muted-foreground">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">JPG / PNG</p>
+                  <div className="text-center p-8">
+                    <div className="icon-3d w-16 h-16 mx-auto mb-4">
+                      <Upload size={26} strokeWidth={2} />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
+                    <p className="text-xs text-muted-foreground/80 mt-1">JPG / PNG · حداکثر ۱۰ مگابایت</p>
                   </div>
                 )}
                 <input ref={inputRef} type="file" accept="image/*" className="hidden"
@@ -367,14 +377,15 @@ const AIDesign = () => {
 
             {/* Step 2: Style */}
             <section>
-              <h2 className="font-bold mb-3 text-lg">۲. سبک دکوراسیون</h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="step-medallion">۲</span>
+                <h2 className="font-bold text-lg">سبک دکوراسیون</h2>
+              </div>
+              <div className="flex flex-wrap gap-2.5">
                 {STYLES.map((s) => (
                   <button key={s.id} onClick={() => setStyle(s.id)}
-                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      style === s.id
-                        ? "border-accent bg-accent/15 text-foreground"
-                        : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                    className={`tile-3d px-5 py-2.5 text-sm font-semibold ${
+                      style === s.id ? "is-selected text-foreground" : "text-muted-foreground"
                     }`}>
                     {s.label}
                   </button>
@@ -384,32 +395,34 @@ const AIDesign = () => {
 
             {/* Step 3: Multi-select products */}
             <section>
-              <h2 className="font-bold mb-1 text-lg">۳. وسایلی که می‌خواهی داخل خونه قرار بگیره</h2>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="step-medallion">۳</span>
+                <h2 className="font-bold text-lg">وسایل مورد نظر برای این فضا</h2>
+              </div>
+              <div className="flex items-center gap-2 mb-4 mr-12">
                 <Info size={13} className="text-accent shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  می‌توانی همزمان هر تعداد وسیله از هر دسته انتخاب کنی —
-                  مبل + لوستر + فرش + هر چیز دیگری — جمینی همه را با هم چیدمان می‌کند.
+                  از چند دسته همزمان انتخاب کن — مبل، لوستر، فرش و هر چیز دیگر. طراح ما همه را با هم چیدمان می‌کند.
                 </p>
               </div>
 
-              {/* Category tabs */}
-              <div className="flex flex-wrap gap-2 mb-4">
+              {/* Category tiles — 3D medallions */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-5">
                 {CATEGORIES.map((c) => {
                   const count = (products[c.slug] || []).length;
                   const sel   = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
+                  const isActive = activeCat === c.slug;
+                  const Icon = c.Icon;
                   return (
                     <button key={c.slug} onClick={() => setActiveCat(c.slug)}
-                      className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition-all ${
-                        activeCat === c.slug
-                          ? "border-accent bg-accent/15 text-foreground"
-                          : "border-border bg-card text-muted-foreground hover:border-accent/50"
-                      }`}>
-                      <span>{c.icon}</span>
-                      <span>{c.label}</span>
-                      <span className="text-xs opacity-70">({count})</span>
+                      className={`tile-3d relative flex flex-col items-center gap-2 py-4 px-2 ${isActive ? "is-selected" : ""}`}>
+                      <div className={`icon-3d w-12 h-12 ${isActive ? "is-active" : ""}`}>
+                        <Icon size={22} strokeWidth={1.75} />
+                      </div>
+                      <span className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>{c.label}</span>
+                      <span className="text-[10px] text-muted-foreground/70">({count})</span>
                       {sel > 0 && (
-                        <span className="text-xs bg-accent text-accent-foreground rounded-full px-1.5 py-0.5 font-bold">
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background">
                           {sel}
                         </span>
                       )}
@@ -417,6 +430,8 @@ const AIDesign = () => {
                   );
                 })}
               </div>
+
+
 
               {/* Products grid */}
               {currentProducts.length === 0 ? (
