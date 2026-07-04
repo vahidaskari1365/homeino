@@ -232,13 +232,20 @@ const AIDesign = () => {
       });
 
       if (error)        throw new Error(error.message || "خطا در اتصال به سرور");
-      if (data?.error)  throw new Error(data.error);
-      if (!data?.placements) throw new Error("پاسخ نامعتبر از جمینی");
+      // 429 / hard errors come back as { error }. A `fallback` flagged payload is still
+      // a valid, renderable response — never treat it as a crash.
+      if (data?.error && !data?.fallback) throw new Error(data.error);
+      if (!data || !Array.isArray(data.placements)) throw new Error("پاسخ نامعتبر از جمینی");
 
       setGeminiResult(data as GeminiResult);
       setCurrentStage("RENDERING");
       await new Promise((r) => setTimeout(r, 400));
-      toast.success("چیدمان هوشمند آماده شد ✨");
+
+      if ((data as GeminiResult & { fallback?: boolean }).fallback || data.placements.length === 0) {
+        toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
+      } else {
+        toast.success("چیدمان هوشمند آماده شد ✨");
+      }
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "خطا در تولید طراحی");

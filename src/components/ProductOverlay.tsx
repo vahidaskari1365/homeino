@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ShoppingCart } from "lucide-react";
 
 interface Placement {
@@ -32,12 +32,37 @@ const fmt = (n: number | null | undefined) =>
 
 const ProductOverlay = ({ roomImage, placements, productsMap, onProductClick }: ProductOverlayProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Lock the container's aspect ratio to the room image's NATURAL pixel dimensions.
+  // Gemini computes x/y placement percentages against the full, uncropped image it
+  // received. If the displayed container's aspect ratio differs from the image's
+  // natural ratio (e.g. object-cover cropping to fit a fixed-height card on mobile
+  // vs desktop), the same x%/y% value maps to a different physical spot on screen —
+  // causing placement "drift" across devices. Locking aspectRatio to the real image
+  // dimensions guarantees the rendered image is never cropped, so percentage-based
+  // coordinates always line up with what the AI actually analyzed.
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setAspectRatio(naturalWidth / naturalHeight);
+    }
+  }, []);
 
   return (
     <div className="relative w-full rounded-2xl bg-black border border-border select-none" style={{ overflow: "visible" }}>
       {/* Clip only the room image, not the tooltips */}
-      <div className="rounded-2xl overflow-hidden">
-        <img src={roomImage} alt="اتاق" className="w-full object-cover" draggable={false} />
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
+      >
+        <img
+          src={roomImage}
+          alt="اتاق"
+          className="w-full h-full object-cover"
+          draggable={false}
+          onLoad={handleImageLoad}
+        />
       </div>
 
       {/* Product overlays at Gemini-determined coordinates */}
