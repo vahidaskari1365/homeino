@@ -145,8 +145,10 @@ const AIDesignSection = () => {
         }
 
         setLiveProducts(prods as Product[]);
-        // Auto-select the fetched products so they display immediately
-        setSelectedProducts(prods as Product[]);
+        // Don't overwrite user's manual selections — only auto-select if none selected yet
+        if (selectedProducts.length === 0) {
+          setSelectedProducts(prods as Product[]);
+        }
       } catch (err) {
         console.error("Error fetching live products:", err);
       }
