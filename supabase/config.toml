@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 project_id = "nkxvkemsjajwvzxweucj"
 
 [functions.ai-redesign]
@@ -11,3 +12,17 @@ verify_jwt = false
 
 [functions.inspiration-cron]
 verify_jwt = false
+=======
+{
+  "project_id": "tljdihejjoepkcgftian",
+  "org_id": "vercel_icfg_UER83FvMumtF2hhPjiUoGWbu",
+  "name": "Homeino - AI Interior Design Marketplace",
+  "functions": {
+    "gemini-decorator": {
+      "entrypoint": "index.ts",
+      "verify_jwt": true,
+      "import_map": "./import_map.json"
+    }
+  }
+}
+>>>>>>> 487b134 (Initial commit: Homeino AI Interior Design Marketplace - Supabase schema, Gemini Edge Function, React frontend)
