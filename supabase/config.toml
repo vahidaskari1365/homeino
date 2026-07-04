@@ -5,10 +5,6 @@ project_id = "tljdihejjoepkcgftian"
 [functions.gemini-decorator]
 verify_jwt = true
 
-# ai-redesign: user-facing → JWT must be verified
-[functions.ai-redesign]
-verify_jwt = true
-
 # inspiration-* functions: called internally by cron with service-role key
 [functions.inspiration-ai-processor]
 verify_jwt = false

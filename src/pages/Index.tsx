@@ -6,7 +6,6 @@ import InspirationSection from "@/components/InspirationSection";
 import BudgetSection from "@/components/BudgetSection";
 import ServicesSection from "@/components/ServicesSection";
 import Newsletter from "@/components/Newsletter";
-import ChatBot from "@/components/ChatBot";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -150,7 +149,6 @@ const Index = () => {
       </Reveal>
 
       <Footer />
-      <ChatBot />
     </div>
   );
 };

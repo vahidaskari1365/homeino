@@ -52,6 +52,23 @@ PIXEL-PERFECT RENDER ENGINE (src/lib/overlayGeometry.ts + src/components/Product
 - ✅ **AI → UI never coupled directly** — every AI response passes through Validation → Sanitization → Normalization → DB Enrichment (`src/lib/aiPipeline.ts`) before it ever reaches a render component
 - ✅ **Reliability** — retry (max 2 attempts), 30s timeout, per-user rate limiting, fallback state on invalid/empty output, full audit trail in `ai_logs`
 
+### One Unified AI Strategy
+
+Homeino uses exactly **one** user-facing AI system. No duplicate or alternate AI providers exist in the product flow:
+
+| Layer | Provider | Purpose | User-facing |
+|---|---|---|---|
+| AI CORE | **Gemini 1.5 Flash** (`gemini-decorator`) | Product placement + design reasoning (AIDesign pipeline) | ✅ Yes |
+| DATABASE | **Supabase** | Sole source of truth for product name/price/image | — |
+| RENDER ENGINE | Overlay (`overlayGeometry.ts` + `ProductOverlay.tsx`) | Pixel-perfect placement rendering | ✅ Yes |
+| OPTIONAL BACKGROUND AI | Zhipu GLM-4V (`inspiration-ai-processor`) | Non-user-facing cron job that auto-tags/translates crawled inspiration gallery images (title, style, tags, palette). Never touches product placement, pricing, or the render pipeline. | ❌ No (cron/admin only) |
+
+Removed as part of the architecture cleanup (dead, unused, or UX-deceptive — no longer present in the codebase):
+- ❌ `ai-redesign` Edge Function (Zhipu/CogView full-image generation) — not wired into any UI flow
+- ❌ `src/services/huggingface.ts` and `src/services/siliconFlow.ts` — unused duplicate AI providers (SiliconFlow client-side API key), only consumed by the dead redesign section below
+- ❌ `AIDesignSection.tsx`, `BeforeAfterSlider.tsx`, `MaskCanvas.tsx` — orphaned UI for the removed image-generation redesign flow (not rendered on any page)
+- ❌ `ChatBot.tsx` — keyword/if-else responder with no real LLM behind it; removed to avoid presenting fake AI capability to users
+
 ---
 
 ## 📁 Project Structure
@@ -62,12 +79,11 @@ homeino/
 │   ├── config.toml                    # Supabase project config
 │   ├── migrations/                    # Full DB schema + RLS + ai_logs audit table
 │   └── functions/
-│       ├── gemini-decorator/          # AI placement pipeline (Validation + Sanitization + DB pricing)
+│       ├── gemini-decorator/          # THE core AI pipeline: Validation + Sanitization + DB pricing
 │       │   ├── deno.json
 │       │   ├── import_map.json
 │       │   └── index.ts
-│       ├── ai-redesign/               # Full-image style redesign (separate feature, no placement/pricing decisions)
-│       ├── inspiration-ai-processor/
+│       ├── inspiration-ai-processor/  # Optional background AI — gallery tagging only, not user-facing
 │       ├── inspiration-crawler/
 │       └── inspiration-cron/
 ├── src/
