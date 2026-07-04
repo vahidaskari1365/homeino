@@ -305,20 +305,40 @@ const AIDesign = () => {
           <ArrowLeft size={16} /> بازگشت به خانه
         </Link>
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-accent/15 border border-accent/30 rounded-full px-5 py-2 mb-4">
+        {/* Header — cinematic 3D hero */}
+        <div className="relative text-center mb-14 pt-6">
+          <div className="ai-hero-orb w-[420px] h-[420px] left-1/2 -translate-x-1/2 -top-16 bg-accent/40" />
+          <div className="ai-hero-orb w-[260px] h-[260px] right-8 top-4 bg-gold/40" style={{ animationDelay: "1.5s" }} />
+
+          <div className="relative inline-flex items-center gap-2 rounded-full px-5 py-2 mb-6"
+            style={{
+              background: "linear-gradient(180deg, hsl(var(--accent)/0.18), hsl(var(--accent)/0.06))",
+              boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.6), 0 6px 18px -6px hsl(var(--accent)/0.35)",
+              border: "1px solid hsl(var(--accent)/0.35)",
+            }}>
             <Sparkles size={16} className="text-accent" />
-            <span className="text-accent text-sm font-medium">طراح هوشمند هومینو · Gemini AI</span>
+            <span className="text-accent text-sm font-semibold">مشاور طراحی داخلی هوشمند هومینو</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold mb-3">طراحی اتاق با هوش مصنوعی</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            عکس خانه‌ات را آپلود کن، هر تعداد وسیله‌ای که می‌خواهی از بازار انتخاب کن —
-            جمینی آن‌ها را هوشمندانه داخل عکس خانه‌ات جایگذاری می‌کند.
+
+          <h1 className="relative text-4xl md:text-6xl font-bold mb-4 tracking-tight"
+            style={{
+              backgroundImage: "linear-gradient(180deg, hsl(158 54% 22%) 0%, hsl(158 48% 34%) 55%, hsl(28 28% 14%) 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              textShadow: "0 1px 0 hsl(0 0% 100% / 0.4)",
+              filter: "drop-shadow(0 12px 22px hsl(158 54% 15% / 0.22))",
+            }}>
+            اتاق‌ خودت را با هوش مصنوعی طراحی کن
+          </h1>
+          <p className="relative text-muted-foreground max-w-2xl mx-auto text-base md:text-lg leading-loose">
+            یک عکس از فضا آپلود کن، محصولات دلخواه از بازار انتخاب کن — طراح هوشمند ما
+            آن‌ها را با نور، سبک و ابعاد اتاق هماهنگ می‌کند.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
+
           {/* ── LEFT COLUMN ───────────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-6">
 
