@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -20,6 +20,7 @@ import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
   Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
   ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check, User,
+  Boxes, Store as StoreIcon, Tag,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { formatPersianDate } from "@/lib/date";
@@ -27,11 +28,19 @@ import { CustomerDashboard } from "@/components/CustomerDashboard";
 import { SellerAnalyticsPanel } from "@/components/SellerAnalyticsPanel";
 
 interface Category { id: string; name: string; slug: string; }
-interface Profile {
-  id: string; brand_name: string; contact_name: string | null;
-  phone: string | null; city: string | null; address: string | null;
-  description: string | null; website: string | null;
-  contact_published: boolean; contact_published_at: string | null;
+
+// Seller/brand form — backed by the `stores` table (the seller entity).
+interface SellerForm {
+  id: string; // store id ("" until the store is created)
+  brand_name: string;
+  contact_name: string | null;
+  phone: string | null;
+  city: string | null;
+  address: string | null;
+  description: string | null;
+  website: string | null;
+  contact_published: boolean;
+  contact_published_at: string | null;
 }
 interface Product {
   id: string; name: string; description: string | null;
@@ -48,11 +57,24 @@ interface Order {
   address: string; note: string | null; status: OrderStatus;
   total_amount: number; created_at: string; order_items: OrderItem[];
 }
-interface Inquiry {
-  id: string; name: string; phone: string; message: string;
-  is_read: boolean; created_at: string; product_id: string | null;
+
+type QuoteStatus = "pending" | "answered" | "accepted" | "rejected" | "expired";
+interface Quote {
+  id: string; product_name: string | null; product_id: string | null;
+  quantity: number | null; notes: string | null; status: QuoteStatus;
+  proposed_price: number | null; created_at: string;
 }
+
 interface DailyView { day: string; views: number; }
+interface ProductAnalytics {
+  product_id: string; product_name: string;
+  views: number; clicks: number; saves: number; ai_recommendations: number;
+}
+interface StoreOverview {
+  product_count: number | null; active_product_count: number | null;
+  featured_count: number | null; out_of_stock_count: number | null;
+  total_stock: number | null;
+}
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "در انتظار",
@@ -67,6 +89,13 @@ const STATUS_COLOR: Record<OrderStatus, string> = {
   shipped: "bg-sky-500/15 text-sky-600 border-sky-500/30",
   delivered: "bg-emerald-brand/15 text-emerald-brand border-emerald-brand/30",
   cancelled: "bg-destructive/15 text-destructive border-destructive/30",
+};
+const QUOTE_STATUS: Record<QuoteStatus, { label: string; cls: string }> = {
+  pending: { label: "در انتظار پاسخ", cls: "bg-gold/15 text-gold border-gold/30" },
+  answered: { label: "پاسخ داده شده", cls: "bg-primary/15 text-primary border-primary/30" },
+  accepted: { label: "پذیرفته شده", cls: "bg-emerald-brand/15 text-emerald-brand border-emerald-brand/30" },
+  rejected: { label: "رد شده", cls: "bg-destructive/15 text-destructive border-destructive/30" },
+  expired: { label: "منقضی", cls: "bg-muted text-muted-foreground border-border" },
 };
 
 const profileSchema = z.object({
@@ -88,21 +117,32 @@ const productSchema = z.object({
   is_active: z.boolean(),
 });
 
+const emptyForm: SellerForm = {
+  id: "", brand_name: "", contact_name: null, phone: null, city: null,
+  address: null, description: null, website: null,
+  contact_published: false, contact_published_at: null,
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<SellerForm | null>(null);
+  const [storeId, setStoreId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"producer" | "customer">("producer");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [dailyViews, setDailyViews] = useState<DailyView[]>([]);
   const [dailySales, setDailySales] = useState<{ day: string; amount: number }[]>([]);
   const [productViews, setProductViews] = useState<Record<string, number>>({});
+  const [productAnalytics, setProductAnalytics] = useState<ProductAnalytics[]>([]);
+  const [overview, setOverview] = useState<StoreOverview | null>(null);
+
+  // quote respond
+  const [quotePrice, setQuotePrice] = useState<Record<string, string>>({});
 
   // product dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -136,75 +176,111 @@ const Dashboard = () => {
   }, []);
 
   const loadAll = async (uid: string) => {
-    const [{ data: prof }, { data: cats }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
+    const [{ data: cats }, { data: store }] = await Promise.all([
       supabase.from("producer_categories").select("id, name, slug").order("name"),
+      supabase.from("stores").select("*").eq("owner_id", uid).maybeSingle(),
     ]);
     if (cats) setCategories(cats);
-    if (prof) {
-      setProfile(prof as Profile);
-      setViewMode("producer");
-      const [{ data: pc }, { data: prods }] = await Promise.all([
-        supabase.from("profile_categories").select("category_id").eq("profile_id", prof.id),
-        supabase.from("products").select("*").eq("profile_id", prof.id).order("created_at", { ascending: false }),
-      ]);
-      if (pc) setSelectedCats(pc.map((r) => r.category_id));
+
+    if (store) {
+      setStoreId(store.id);
+      setProfile({
+        id: store.id,
+        brand_name: store.name ?? "",
+        contact_name: store.contact_name,
+        phone: store.phone,
+        city: store.city,
+        address: store.address,
+        description: store.description,
+        website: store.website,
+        contact_published: store.contact_published ?? false,
+        contact_published_at: store.contact_published_at,
+      });
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, description, price, stock, image_url, is_active, category_id")
+        .eq("store_id", store.id)
+        .order("created_at", { ascending: false });
       if (prods) setProducts(prods as Product[]);
-      await loadSellerData(prof.id);
+      await loadSellerData(store.id, uid);
     } else {
-      setViewMode("customer");
+      // No store yet — show an empty seller profile the user can fill to onboard.
+      setStoreId(null);
+      setProfile({ ...emptyForm });
+      setProducts([]);
+      setOrders([]);
+      setQuotes([]);
+      setDailyViews([]);
+      setDailySales([]);
+      setProductViews({});
+      setProductAnalytics([]);
+      setOverview(null);
     }
   };
 
-  const loadSellerData = async (profileId: string) => {
-    const [ordersRes, inqRes, dailyRes, totalsRes] = await Promise.all([
+  const loadSellerData = async (sid: string, uid: string) => {
+    const [ordersRes, quotesRes, dailyRes, analyticsRes, overviewRes] = await Promise.all([
       supabase.from("orders")
         .select("id, recipient_name, phone, city, address, note, status, total_amount, created_at, order_items(id, product_name, unit_price, quantity)")
-        .eq("profile_id", profileId)
+        .eq("profile_id", uid)
         .order("created_at", { ascending: false }),
-      supabase.from("inquiries")
-        .select("*").eq("profile_id", profileId).order("created_at", { ascending: false }),
-      supabase.from("product_daily_views")
-        .select("day, views").eq("profile_id", profileId).order("day", { ascending: true }),
-      supabase.from("product_views")
-        .select("product_id").eq("profile_id", profileId),
+      supabase.from("price_quotes")
+        .select("id, product_name, product_id, quantity, notes, status, proposed_price, created_at")
+        .eq("profile_id", uid)
+        .order("created_at", { ascending: false }),
+      supabase.rpc("get_store_daily_views", { p_store_id: sid, p_days: 30 }),
+      supabase.rpc("get_store_product_analytics", { p_store_id: sid }),
+      supabase.from("seller_store_overview").select("*").eq("store_id", sid).maybeSingle(),
     ]);
 
     if (ordersRes.data) {
       const ordersData = ordersRes.data as unknown as Order[];
       setOrders(ordersData);
-      
-      // Calculate daily sales for the last 30 days
       const salesMap = new Map<string, number>();
-      ordersData.forEach(o => {
-        const day = o.created_at.split('T')[0];
-        salesMap.set(day, (salesMap.get(day) ?? 0) + o.total_amount);
+      ordersData.forEach((o) => {
+        const day = o.created_at.split("T")[0];
+        salesMap.set(day, (salesMap.get(day) ?? 0) + (o.total_amount ?? 0));
       });
-      const salesArr = Array.from(salesMap.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([day, amount]) => ({ day, amount }));
-      setDailySales(salesArr);
+      setDailySales(
+        Array.from(salesMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([day, amount]) => ({ day, amount })),
+      );
+    } else {
+      setOrders([]);
+      setDailySales([]);
     }
-    if (inqRes.data) setInquiries(inqRes.data as Inquiry[]);
+
+    setQuotes((quotesRes.data as Quote[] | null) ?? []);
 
     if (dailyRes.data) {
-      // Aggregate across products per day
-      const map = new Map<string, number>();
-      for (const r of dailyRes.data as { day: string; views: number }[]) {
-        map.set(r.day, (map.get(r.day) ?? 0) + r.views);
-      }
-      const arr = [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
-        .map(([day, views]) => ({ day, views }));
-      setDailyViews(arr);
+      setDailyViews(
+        (dailyRes.data as { day: string; views: number }[])
+          .map((r) => ({ day: r.day, views: Number(r.views) || 0 }))
+          .sort((a, b) => a.day.localeCompare(b.day)),
+      );
+    } else {
+      setDailyViews([]);
     }
 
-    if (totalsRes.data) {
+    if (analyticsRes.data) {
+      const rows = (analyticsRes.data as ProductAnalytics[]).map((r) => ({
+        ...r,
+        views: Number(r.views) || 0,
+        clicks: Number(r.clicks) || 0,
+        saves: Number(r.saves) || 0,
+        ai_recommendations: Number(r.ai_recommendations) || 0,
+      }));
+      setProductAnalytics(rows);
       const counts: Record<string, number> = {};
-      for (const r of totalsRes.data as { product_id: string }[]) {
-        counts[r.product_id] = (counts[r.product_id] ?? 0) + 1;
-      }
+      rows.forEach((r) => { counts[r.product_id] = r.views; });
       setProductViews(counts);
+    } else {
+      setProductAnalytics([]);
+      setProductViews({});
     }
+
+    setOverview((overviewRes.data as StoreOverview | null) ?? null);
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
@@ -217,63 +293,76 @@ const Dashboard = () => {
     toast({ title: "وضعیت به‌روز شد" });
   };
 
-  const markInquiryRead = async (id: string, is_read: boolean) => {
-    const { error } = await supabase.from("inquiries").update({ is_read }).eq("id", id);
+  const respondQuote = async (id: string) => {
+    const raw = quotePrice[id];
+    const price = Number(raw);
+    if (!raw || Number.isNaN(price) || price <= 0) {
+      toast({ title: "خطا", description: "قیمت معتبر وارد کنید", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("price_quotes")
+      .update({ proposed_price: price, status: "answered" })
+      .eq("id", id);
     if (error) {
       toast({ title: "خطا", description: error.message, variant: "destructive" });
       return;
     }
-    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, is_read } : i));
+    setQuotes((prev) => prev.map((q) => q.id === id ? { ...q, proposed_price: price, status: "answered" } : q));
+    setQuotePrice((prev) => ({ ...prev, [id]: "" }));
+    toast({ title: "قیمت پیشنهادی ثبت شد" });
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  // ---- profile save ----
+  // ---- profile save (creates or updates the store) ----
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !userId) return;
     const result = profileSchema.safeParse(profile);
     if (!result.success) {
       toast({ title: "خطا", description: result.error.issues[0].message, variant: "destructive" });
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        brand_name: profile.brand_name,
-        contact_name: profile.contact_name || null,
-        phone: profile.phone || null,
-        city: profile.city || null,
-        address: profile.address || null,
-        description: profile.description || null,
-        website: profile.website || null,
-      })
-      .eq("id", profile.id);
+    const payload = {
+      name: profile.brand_name,
+      description: profile.description || null,
+      city: profile.city || null,
+      contact_name: profile.contact_name || null,
+      phone: profile.phone || null,
+      address: profile.address || null,
+      website: profile.website || null,
+    };
 
-    // sync categories: delete missing, add new
-    if (!error) {
-      const { data: current } = await supabase
-        .from("profile_categories").select("category_id").eq("profile_id", profile.id);
-      const currentIds = new Set((current ?? []).map((r) => r.category_id));
-      const desiredIds = new Set(selectedCats);
-      const toAdd = selectedCats.filter((id) => !currentIds.has(id));
-      const toRemove = [...currentIds].filter((id) => !desiredIds.has(id));
-      if (toAdd.length) {
-        await supabase.from("profile_categories").insert(
-          toAdd.map((category_id) => ({ profile_id: profile.id, category_id }))
-        );
+    if (profile.id) {
+      const { error } = await supabase.from("stores").update(payload).eq("id", profile.id);
+      setSaving(false);
+      if (error) {
+        toast({ title: "خطا در ذخیره", description: error.message, variant: "destructive" });
+        return;
       }
-      if (toRemove.length) {
-        await supabase.from("profile_categories").delete()
-          .eq("profile_id", profile.id).in("category_id", toRemove);
+      toast({ title: "ذخیره شد", description: "اطلاعات فروشگاه به‌روزرسانی شد" });
+    } else {
+      const { data: created, error } = await supabase
+        .from("stores")
+        .insert({ owner_id: userId, ...payload })
+        .select("*")
+        .single();
+      if (error || !created) {
+        setSaving(false);
+        toast({ title: "خطا در ایجاد فروشگاه", description: error?.message, variant: "destructive" });
+        return;
       }
+      // Mark the user as a seller (allowed by profiles_self_update RLS).
+      await supabase.from("profiles").update({ role: "seller" }).eq("id", userId);
+      setSaving(false);
+      setStoreId(created.id);
+      setProfile((prev) => prev ? { ...prev, id: created.id } : prev);
+      toast({ title: "فروشگاه ایجاد شد", description: "اکنون می‌توانید محصولات خود را اضافه کنید" });
+      await loadSellerData(created.id, userId);
     }
-    setSaving(false);
-    if (error) toast({ title: "خطا در ذخیره", description: error.message, variant: "destructive" });
-    else toast({ title: "ذخیره شد", description: "اطلاعات پروفایل به‌روزرسانی شد" });
   };
 
   // ---- contact info completeness & publish ----
@@ -290,6 +379,10 @@ const Dashboard = () => {
 
   const togglePublish = async (publish: boolean) => {
     if (!profile) return;
+    if (!profile.id) {
+      toast({ title: "ابتدا ذخیره کنید", description: "برای انتشار، ابتدا اطلاعات فروشگاه را ذخیره کنید.", variant: "destructive" });
+      return;
+    }
     if (publish && !isContactComplete) {
       toast({
         title: "اطلاعات ناقص است",
@@ -299,23 +392,17 @@ const Dashboard = () => {
       return;
     }
     setSaving(true);
+    const publishedAt = publish ? new Date().toISOString() : null;
     const { error } = await supabase
-      .from("profiles")
-      .update({
-        contact_published: publish,
-        contact_published_at: publish ? new Date().toISOString() : null,
-      })
+      .from("stores")
+      .update({ contact_published: publish, contact_published_at: publishedAt })
       .eq("id", profile.id);
     setSaving(false);
     if (error) {
       toast({ title: "خطا", description: error.message, variant: "destructive" });
       return;
     }
-    setProfile({
-      ...profile,
-      contact_published: publish,
-      contact_published_at: publish ? new Date().toISOString() : null,
-    });
+    setProfile({ ...profile, contact_published: publish, contact_published_at: publishedAt });
     toast({
       title: publish ? "اطلاعات منتشر شد" : "انتشار لغو شد",
       description: publish ? "اطلاعات تماس شما اکنون در سایت نمایش داده می‌شود" : "اطلاعات تماس از سایت حذف شد",
@@ -342,7 +429,7 @@ const Dashboard = () => {
     if (!userId) return null;
     const ext = file.name.split(".").pop();
     const path = `${userId}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file);
+    const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
     if (error) {
       toast({ title: "خطا در آپلود", description: error.message, variant: "destructive" });
       return null;
@@ -353,7 +440,11 @@ const Dashboard = () => {
 
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!userId) return;
+    if (!storeId) {
+      toast({ title: "ابتدا فروشگاه بسازید", description: "برای افزودن محصول، ابتدا اطلاعات فروشگاه را ذخیره کنید.", variant: "destructive" });
+      return;
+    }
     const parsed = productSchema.safeParse({
       name: pName, description: pDesc, price: pPrice || undefined,
       stock: pStock, category_id: pCat === "none" ? null : pCat, is_active: pActive,
@@ -377,7 +468,8 @@ const Dashboard = () => {
       category_id: parsed.data.category_id ?? null,
       is_active: parsed.data.is_active,
       image_url: imageUrl,
-      profile_id: profile.id,
+      store_id: storeId,
+      profile_id: userId,
     };
 
     const { error } = editing
@@ -392,7 +484,7 @@ const Dashboard = () => {
     toast({ title: editing ? "محصول ویرایش شد" : "محصول اضافه شد" });
     setDialogOpen(false);
     resetProductForm();
-    await loadAll(userId!);
+    await loadAll(userId);
   };
 
   const deleteProduct = async (p: Product) => {
@@ -402,13 +494,9 @@ const Dashboard = () => {
     else { toast({ title: "حذف شد" }); setProducts((prev) => prev.filter((x) => x.id !== p.id)); }
   };
 
-  const updateProfileField = useCallback(<K extends keyof Profile>(key: K, val: Profile[K]) => {
+  const updateProfileField = useCallback(<K extends keyof SellerForm>(key: K, val: SellerForm[K]) => {
     setProfile((prev) => prev ? { ...prev, [key]: val } : prev);
   }, []);
-
-  const toggleCat = (id: string) => {
-    setSelectedCats((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  };
 
   if (loading) {
     return (
@@ -421,11 +509,7 @@ const Dashboard = () => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background py-10 px-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-brand/10 rounded-full blur-3xl pointer-events-none" />
-
         <div className="relative max-w-5xl mx-auto">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold text-sm mb-2">
@@ -437,12 +521,15 @@ const Dashboard = () => {
               <LogOut size={16} /> خروج
             </Button>
           </div>
-
-          <CustomerDashboard userId={userId!} />
+          {userId && <CustomerDashboard userId={userId} />}
         </div>
       </div>
     );
   }
+
+  const pendingQuotes = quotes.filter((q) => q.status === "pending").length;
+  const pendingOrders = orders.filter((o) => o.status === "pending").length;
+  const totalViews30d = dailyViews.reduce((s, d) => s + d.views, 0);
 
   return (
     <div className="min-h-screen bg-background py-10 px-4 relative overflow-hidden">
@@ -460,11 +547,11 @@ const Dashboard = () => {
               <Sparkles size={14} className="text-gold" />
               <span className="text-gold text-xs font-medium">داشبورد تولیدکننده</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{profile.brand_name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{profile.brand_name || "فروشگاه من"}</h1>
           </div>
           <div className="flex gap-2 self-start">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setViewMode(viewMode === "producer" ? "customer" : "producer")}
               className="gap-2"
             >
@@ -478,17 +565,17 @@ const Dashboard = () => {
         </div>
 
         {viewMode === "customer" ? (
-          <CustomerDashboard userId={userId!} />
+          userId && <CustomerDashboard userId={userId} />
         ) : (
           <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-5 md:max-w-3xl mb-6 h-auto">
             <TabsTrigger value="profile" className="text-xs md:text-sm">پروفایل</TabsTrigger>
             <TabsTrigger value="products" className="text-xs md:text-sm">محصولات ({products.length})</TabsTrigger>
             <TabsTrigger value="orders" className="text-xs md:text-sm gap-1">
-              <ShoppingCart size={14} />سفارش‌ها ({orders.filter((o) => o.status === "pending").length})
+              <ShoppingCart size={14} />سفارش‌ها ({pendingOrders})
             </TabsTrigger>
-            <TabsTrigger value="inquiries" className="text-xs md:text-sm gap-1">
-              <MessageSquare size={14} />درخواست‌ها ({inquiries.filter((i) => !i.is_read).length})
+            <TabsTrigger value="quotes" className="text-xs md:text-sm gap-1">
+              <MessageSquare size={14} />درخواست‌ها ({pendingQuotes})
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs md:text-sm gap-1">
               <BarChart3 size={14} />آمار
@@ -498,6 +585,15 @@ const Dashboard = () => {
           {/* PROFILE TAB */}
           <TabsContent value="profile">
             <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
+              {!profile.id && (
+                <div className="flex items-start gap-3 mb-6 p-4 rounded-xl border border-gold/30 bg-gold/5">
+                  <StoreIcon size={20} className="text-gold shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-bold text-foreground">هنوز فروشگاهی ندارید</p>
+                    <p className="text-muted-foreground">اطلاعات زیر را تکمیل و ذخیره کنید تا فروشگاه شما ساخته شود.</p>
+                  </div>
+                </div>
+              )}
               <form onSubmit={saveProfile} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -534,26 +630,6 @@ const Dashboard = () => {
                     <Label>درباره برند</Label>
                     <Textarea rows={4} value={profile.description ?? ""}
                       onChange={(e) => updateProfileField("description", e.target.value)} maxLength={1000} />
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-4 border-t border-border">
-                  <Label>دسته‌های فعالیت</Label>
-                  <p className="text-xs text-muted-foreground">می‌توانید چند دسته انتخاب کنید</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto p-3 rounded-lg border border-border bg-background">
-                    {categories.map((cat) => {
-                      const checked = selectedCats.includes(cat.id);
-                      return (
-                        <label key={cat.id}
-                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors text-sm ${
-                            checked ? "bg-gold/15 border border-gold/40 text-foreground"
-                                    : "border border-transparent hover:bg-accent text-muted-foreground"
-                          }`}>
-                          <Checkbox checked={checked} onCheckedChange={() => toggleCat(cat.id)} />
-                          <span>{cat.name}</span>
-                        </label>
-                      );
-                    })}
                   </div>
                 </div>
 
@@ -607,7 +683,7 @@ const Dashboard = () => {
                       <EyeOff size={16} /> لغو انتشار
                     </Button>
                   ) : (
-                    <Button type="button" variant="outline" disabled={saving || !isContactComplete}
+                    <Button type="button" variant="outline" disabled={saving || !isContactComplete || !profile.id}
                       onClick={() => togglePublish(true)} className="gap-2 border-gold/40 text-gold hover:bg-gold/10">
                       <Send size={16} /> تأیید و انتشار اطلاعات
                     </Button>
@@ -633,10 +709,14 @@ const Dashboard = () => {
               {products.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <Package size={40} className="mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground mb-4">هنوز محصولی اضافه نکرده‌اید</p>
-                  <Button onClick={openNewProduct} variant="outline" className="gap-2">
-                    <Plus size={16} /> افزودن اولین محصول
-                  </Button>
+                  <p className="text-muted-foreground mb-4">
+                    {storeId ? "هنوز محصولی اضافه نکرده‌اید" : "برای افزودن محصول، ابتدا فروشگاه خود را در تب پروفایل بسازید"}
+                  </p>
+                  {storeId && (
+                    <Button onClick={openNewProduct} variant="outline" className="gap-2">
+                      <Plus size={16} /> افزودن اولین محصول
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -713,9 +793,9 @@ const Dashboard = () => {
                       </div>
                       {o.note && <p className="text-xs text-muted-foreground italic mb-3">یادداشت: {o.note}</p>}
                       <div className="border-t border-border pt-3 space-y-1.5">
-                        {o.order_items.map((it) => (
+                        {(o.order_items ?? []).map((it) => (
                           <div key={it.id} className="flex justify-between text-sm">
-                            <span className="text-foreground">{it.product_name} �� {it.quantity}</span>
+                            <span className="text-foreground">{it.product_name} × {it.quantity}</span>
                             <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("fa-IR")} ت</span>
                           </div>
                         ))}
@@ -742,49 +822,60 @@ const Dashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* INQUIRIES TAB */}
-          <TabsContent value="inquiries">
+          {/* QUOTES / REQUESTS TAB */}
+          <TabsContent value="quotes">
             <Card className="p-6 md:p-8 shadow-luxury bg-card border-border">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
-                <MessageSquare size={20} className="text-gold" /> درخواست‌های مشتری ({inquiries.length})
+                <MessageSquare size={20} className="text-gold" /> درخواست‌های قیمت مشتری ({quotes.length})
               </h2>
-              {inquiries.length === 0 ? (
+              {quotes.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <MessageSquare size={40} className="mx-auto text-muted-foreground mb-3" />
                   <p className="text-muted-foreground">درخواستی از مشتری‌ها دریافت نکرده‌اید</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {inquiries.map((inq) => {
-                    const product = inq.product_id ? products.find((p) => p.id === inq.product_id) : null;
-                    return (
-                      <Card key={inq.id} className={`p-4 bg-background border ${inq.is_read ? "border-border" : "border-gold/50 bg-gold/5"}`}>
-                        <div className="flex items-start justify-between flex-wrap gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-bold text-foreground">{inq.name}</p>
-                              {!inq.is_read && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">جدید</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
-                              <a href={`tel:${inq.phone}`} className="flex items-center gap-1 hover:text-gold"><Phone size={12} /> {inq.phone}</a>
-                              <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(inq.created_at)}</span>
+                  {quotes.map((q) => (
+                    <Card key={q.id} className={`p-4 bg-background border ${q.status === "pending" ? "border-gold/50 bg-gold/5" : "border-border"}`}>
+                      <div className="flex items-start justify-between flex-wrap gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold text-foreground flex items-center gap-1">
+                              <Tag size={14} className="text-gold" /> {q.product_name || "درخواست قیمت"}
                             </p>
-                            {product && (
-                              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                                <Package size={12} /> درباره: {product.name}
-                              </p>
-                            )}
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{inq.message}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full border ${QUOTE_STATUS[q.status].cls}`}>
+                              {QUOTE_STATUS[q.status].label}
+                            </span>
                           </div>
-                          <Button size="sm" variant="outline" onClick={() => markInquiryRead(inq.id, !inq.is_read)} className="gap-1">
-                            <Check size={14} /> {inq.is_read ? "علامت ناخوانده" : "خوانده شد"}
+                          <p className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
+                            <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(q.created_at)}</span>
+                            {q.quantity != null && <span>تعداد: {q.quantity.toLocaleString("fa-IR")}</span>}
+                          </p>
+                          {q.notes && <p className="text-sm text-foreground whitespace-pre-wrap mb-2">{q.notes}</p>}
+                          {q.proposed_price != null && (
+                            <p className="text-sm font-bold text-emerald-brand">
+                              قیمت پیشنهادی شما: {q.proposed_price.toLocaleString("fa-IR")} تومان
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {q.status === "pending" && (
+                        <div className="flex flex-wrap items-end gap-2 pt-3 mt-3 border-t border-border">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">قیمت پیشنهادی (تومان)</Label>
+                            <Input
+                              type="number" min="0" dir="ltr" className="w-44"
+                              value={quotePrice[q.id] ?? ""}
+                              onChange={(e) => setQuotePrice((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                            />
+                          </div>
+                          <Button size="sm" onClick={() => respondQuote(q.id)} className="gap-1">
+                            <Send size={14} /> ثبت قیمت
                           </Button>
                         </div>
-                      </Card>
-                    );
-                  })}
+                      )}
+                    </Card>
+                  ))}
                 </div>
               )}
             </Card>
@@ -793,6 +884,41 @@ const Dashboard = () => {
           {/* ANALYTICS TAB */}
           <TabsContent value="analytics">
             {userId && <SellerAnalyticsPanel ownerId={userId} />}
+
+            {/* Store health / overview */}
+            {overview && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <Card className="p-4 bg-card border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">کل محصولات</span>
+                    <Package size={15} className="text-gold" />
+                  </div>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.product_count ?? 0).toLocaleString("fa-IR")}</p>
+                </Card>
+                <Card className="p-4 bg-card border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">محصولات فعال</span>
+                    <CheckCircle2 size={15} className="text-emerald-brand" />
+                  </div>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.active_product_count ?? 0).toLocaleString("fa-IR")}</p>
+                </Card>
+                <Card className="p-4 bg-card border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">محصولات ویژه</span>
+                    <Sparkles size={15} className="text-gold" />
+                  </div>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.featured_count ?? 0).toLocaleString("fa-IR")}</p>
+                </Card>
+                <Card className="p-4 bg-card border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">ناموجود</span>
+                    <Boxes size={15} className="text-destructive" />
+                  </div>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.out_of_stock_count ?? 0).toLocaleString("fa-IR")}</p>
+                </Card>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card className="p-5 bg-card border-border">
                 <div className="flex items-center justify-between">
@@ -800,7 +926,7 @@ const Dashboard = () => {
                   <Eye size={16} className="text-gold" />
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-2">
-                  {dailyViews.reduce((s, d) => s + d.views, 0).toLocaleString("fa-IR")}
+                  {totalViews30d.toLocaleString("fa-IR")}
                 </p>
               </Card>
               <Card className="p-5 bg-card border-border">
@@ -814,11 +940,11 @@ const Dashboard = () => {
               </Card>
               <Card className="p-5 bg-card border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">درخواست‌های خوانده‌نشده</span>
+                  <span className="text-sm text-muted-foreground">درخواست‌های در انتظار</span>
                   <MessageSquare size={16} className="text-gold" />
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-2">
-                  {inquiries.filter((i) => !i.is_read).length.toLocaleString("fa-IR")}
+                  {pendingQuotes.toLocaleString("fa-IR")}
                 </p>
               </Card>
             </div>
@@ -836,7 +962,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11}
                         tickFormatter={(v) => v.slice(5)} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} 
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false}
                         tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
                       <Tooltip
                         formatter={(v: number) => [`${v.toLocaleString("fa-IR")} تومان`, "فروش"]}
@@ -907,10 +1033,10 @@ const Dashboard = () => {
             </Card>
           </TabsContent>
           </Tabs>
-          )}
-          </div>
+        )}
+        </div>
 
-          {/* Product Dialog */}
+        {/* Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetProductForm(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>

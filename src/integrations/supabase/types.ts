@@ -513,31 +513,49 @@ export type Database = {
       }
       stores: {
         Row: {
+          address: string | null
           city: string | null
+          contact_name: string | null
+          contact_published: boolean
+          contact_published_at: string | null
           created_at: string
           description: string | null
           id: string
           name: string
           owner_id: string
+          phone: string | null
           rating: number | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
           city?: string | null
+          contact_name?: string | null
+          contact_published?: boolean
+          contact_published_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name: string
           owner_id: string
+          phone?: string | null
           rating?: number | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
           city?: string | null
+          contact_name?: string | null
+          contact_published?: boolean
+          contact_published_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name?: string
           owner_id?: string
+          phone?: string | null
           rating?: number | null
+          website?: string | null
         }
         Relationships: [
           {
@@ -1465,8 +1483,12 @@ export type Database = {
           description: string | null
           id: string
           items: Json
+          notes: string | null
           product_id: string | null
+          product_name: string | null
           profile_id: string
+          proposed_price: number | null
+          quantity: number | null
           quoted_price: number | null
           request_type: Database["public"]["Enums"]["quote_request_type"]
           seller_note: string | null
@@ -1488,8 +1510,12 @@ export type Database = {
           description?: string | null
           id?: string
           items?: Json
+          notes?: string | null
           product_id?: string | null
+          product_name?: string | null
           profile_id: string
+          proposed_price?: number | null
+          quantity?: number | null
           quoted_price?: number | null
           request_type?: Database["public"]["Enums"]["quote_request_type"]
           seller_note?: string | null
@@ -1511,8 +1537,12 @@ export type Database = {
           description?: string | null
           id?: string
           items?: Json
+          notes?: string | null
           product_id?: string | null
+          product_name?: string | null
           profile_id?: string
+          proposed_price?: number | null
+          quantity?: number | null
           quoted_price?: number | null
           request_type?: Database["public"]["Enums"]["quote_request_type"]
           seller_note?: string | null
@@ -2047,6 +2077,20 @@ export type Database = {
       }
     }
     Views: {
+      seller_store_overview: {
+        Row: {
+          active_product_count: number | null
+          featured_count: number | null
+          name: string | null
+          out_of_stock_count: number | null
+          owner_id: string | null
+          product_count: number | null
+          rating: number | null
+          store_id: string | null
+          total_stock: number | null
+        }
+        Relationships: []
+      }
       product_daily_views: {
         Row: {
           day: string | null
@@ -2176,6 +2220,13 @@ export type Database = {
       credit_tokens: {
         Args: { p_amount: number; p_reason?: string; p_user_id: string }
         Returns: Json
+      }
+      get_store_daily_views: {
+        Args: { p_days?: number; p_store_id: string }
+        Returns: {
+          day: string
+          views: number
+        }[]
       }
       get_store_product_analytics: {
         Args: { p_store_id: string }

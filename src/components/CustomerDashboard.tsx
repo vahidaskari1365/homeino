@@ -26,6 +26,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { useNotifications, type NotificationType } from "@/hooks/useNotifications";
 import { useTokens } from "@/hooks/useTokens";
 import { useAddresses, type AddressInput } from "@/hooks/useAddresses";
+import { AvatarUploader } from "@/components/AvatarUploader";
 import { useMyAds, useAdCategories, type AdInput } from "@/hooks/useMyAds";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -667,16 +668,15 @@ const ProfileSection = ({
       <Card>
         <CardHeader><CardTitle className="text-lg">اطلاعات شخصی</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-gold/30">
-              <AvatarImage src={form.avatar_url || undefined} />
-              <AvatarFallback className="bg-gold text-primary-foreground text-xl font-bold">{(form.first_name || "ک").slice(0, 1)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-1.5">
-              <Label>آدرس تصویر پروفایل</Label>
-              <Input placeholder="https://..." value={form.avatar_url} onChange={(e) => setForm((f) => ({ ...f, avatar_url: e.target.value }))} />
-            </div>
-          </div>
+          <AvatarUploader
+            userId={userId}
+            value={form.avatar_url || null}
+            fallback={form.first_name || "ک"}
+            onChange={(url) => {
+              setForm((f) => ({ ...f, avatar_url: url ?? "" }));
+              onSaved();
+            }}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5"><Label>نام</Label><Input value={form.first_name} onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>نام خانوادگی</Label><Input value={form.last_name} onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))} /></div>
