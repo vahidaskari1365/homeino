@@ -19,10 +19,12 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
   Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
-  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check,
+  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check, User,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { formatPersianDate } from "@/lib/date";
 import { CustomerDashboard } from "@/components/CustomerDashboard";
+import { SellerAnalyticsPanel } from "@/components/SellerAnalyticsPanel";
 
 interface Category { id: string; name: string; slug: string; }
 interface Profile {
@@ -790,6 +792,7 @@ const Dashboard = () => {
 
           {/* ANALYTICS TAB */}
           <TabsContent value="analytics">
+            {userId && <SellerAnalyticsPanel ownerId={userId} />}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card className="p-5 bg-card border-border">
                 <div className="flex items-center justify-between">

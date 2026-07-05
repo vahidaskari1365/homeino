@@ -17,6 +17,8 @@ import { useCart } from "@/contexts/CartContext";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ProductOverlay from "@/components/ProductOverlay";
+import { useTokens } from "@/hooks/useTokens";
+import { trackEvent } from "@/lib/tracking";
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
@@ -66,6 +68,7 @@ type Product = {
   category_id: string | null;
   profile_id?: string;
   stock?: number;
+  is_featured?: boolean;
 };
 
 const fmt = (n: number | null | undefined) =>
@@ -92,6 +95,12 @@ const AIDesign = () => {
   const inputRef      = useRef<HTMLInputElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
 
+  // Token / free-quota billing gate (Customer Dashboard token system).
+  // This sits strictly IN FRONT OF the Gemini pipeline — it only decides
+  // whether the user is allowed to call gemini-decorator at all, and never
+  // participates in AI validation/sanitization/rendering.
+  const { freeDesignsRemaining, tokenBalance, hasCredit, consumeDesignCredit } = useTokens();
+
   // ── load products from Supabase ──
   useEffect(() => {
     (async () => {
@@ -102,7 +111,7 @@ const AIDesign = () => {
 
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, price, image_url, category_id, profile_id, stock")
+        .select("id, name, price, image_url, category_id, profile_id, stock, is_featured")
         .eq("is_active", true)
         .not("image_url", "is", null)
         .limit(500);
@@ -189,6 +198,14 @@ const AIDesign = () => {
         return;
       }
 
+      // Token / free-quota billing gate — first 3 AI designs are free, then
+      // 1 token per design. Blocks BEFORE calling Gemini; never touches the
+      // AI pipeline itself. Shows its own toast + returns early on failure.
+      const allowed = await consumeDesignCredit();
+      if (!allowed) return;
+
+      trackEvent("ai_started");
+
       // Strip data-URL prefix → raw base64
       const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
 
@@ -199,13 +216,14 @@ const AIDesign = () => {
         const slug = Object.keys(catMap).find((s) => catMap[s] === p.category_id);
         const cat  = CATEGORIES.find((c) => c.slug === slug);
         return {
-          id:        p.id,
-          name:      p.name,
-          category:  cat?.label || "عمومی",
+          id:          p.id,
+          name:        p.name,
+          category:    cat?.label || "عمومی",
           style,
-          price:     p.price || 0,
-          image_url: p.image_url || undefined,
-          tags:      [] as string[],
+          price:       p.price || 0,
+          image_url:   p.image_url || undefined,
+          tags:        [] as string[],
+          is_featured: p.is_featured || false,
         };
       });
 
@@ -244,8 +262,10 @@ const AIDesign = () => {
 
       if (result.status !== "ok") {
         toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
+        trackEvent("ai_failed", { metadata: { status: result.status } });
       } else {
         toast.success("چیدمان هوشمند آماده شد ✨");
+        trackEvent("ai_finished", { metadata: { placements: result.placements.length } });
       }
     } catch (e) {
       // Hard failure (network / auth / rate-limit / unexpected exception).
@@ -255,6 +275,7 @@ const AIDesign = () => {
       console.error(e);
       setAiError(message);
       toast.error(message);
+      trackEvent("ai_failed", { metadata: { message } });
     } finally {
       setLoading(false);
       stopStageProgression();

@@ -49,6 +49,11 @@ interface ProductInput {
   depth?: number;
   image_url?: string;
   tags?: string[];
+  /** DB-sourced only (products.is_featured) — informs which of several
+   *  near-equally relevant products are OFFERED to Gemini for consideration.
+   *  Never overrides quality/relevance; only breaks near-ties. Gemini itself
+   *  still only ever decides placement, never sees or reasons about this flag. */
+  is_featured?: boolean;
 }
 
 /**
@@ -150,7 +155,12 @@ function selectTopProducts(
   const scored = products.map((p) => {
     const overBudget = typeof budget === "number" && budget > 0 && p.price > budget;
     const priceDistance = perItemTarget !== null ? Math.abs(p.price - perItemTarget) : p.price;
-    const score = priceDistance + (overBudget ? 1_000_000_000 : 0);
+    // FEATURED PRODUCTS: only a small tie-breaking nudge (2%) toward stores
+    // that purchased Featured placement — never enough to beat a genuinely
+    // more relevant/cheaper match. Quality/relevance (price-distance to the
+    // customer's budget) always dominates the score.
+    const featuredNudge = p.is_featured ? 0.98 : 1;
+    const score = priceDistance * featuredNudge + (overBudget ? 1_000_000_000 : 0);
     return { product: p, score };
   });
 

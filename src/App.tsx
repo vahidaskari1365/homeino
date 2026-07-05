@@ -29,6 +29,7 @@ import Inspirations from "./pages/Inspirations.tsx";
 import InspirationDetail from "./pages/InspirationDetail.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
+import Billing from "./pages/Billing.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/inspirations/:id" element={<InspirationDetail />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/budget-estimator" element={<BudgetEstimator />} />
+                  <Route path="/billing" element={<Billing />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
