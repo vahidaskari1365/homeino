@@ -6,8 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Coins, Crown, CheckCircle2, Clock, ArrowRight, History, Wallet } from "lucide-react";
+import {
+  Coins, Crown, CheckCircle2, Clock, ArrowRight, History, Wallet,
+  Store, BarChart3, ImageIcon, Sparkles, Megaphone, Star,
+} from "lucide-react";
 import { useWallet, type TokenPackage, type WalletTransaction } from "@/hooks/useWallet";
+import { useSubscription, getAnalyticsTierLabel, SUBSCRIPTION_STATUS_LABELS, type SubscriptionPlan } from "@/hooks/useSubscription";
 
 // ============================================================
 // Homeino — Billing / Token Packages & Transaction History
@@ -17,6 +21,7 @@ import { useWallet, type TokenPackage, type WalletTransaction } from "@/hooks/us
 // ============================================================
 
 const fmt = (n: number) => new Intl.NumberFormat("fa-IR").format(n);
+const fmtToman = (n: number | null | undefined) => n && n > 0 ? `${fmt(n)} تومان` : "رایگان";
 const fmtDate = (d: string) =>
   new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(d));
 
@@ -41,9 +46,10 @@ const REASON_COLORS: Record<string, string> = {
 
 const Billing = () => {
   const wallet = useWallet();
+  const subscription = useSubscription();
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [activeTab, setActiveTab] = useState<"packages" | "history">("packages");
+  const [activeTab, setActiveTab] = useState<"packages" | "history" | "premium">("packages");
   const [loadingPkgs, setLoadingPkgs] = useState(true);
 
   useEffect(() => {
@@ -123,6 +129,16 @@ const Billing = () => {
             }`}
           >
             <Coins size={16} /> خرید توکن
+          </button>
+          <button
+            onClick={() => setActiveTab("premium")}
+            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              activeTab === "premium"
+                ? "bg-gold/15 text-gold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Crown size={16} /> اشتراک فروشگاه
           </button>
           <button
             onClick={() => setActiveTab("history")}
@@ -209,6 +225,147 @@ const Billing = () => {
               </CardContent>
             </Card>
           </>
+        )}
+
+        {/* ── Premium / Subscription ──────────────────────── */}
+        {activeTab === "premium" && (
+          <div className="space-y-6">
+            {/* Current subscription status (for store owners) */}
+            {subscription.storeSubscription.storeId && (
+              <Card className="border-gold/30 bg-gradient-to-br from-gold/5 to-transparent">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                        <Store size={28} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">اشتراک فعلی فروشگاه</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xl font-bold text-gold">
+                            {subscription.storeSubscription.plan?.name || "بدون اشتراک"}
+                          </p>
+                          {subscription.storeSubscription.subscription && (
+                            <Badge variant="outline"
+                              className={`text-xs ${
+                                SUBSCRIPTION_STATUS_LABELS[subscription.storeSubscription.subscription.status]?.color || ""
+                              }`}
+                            >
+                              {SUBSCRIPTION_STATUS_LABELS[subscription.storeSubscription.subscription.status]?.label || subscription.storeSubscription.subscription.status}
+                            </Badge>
+                          )}
+                        </div>
+                        {subscription.storeSubscription.subscription?.trial_ends_at && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            پایان دوره آزمایشی: {fmtDate(subscription.storeSubscription.subscription.trial_ends_at)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Plan comparison grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {subscription.plans.map((plan) => {
+                const features = plan.features as string[] | null;
+                const isUnlimited = (val: number | null) => val === null;
+                return (
+                  <Card
+                    key={plan.id}
+                    className={`relative flex flex-col border-2 transition-all hover:shadow-lg ${
+                      plan.slug === "professional"
+                        ? "border-gold shadow-gold/20"
+                        : plan.slug === "business"
+                        ? "border-blue-200"
+                        : "border-border hover:border-gold/40"
+                    }`}
+                  >
+                    {plan.slug === "professional" && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-gold text-gold-foreground whitespace-nowrap px-3">
+                          <Crown size={12} className="ml-1" /> پیشنهاد ویژه
+                        </Badge>
+                      </div>
+                    )}
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {plan.name}
+                        {plan.price_monthly === 0 && (
+                          <Badge variant="outline" className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200">
+                            رایگان
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">{plan.tagline}</p>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col gap-4">
+                      <p className="text-2xl font-bold text-gold">
+                        {fmtToman(plan.price_monthly)}
+                        {plan.price_monthly > 0 && <span className="text-sm text-muted-foreground font-normal"> / ماه</span>}
+                      </p>
+
+                      {/* Usage limits */}
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><Store size={12} /> محصولات</span>
+                          <span className="font-medium">{isUnlimited(plan.max_products) ? "نامحدود" : fmt(plan.max_products!)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><Star size={12} /> ویژه</span>
+                          <span className="font-medium">{isUnlimited(plan.max_featured) ? "نامحدود" : fmt(plan.max_featured)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><Sparkles size={12} /> طراحی هوش مصنوعی</span>
+                          <span className="font-medium">{isUnlimited(plan.ai_designs_per_month) ? "نامحدود" : `${fmt(plan.ai_designs_per_month)} / ماه`}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><ImageIcon size={12} /> فضای ذخیره‌سازی</span>
+                          <span className="font-medium">{isUnlimited(plan.storage_mb) ? "نامحدود" : `${fmt(plan.storage_mb)} مگابایت`}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><Megaphone size={12} /> آگهی</span>
+                          <span className="font-medium">{isUnlimited(plan.max_ads) ? "نامحدود" : fmt(plan.max_ads)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1"><BarChart3 size={12} /> آنالیتیکس</span>
+                          <span className="font-medium">{getAnalyticsTierLabel(plan.analytics_tier)}</span>
+                        </div>
+                      </div>
+
+                      {/* Features list */}
+                      <div className="flex-1 border-t border-border pt-3">
+                        <ul className="space-y-1.5">
+                          {(features || []).map((f, i) => (
+                            <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                              <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <p className="text-[10px] text-muted-foreground bg-muted rounded-lg px-2 py-1 text-center">
+                        به‌زودی با درگاه پرداخت فعال می‌شود
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Placeholder notice */}
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Clock size={18} className="text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-800">
+                  درگاه پرداخت هومینو به‌زودی راه‌اندازی می‌شود. پس از فعال‌سازی، می‌توانید اشتراک فروشگاه خود را ارتقا دهید.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* ── Transaction History ────────────────────────── */}
