@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/tracking";
 
 export type WishlistItemType = "product" | "set" | "ai_design";
 
@@ -92,6 +93,11 @@ export const useWishlist = () => {
       }
       if (data) setItems((prev) => [data as unknown as WishlistItem, ...prev]);
       toast({ title: "ذخیره شد", description: "به علاقه‌مندی‌ها اضافه شد." });
+      trackEvent("product_favorited", {
+        entityType: input.item_type,
+        entityId: input.item_id,
+        metadata: { title: input.title, price: input.price },
+      });
       return true;
     },
     [userId]
@@ -112,6 +118,10 @@ export const useWishlist = () => {
       }
       setItems((prev) => prev.filter((i) => !(i.item_type === item_type && i.item_id === item_id)));
       toast({ title: "حذف شد", description: "از علاقه‌مندی‌ها حذف شد." });
+      trackEvent("product_unfavorited", {
+        entityType: item_type,
+        entityId: item_id,
+      });
       return true;
     },
     [userId]

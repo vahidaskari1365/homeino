@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { trackEvent } from "@/lib/tracking";
 
 // ============================================================
 // Homeino — Address Management
@@ -63,6 +64,7 @@ export function useAddresses() {
         return null;
       }
       toast({ title: "آدرس با موفقیت ثبت شد" });
+      trackEvent("address_added", { entityType: "address", entityId: data?.id });
       await load();
       return data;
     },
@@ -77,6 +79,7 @@ export function useAddresses() {
         return false;
       }
       toast({ title: "آدرس بروزرسانی شد" });
+      trackEvent("address_updated", { entityType: "address", entityId: id });
       await load();
       return true;
     },
@@ -91,6 +94,7 @@ export function useAddresses() {
         return false;
       }
       toast({ title: "آدرس حذف شد" });
+      trackEvent("address_deleted", { entityType: "address", entityId: id });
       await load();
       return true;
     },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/tracking";
 
 // ============================================================
 // Homeino — AI Design Token System
@@ -114,6 +115,13 @@ export function useTokens() {
         tokenBalance: result.token_balance,
         hasCredit: result.free_designs_remaining > 0 || result.token_balance > 0,
       }));
+      trackEvent("token_consumed", {
+        metadata: {
+          source: result.source,
+          token_balance_after: result.token_balance,
+          free_remaining: result.free_designs_remaining,
+        },
+      });
     }
     return true;
   }, []);

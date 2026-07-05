@@ -9,6 +9,7 @@ import { CompareProvider } from "./contexts/CompareContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CartDrawer from "./components/CartDrawer";
 import CompareBar from "./components/CompareBar";
+import { TrackingProvider } from "./contexts/TrackingContext";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
@@ -38,43 +39,45 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <CartProvider>
-          <CompareProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <CartDrawer />
-                <CompareBar />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/shops" element={<Shops />} />
-                  <Route path="/shops/:id" element={<ShopDetail />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/wishlist" element={<Wishlist />} />
-                  <Route path="/compare" element={<Compare />} />
-                  <Route path="/quotes" element={<Quotes />} />
-                  <Route path="/consultations" element={<Consultations />} />
-                  <Route path="/site-visits" element={<SiteVisits />} />
-                  
-                  <Route path="/designers" element={<Designers />} />
-                  <Route path="/second-hand" element={<SecondHand />} />
-                  <Route path="/ai-design" element={<AIDesign />} />
-                  <Route path="/inspirations" element={<Inspirations />} />
-                  <Route path="/inspirations/:id" element={<InspirationDetail />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/budget-estimator" element={<BudgetEstimator />} />
-                  <Route path="/billing" element={<Billing />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </CompareProvider>
-        </CartProvider>
+        <TrackingProvider>
+          <CartProvider>
+            <CompareProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <CartDrawer />
+                  <CompareBar />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/shops" element={<Shops />} />
+                    <Route path="/shops/:id" element={<ShopDetail />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/wishlist" element={<Wishlist />} />
+                    <Route path="/compare" element={<Compare />} />
+                    <Route path="/quotes" element={<Quotes />} />
+                    <Route path="/consultations" element={<Consultations />} />
+                    <Route path="/site-visits" element={<SiteVisits />} />
+                    
+                    <Route path="/designers" element={<Designers />} />
+                    <Route path="/second-hand" element={<SecondHand />} />
+                    <Route path="/ai-design" element={<AIDesign />} />
+                    <Route path="/inspirations" element={<Inspirations />} />
+                    <Route path="/inspirations/:id" element={<InspirationDetail />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/budget-estimator" element={<BudgetEstimator />} />
+                    <Route path="/billing" element={<Billing />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </CompareProvider>
+          </CartProvider>
+        </TrackingProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </ErrorBoundary>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { trackEvent } from "@/lib/tracking";
 
 export type NotificationType =
   | "order_new"
@@ -80,6 +81,7 @@ export const useNotifications = () => {
   const markRead = useCallback(async (id: string) => {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    trackEvent("notification_read", { entityType: "notification", entityId: id });
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -91,6 +93,7 @@ export const useNotifications = () => {
       .update({ is_read: true })
       .eq("user_id", uid)
       .eq("is_read", false);
+    trackEvent("notification_read", { metadata: { bulk: true } });
   }, [session?.user?.id]);
 
   const remove = useCallback(async (id: string) => {

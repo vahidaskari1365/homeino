@@ -18,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import ProductOverlay from "@/components/ProductOverlay";
 import { useTokens } from "@/hooks/useTokens";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, trackAIDesignResult } from "@/lib/tracking";
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
@@ -204,7 +204,7 @@ const AIDesign = () => {
       const allowed = await consumeDesignCredit();
       if (!allowed) return;
 
-      trackEvent("ai_started");
+      trackEvent("ai_started", { metadata: { style, budget: budgetNum, product_count: selectedList.length } });
 
       // Strip data-URL prefix → raw base64
       const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
@@ -262,10 +262,10 @@ const AIDesign = () => {
 
       if (result.status !== "ok") {
         toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
-        trackEvent("ai_failed", { metadata: { status: result.status } });
+        trackAIDesignResult("failed", { errorMessage: result.status, style, budget: budgetNum });
       } else {
         toast.success("چیدمان هوشمند آماده شد ✨");
-        trackEvent("ai_finished", { metadata: { placements: result.placements.length } });
+        trackAIDesignResult("finished", { placementsCount: result.placements.length, style, budget: budgetNum });
       }
     } catch (e) {
       // Hard failure (network / auth / rate-limit / unexpected exception).
@@ -275,7 +275,7 @@ const AIDesign = () => {
       console.error(e);
       setAiError(message);
       toast.error(message);
-      trackEvent("ai_failed", { metadata: { message } });
+      trackAIDesignResult("failed", { errorMessage: message, style, budget: budgetNum });
     } finally {
       setLoading(false);
       stopStageProgression();
