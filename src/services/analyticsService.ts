@@ -75,10 +75,17 @@ export const analyticsService = {
   },
 
   async getTotalViews(storeId: string): Promise<number> {
-    const { data } = await supabase
+    const { data: products } = await supabase
+      .from("products")
+      .select("id")
+      .eq("store_id", storeId);
+    const productIds = (products ?? []).map((p: { id: string }) => p.id);
+    if (productIds.length === 0) return 0;
+
+    const { count } = await supabase
       .from("product_views")
       .select("id", { count: "exact", head: true })
-      .eq("product_id", storeId);
-    return data ?? 0;
+      .in("product_id", productIds);
+    return count ?? 0;
   },
 };

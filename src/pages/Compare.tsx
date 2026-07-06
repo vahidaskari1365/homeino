@@ -26,16 +26,16 @@ const Compare = () => {
     (async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, attributes, rating, profile_id, profiles(id, brand_name)")
+        .select("id, attributes, rating, store_id, stores!store_id(id, name)")
         .in("id", ids);
       const map: Record<string, Enriched> = {};
-      (data || []).forEach((p: { id: string; attributes: Record<string, unknown> | null; rating: number | null; profiles: { id: string; brand_name: string | null } | null }) => {
+      (data || []).forEach((p: { id: string; attributes: Record<string, unknown> | null; rating: number | null; store_id: string | null; stores: { id: string; name: string | null } | null }) => {
         map[p.id] = {
           id: p.id,
           attributes: p.attributes || {},
           rating: Number(p.rating || 0),
-          shop_id: p.profiles?.id,
-          shop_name: p.profiles?.brand_name,
+          shop_id: p.stores?.id,
+          shop_name: p.stores?.name,
         };
       });
       setEnriched(map);

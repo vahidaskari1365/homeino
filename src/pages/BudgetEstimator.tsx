@@ -212,7 +212,7 @@ const BudgetEstimator = () => {
         // Fetch products from db
         const { data: prodData } = await supabase
           .from("products")
-          .select("id, name, description, price, image_url, attributes, profiles(brand_name)")
+          .select("id, name, description, price, image_url, attributes, stores!store_id(name)")
           .eq("is_active", true);
 
         if (prodData && prodData.length > 0) {
@@ -223,7 +223,7 @@ const BudgetEstimator = () => {
             price: number | null;
             image_url: string | null;
             attributes: { category?: string; style?: string } | null;
-            profiles: { brand_name?: string } | null;
+            stores: { name?: string } | null;
           };
           const formattedProducts: Product[] = (prodData as ProductRow[]).map((p) => ({
             id: p.id,
@@ -233,7 +233,7 @@ const BudgetEstimator = () => {
             image_url: p.image_url,
             category_name: (p.attributes?.category as string) || "مبلمان",
             style: (p.attributes?.style as string) || "مدرن",
-            brand_name: p.profiles?.brand_name || "تولیدکننده هومینو"
+            brand_name: p.stores?.name || "تولیدکننده هومینو"
           }));
           setDbProducts(formattedProducts);
         }

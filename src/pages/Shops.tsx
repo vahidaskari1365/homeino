@@ -43,7 +43,7 @@ type Product = {
   category_id: string | null;
   profile_id: string;
   attributes?: Record<string, unknown> | null;
-  profiles: { brand_name: string; city: string | null } | null;
+  stores: { name: string; city: string | null } | null;
 };
 
 const ALL = "all";
@@ -115,10 +115,10 @@ const Shops = () => {
 
       let productQuery = supabase
         .from("products")
-        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, profiles(brand_name, city)", { count: 'exact' })
+        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, stores!store_id(name, city)", { count: 'exact' })
         .eq("is_active", true);
 
-      if (city !== ALL) productQuery = productQuery.eq("profiles.city", city);
+      if (city !== ALL) productQuery = productQuery.eq("stores.city", city);
       if (category !== ALL) productQuery = productQuery.eq("category_id", category);
       if (search) productQuery = productQuery.ilike("name", `%${search}%`);
       if (minPrice !== undefined) productQuery = productQuery.gte("price", minPrice);
@@ -402,10 +402,10 @@ const Shops = () => {
                           {/* Hover Info Overlay */}
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 text-white z-10">
                             <span className="text-[10px] text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-full w-fit mb-2">
-                              {p.profiles?.city || "هومینور"}
+                              {p.stores?.city || "هومینور"}
                             </span>
                             <h3 className="font-bold text-base line-clamp-2 mb-1">{p.name}</h3>
-                            <p className="text-xs text-gray-300 font-medium mb-3">{p.profiles?.brand_name}</p>
+                            <p className="text-xs text-gray-300 font-medium mb-3">{p.stores?.name}</p>
 
                             <div className="flex items-center justify-between border-t border-white/20 pt-2 mt-1">
                               {p.price ? (
@@ -426,10 +426,10 @@ const Shops = () => {
                         <div className="p-4 space-y-2">
                           <h3 className="font-bold text-sm text-foreground line-clamp-1">{p.name}</h3>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{p.profiles?.brand_name}</span>
-                            {p.profiles?.city && (
+                            <span>{p.stores?.name}</span>
+                            {p.stores?.city && (
                               <span className="flex items-center gap-1">
-                                <MapPin size={12} />{p.profiles.city}
+                                <MapPin size={12} />{p.stores.city}
                               </span>
                             )}
                           </div>

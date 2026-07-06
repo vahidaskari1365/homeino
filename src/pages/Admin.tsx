@@ -102,7 +102,7 @@ type AdminProduct = {
   price: number | null;
   stock: number;
   is_active: boolean;
-  profiles: { brand_name: string } | null;
+  stores: { name: string } | null;
 };
 
 type Category = {
@@ -617,7 +617,7 @@ const ProductsTab = () => {
     setLoading(true);
     const { data } = await supabase
       .from("products")
-      .select("*, profiles(brand_name)")
+      .select("*, stores(name)")
       .order("created_at", { ascending: false });
     setProducts((data as AdminProduct[]) ?? []);
     setLoading(false);
@@ -661,7 +661,7 @@ const ProductsTab = () => {
             {products.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell>{p.profiles?.brand_name ?? "-"}</TableCell>
+                <TableCell>{p.stores?.name ?? "-"}</TableCell>
                 <TableCell>{p.price ? `${Number(p.price).toLocaleString()} ت` : "-"}</TableCell>
                 <TableCell>{p.stock}</TableCell>
                 <TableCell>
@@ -872,8 +872,8 @@ const PaymentsTab = () => {
             <TableBody>
               {payments.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell><code className="text-xs">{p.order_id.slice(0, 8)}</code></TableCell>
-                  <TableCell>{Number(p.amount).toLocaleString()} ت</TableCell>
+                  <TableCell><code className="text-xs">{p.order_id?.slice(0, 8) ?? "-"}</code></TableCell>
+                  <TableCell>{Number(p.amount ?? 0).toLocaleString()} ت</TableCell>
                   <TableCell><Badge variant="outline">{p.method}</Badge></TableCell>
                   <TableCell>{statusBadge(p.status)}</TableCell>
                   <TableCell>

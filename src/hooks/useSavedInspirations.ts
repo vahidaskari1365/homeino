@@ -85,18 +85,37 @@ export const useSavedInspirations = () => {
   const unsaveInspiration = useMutation({
     mutationFn: async (inspirationId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("لطفاً ابتدا وارد حساب کاربری خود شوید");
 
-      // Find collection item
-      const { data: item } = await supabase
-        .from("collection_items")
+      const { data: existing } = await supabase
+        .from("user_collections")
         .select("id")
-        .eq("inspiration_id", inspirationId)
-        .eq("collection_id", collections?.find(c => c.user_id === user.id)?.id || ""); // Simplified
+        .eq("user_id", user.id)
+        .eq("name", "علاقه‌مندی‌ها")
+        .maybeSingle();
+      if (!existing) return;
 
-      if (item) {
-        // This needs a more robust way to handle multiple collections
-      }
+      const { error } = await supabase
+        .from("collection_items")
+        .delete()
+        .eq("collection_id", existing.id)
+        .eq("inspiration_id", inspirationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user_collections"] });
+      toast({
+        title: "حذف شد",
+        description: "ایده مورد نظر از مجموعه شما حذف شد.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطا",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -104,5 +123,6 @@ export const useSavedInspirations = () => {
     collections,
     isLoadingCollections,
     saveInspiration,
+    unsaveInspiration,
   };
 };

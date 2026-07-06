@@ -63,7 +63,7 @@ const Quotes = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate("/auth"); return; }
 
-    const { data: prof } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+    const { data: prof } = await supabase.from("public_profiles").select("id").eq("user_id", user.id).maybeSingle();
     setHasShop(!!prof);
 
     const my = await supabase.from("price_quotes").select("*").eq("customer_id", user.id).order("created_at", { ascending: false });
