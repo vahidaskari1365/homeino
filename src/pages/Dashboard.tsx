@@ -26,6 +26,9 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { formatPersianDate } from "@/lib/date";
 import { CustomerDashboard } from "@/components/CustomerDashboard";
 import { SellerAnalyticsPanel } from "@/components/SellerAnalyticsPanel";
+import { ProfileCompletionBar } from "@/components/ProfileCompletionBar";
+import { TrustScoreBadge } from "@/components/TrustScoreBadge";
+import { StoreHealthPanel } from "@/components/StoreHealthPanel";
 
 interface Category { id: string; name: string; slug: string; }
 
@@ -558,6 +561,15 @@ const Dashboard = () => {
               {viewMode === "producer" ? <User size={16} /> : <Sparkles size={16} />}
               {viewMode === "producer" ? "پنل مشتری" : "پنل فروشنده"}
             </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/analytics"><BarChart3 size={16} /> آنالیتیکس</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/subscription"><Sparkles size={16} /> اشتراک</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/badges"><Package size={16} /> نشان‌ها</Link>
+            </Button>
             <Button variant="outline" onClick={handleSignOut} className="gap-2">
               <LogOut size={16} /> خروج
             </Button>
@@ -579,6 +591,12 @@ const Dashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs md:text-sm gap-1">
               <BarChart3 size={14} />آمار
+            </TabsTrigger>
+            <TabsTrigger value="health" className="text-xs md:text-sm gap-1">
+              سلامت
+            </TabsTrigger>
+            <TabsTrigger value="trust" className="text-xs md:text-sm gap-1">
+              اعتماد
             </TabsTrigger>
           </TabsList>
 
@@ -1031,6 +1049,25 @@ const Dashboard = () => {
                 </div>
               )}
             </Card>
+          </TabsContent>
+
+          {/* HEALTH TAB */}
+          <TabsContent value="health">
+            <Card className="p-6 shadow-luxury bg-card border-border">
+              {storeId && <StoreHealthPanel storeId={storeId} />}
+            </Card>
+          </TabsContent>
+
+          {/* TRUST SCORE TAB */}
+          <TabsContent value="trust">
+            {storeId && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <TrustScoreBadge storeId={storeId} showRecalculate />
+                <Card className="p-6 bg-card border-border">
+                  <ProfileCompletionBar />
+                </Card>
+              </div>
+            )}
           </TabsContent>
           </Tabs>
         )}

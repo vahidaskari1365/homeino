@@ -1,3 +1,4 @@
+
 // ============================================================
 // Homeino — Phase 3: Subscription Engine (useSubscription)
 // ============================================================
@@ -198,3 +199,4 @@ export function useSubscription() {
     refresh,
   };
 }
+

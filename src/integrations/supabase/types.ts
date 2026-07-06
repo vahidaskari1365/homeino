@@ -2075,8 +2075,221 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          id: string
+          user_id: string
+          balance: number
+          lifetime_earned: number
+          lifetime_spent: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          balance?: number
+          lifetime_earned?: number
+          lifetime_spent?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          balance?: number
+          lifetime_earned?: number
+          lifetime_spent?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "wallets_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      token_packages: {
+        Row: {
+          id: string; name: string; slug: string; tokens: number; price: number
+          bonus_tokens: number; is_active: boolean; sort_order: number; created_at: string
+        }
+        Insert: {
+          id?: string; name: string; slug: string; tokens: number; price: number
+          bonus_tokens?: number; is_active?: boolean; sort_order?: number; created_at?: string
+        }
+        Update: {
+          id?: string; name?: string; slug?: string; tokens?: number; price?: number
+          bonus_tokens?: number; is_active?: boolean; sort_order?: number; created_at?: string
+        }
+        Relationships: []
+      }
+      token_usage_logs: {
+        Row: {
+          id: string; user_id: string; design_id: string | null; transaction_id: string | null
+          token_type: string; amount: number; created_at: string
+        }
+        Insert: {
+          id?: string; user_id: string; design_id?: string | null; transaction_id?: string | null
+          token_type: string; amount?: number; created_at?: string
+        }
+        Update: {
+          id?: string; user_id?: string; design_id?: string | null; transaction_id?: string | null
+          token_type?: string; amount?: number; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "token_usage_logs_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "token_usage_logs_design_id_fkey"; columns: ["design_id"]; isOneToOne: false; referencedRelation: "designs"; referencedColumns: ["id"] },
+        ]
+      }
+      store_daily_stats: {
+        Row: {
+          id: string; store_id: string; date: string; views: number; unique_visitors: number
+          clicks: number; favorites: number; ai_recommendations: number; orders_count: number; revenue: number; created_at: string
+        }
+        Insert: {
+          id?: string; store_id: string; date: string; views?: number; unique_visitors?: number
+          clicks?: number; favorites?: number; ai_recommendations?: number; orders_count?: number; revenue?: number; created_at?: string
+        }
+        Update: {
+          id?: string; store_id?: string; date?: string; views?: number; unique_visitors?: number
+          clicks?: number; favorites?: number; ai_recommendations?: number; orders_count?: number; revenue?: number; created_at?: string
+        }
+        Relationships: [{ foreignKeyName: "store_daily_stats_store_id_fkey"; columns: ["store_id"]; isOneToOne: false; referencedRelation: "stores"; referencedColumns: ["id"] }]
+      }
+      store_health_checks: {
+        Row: {
+          id: string; store_id: string; overall_score: number; missing_dimensions: boolean
+          poor_quality_images: boolean; missing_material: boolean; missing_colors: boolean
+          low_ai_recommendation: boolean; low_ctr: boolean; outdated_prices: boolean
+          products_no_category: boolean; suggestions: Json; checked_at: string
+        }
+        Insert: {
+          id?: string; store_id: string; overall_score?: number; missing_dimensions?: boolean
+          poor_quality_images?: boolean; missing_material?: boolean; missing_colors?: boolean
+          low_ai_recommendation?: boolean; low_ctr?: boolean; outdated_prices?: boolean
+          products_no_category?: boolean; suggestions?: Json; checked_at?: string
+        }
+        Update: {
+          id?: string; store_id?: string; overall_score?: number; missing_dimensions?: boolean
+          poor_quality_images?: boolean; missing_material?: boolean; missing_colors?: boolean
+          low_ai_recommendation?: boolean; low_ctr?: boolean; outdated_prices?: boolean
+          products_no_category?: boolean; suggestions?: Json; checked_at?: string
+        }
+        Relationships: [{ foreignKeyName: "store_health_checks_store_id_fkey"; columns: ["store_id"]; isOneToOne: false; referencedRelation: "stores"; referencedColumns: ["id"] }]
+      }
+      store_trust_scores: {
+        Row: {
+          id: string; store_id: string; overall_score: number; profile_completed: boolean
+          has_verified_info: boolean; product_quality_score: number; product_completeness: number
+          has_active_subscription: boolean; activity_score: number; ai_recommendation_score: number
+          store_age_days: number; badges: string[]; calculated_at: string; updated_at: string
+        }
+        Insert: {
+          id?: string; store_id: string; overall_score?: number; profile_completed?: boolean
+          has_verified_info?: boolean; product_quality_score?: number; product_completeness?: number
+          has_active_subscription?: boolean; activity_score?: number; ai_recommendation_score?: number
+          store_age_days?: number; badges?: string[]; calculated_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: string; store_id?: string; overall_score?: number; profile_completed?: boolean
+          has_verified_info?: boolean; product_quality_score?: number; product_completeness?: number
+          has_active_subscription?: boolean; activity_score?: number; ai_recommendation_score?: number
+          store_age_days?: number; badges?: string[]; calculated_at?: string; updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "store_trust_scores_store_id_fkey"; columns: ["store_id"]; isOneToOne: true; referencedRelation: "stores"; referencedColumns: ["id"] }]
+      }
+      badge_definitions: {
+        Row: {
+          id: string; name: string; slug: string; description: string | null
+          category: string; icon: string | null; criteria: Json; is_active: boolean; sort_order: number; created_at: string
+        }
+        Insert: {
+          id?: string; name: string; slug: string; description?: string | null
+          category: string; icon?: string | null; criteria?: Json; is_active?: boolean; sort_order?: number; created_at?: string
+        }
+        Update: {
+          id?: string; name?: string; slug?: string; description?: string | null
+          category?: string; icon?: string | null; criteria?: Json; is_active?: boolean; sort_order?: number; created_at?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: { id: string; user_id: string; badge_id: string; awarded_at: string }
+        Insert: { id?: string; user_id: string; badge_id: string; awarded_at?: string }
+        Update: { id?: string; user_id?: string; badge_id?: string; awarded_at?: string }
+        Relationships: [
+          { foreignKeyName: "user_badges_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "user_badges_badge_id_fkey"; columns: ["badge_id"]; isOneToOne: false; referencedRelation: "badge_definitions"; referencedColumns: ["id"] },
+        ]
+      }
+      seller_badges: {
+        Row: { id: string; store_id: string; badge_id: string; awarded_at: string }
+        Insert: { id?: string; store_id: string; badge_id: string; awarded_at?: string }
+        Update: { id?: string; store_id?: string; badge_id?: string; awarded_at?: string }
+        Relationships: [
+          { foreignKeyName: "seller_badges_store_id_fkey"; columns: ["store_id"]; isOneToOne: false; referencedRelation: "stores"; referencedColumns: ["id"] },
+          { foreignKeyName: "seller_badges_badge_id_fkey"; columns: ["badge_id"]; isOneToOne: false; referencedRelation: "badge_definitions"; referencedColumns: ["id"] },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          id: string; user_id: string; in_app: boolean; email: boolean; sms: boolean; push: boolean
+          order_updates: boolean; design_updates: boolean; marketing: boolean; system_alerts: boolean
+          created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: string; user_id: string; in_app?: boolean; email?: boolean; sms?: boolean; push?: boolean
+          order_updates?: boolean; design_updates?: boolean; marketing?: boolean; system_alerts?: boolean
+          created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: string; user_id?: string; in_app?: boolean; email?: boolean; sms?: boolean; push?: boolean
+          order_updates?: boolean; design_updates?: boolean; marketing?: boolean; system_alerts?: boolean
+          created_at?: string; updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "notification_preferences_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      notification_logs: {
+        Row: {
+          id: string; notification_id: string | null; user_id: string; channel: string
+          status: string; error_message: string | null; delivered_at: string | null; read_at: string | null; created_at: string
+        }
+        Insert: {
+          id?: string; notification_id?: string | null; user_id: string; channel: string
+          status?: string; error_message?: string | null; delivered_at?: string | null; read_at?: string | null; created_at?: string
+        }
+        Update: {
+          id?: string; notification_id?: string | null; user_id?: string; channel?: string
+          status?: string; error_message?: string | null; delivered_at?: string | null; read_at?: string | null; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "notification_logs_notification_id_fkey"; columns: ["notification_id"]; isOneToOne: false; referencedRelation: "notifications"; referencedColumns: ["id"] },
+          { foreignKeyName: "notification_logs_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      admin_audit_logs: {
+        Row: {
+          id: string; admin_id: string; action: string; entity_type: string | null
+          entity_id: string | null; details: Json; ip_address: string | null; created_at: string
+        }
+        Insert: {
+          id?: string; admin_id: string; action: string; entity_type?: string | null
+          entity_id?: string | null; details?: Json; ip_address?: string | null; created_at?: string
+        }
+        Update: {
+          id?: string; admin_id?: string; action?: string; entity_type?: string | null
+          entity_id?: string | null; details?: Json; ip_address?: string | null; created_at?: string
+        }
+        Relationships: [{ foreignKeyName: "admin_audit_logs_admin_id_fkey"; columns: ["admin_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
     }
     Views: {
+      product_analytics_view: {
+        Row: {
+          product_id: string | null; store_id: string | null; product_name: string | null
+          views: number | null; clicks: number | null; favorites: number | null
+          ai_recommendations: number | null; is_featured: boolean | null
+        }
+        Relationships: []
+      }
+      seller_store_overview: {
       seller_store_overview: {
         Row: {
           active_product_count: number | null

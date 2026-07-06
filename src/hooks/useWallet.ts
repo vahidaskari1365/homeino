@@ -1,3 +1,4 @@
+
 // ============================================================
 // Homeino — Phase 2: Token Ledger (useWallet)
 // ============================================================
@@ -251,3 +252,4 @@ export function useWallet() {
 
 // Re-export the old name for backward compatibility
 export { useWallet as useTokens };
+
