@@ -53,4 +53,34 @@ export const adminService = {
       details: details ?? {},
     });
   },
+
+  async getSubscriptions(): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_subscriptions");
+    return data as any;
+  },
+
+  async getAiLogs(limit = 50, offset = 0): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_ai_logs", { p_limit: limit, p_offset: offset });
+    return data as any;
+  },
+
+  async getSystemHealth(): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_system_health");
+    return data as any;
+  },
+
+  async getStoresDetailed(): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_stores_detailed");
+    return data as any;
+  },
+
+  async getAdvertisements(): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_advertisements");
+    return data as any;
+  },
+
+  async getReportsSummary(): Promise<any> {
+    const { data } = await supabase.rpc("admin_get_reports_summary");
+    return data as any;
+  },
 };
