@@ -18,14 +18,14 @@ export default function BadgesPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session, user } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth", { replace: true }); return; }
-      setUserId(user!.id);
+      setUserId(session.user.id);
 
       const { data: store } = await supabase
         .from("stores")
         .select("id")
-        .eq("owner_id", user!.id)
+        .eq("owner_id", session.user.id)
         .maybeSingle();
       if (store) setUserStoreId(store.id);
 

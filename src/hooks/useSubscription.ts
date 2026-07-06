@@ -127,9 +127,9 @@ export function useSubscription() {
 
     if (sub) {
       const subscription = sub as StoreSubscription;
-      const plan = (sub as unknown as { subscription_plans: SubscriptionPlan }).subscription_plans;
+      const subWithPlan = sub as unknown as { subscription_plans: SubscriptionPlan | null };
       setStoreSubscription({
-        plan: plan ?? null,
+        plan: subWithPlan.subscription_plans ?? null,
         subscription,
         storeId: store.id,
         loading: false,

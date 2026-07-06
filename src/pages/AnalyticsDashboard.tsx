@@ -33,7 +33,7 @@ export default function AnalyticsDashboard() {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-gold" size={32} /></div>;
   }
 
-  const ctrData = productAnalytics.map((p) => ({ name: p.product_name.slice(0, 15), ctr: p.ctr, views: p.views }));
+  const ctrData = productAnalytics.map((p) => ({ name: (p.product_name ?? "").slice(0, 15), ctr: p.ctr, views: p.views }));
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">

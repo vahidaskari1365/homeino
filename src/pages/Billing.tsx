@@ -311,7 +311,7 @@ const Billing = () => {
                       <div className="space-y-2 text-xs">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground flex items-center gap-1"><Store size={12} /> محصولات</span>
-                          <span className="font-medium">{isUnlimited(plan.max_products) ? "نامحدود" : fmt(plan.max_products!)}</span>
+                          <span className="font-medium">{isUnlimited(plan.max_products) ? "نامحدود" : fmt(plan.max_products ?? 0)}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground flex items-center gap-1"><Star size={12} /> ویژه</span>

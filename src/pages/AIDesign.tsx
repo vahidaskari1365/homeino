@@ -667,9 +667,9 @@ const AIDesign = () => {
                 {/* Overlay Render Engine — receives ONLY fully validated, sanitized,
                     normalized, DB-enriched placements. It has zero knowledge of the AI
                     response shape and never performs its own product lookups. */}
-                {geminiResult.status === "ok" && (
+                {geminiResult.status === "ok" && imageBase64 && (
                   <ProductOverlay
-                    roomImage={imageBase64!}
+                    roomImage={imageBase64}
                     placements={geminiResult.placements}
                     onProductClick={addToCart}
                   />
