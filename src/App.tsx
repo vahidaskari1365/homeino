@@ -27,6 +27,7 @@ import Designers from "./pages/Designers.tsx";
 import SecondHand from "./pages/SecondHand.tsx";
 import AIDesign from "./pages/AIDesign.tsx";
 import Inspirations from "./pages/Inspirations.tsx";
+import InspirationSearch from "./pages/InspirationSearch.tsx";
 import InspirationDetail from "./pages/InspirationDetail.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
@@ -69,6 +70,7 @@ const App = () => (
                     <Route path="/designers" element={<Designers />} />
                     <Route path="/second-hand" element={<SecondHand />} />
                     <Route path="/ai-design" element={<AIDesign />} />
+                    <Route path="/inspiration-search" element={<InspirationSearch />} />
                     <Route path="/inspirations" element={<Inspirations />} />
                     <Route path="/inspirations/:id" element={<InspirationDetail />} />
                     <Route path="/checkout" element={<Checkout />} />

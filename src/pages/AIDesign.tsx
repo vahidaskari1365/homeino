@@ -6,7 +6,7 @@ import {
   Sofa, Blinds, Grid3x3, Lamp, BedDouble, Flower2, Image as ImageIcon, TreePine, Gem,
   type LucideIcon,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { runAIDesignPipeline } from "@/lib/aiPipeline";
 import type { PipelineResult } from "@/lib/aiPipeline";
@@ -76,6 +76,7 @@ const fmt = (n: number | null | undefined) =>
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const AIDesign = () => {
+  const [searchParams] = useSearchParams();
   // ── state ──
   const [imageBase64, setImageBase64]     = useState<string | null>(null);
   const [style, setStyle]                 = useState("modern");
@@ -90,6 +91,7 @@ const AIDesign = () => {
   const [products, setProducts]           = useState<Record<string, Product[]>>({});
   const [selected, setSelected]           = useState<Record<string, Product>>({});
   const [analyticsTab, setAnalyticsTab]   = useState<"consultation" | "placements">("consultation");
+  const [initLoading, setInitLoading]     = useState(true);
 
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
@@ -100,6 +102,36 @@ const AIDesign = () => {
   // whether the user is allowed to call gemini-decorator at all, and never
   // participates in AI validation/sanitization/rendering.
   const { freeDesignsRemaining, tokenBalance, hasCredit, consumeDesignCredit } = useTokens();
+
+  // ── Read pre-selected products from URL params ──
+  useEffect(() => {
+    const productIds = searchParams.get("products");
+    if (!productIds) return;
+
+    const ids = productIds.split(",").filter(Boolean);
+    if (ids.length === 0) return;
+
+    (async () => {
+      const { data: preloaded } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, category_id, profile_id, stock, is_featured")
+        .in("id", ids);
+
+      if (preloaded && preloaded.length > 0) {
+        const preSelected: Record<string, Product> = {};
+        preloaded.forEach((p) => {
+          preSelected[p.id] = p as Product;
+        });
+        setSelected(preSelected);
+
+        // Update design session status
+        const sessionId = searchParams.get("session");
+        if (sessionId) {
+          supabase.from("design_sessions").update({ status: "designing" }).eq("id", sessionId).then();
+        }
+      }
+    })();
+  }, [searchParams]);
 
   // ── load products from Supabase ──
   useEffect(() => {
@@ -263,9 +295,22 @@ const AIDesign = () => {
       if (result.status !== "ok") {
         toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
         trackAIDesignResult("failed", { errorMessage: result.status, style, budget: budgetNum });
+        // Update design session
+        const sessionId = searchParams.get("session");
+        if (sessionId) {
+          supabase.from("design_sessions").update({ status: "abandoned" }).eq("id", sessionId).then();
+        }
       } else {
         toast.success("چیدمان هوشمند آماده شد ✨");
         trackAIDesignResult("finished", { placementsCount: result.placements.length, style, budget: budgetNum });
+        // Update design session with design_id
+        const sessionId = searchParams.get("session");
+        if (sessionId) {
+          supabase.from("design_sessions").update({
+            status: "completed",
+            design_id: result.placements[0]?.product_id ? undefined : undefined,
+          }).eq("id", sessionId).then();
+        }
       }
     } catch (e) {
       // Hard failure (network / auth / rate-limit / unexpected exception).
