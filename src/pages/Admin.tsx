@@ -48,6 +48,8 @@ import {
   Plus,
   Trash2,
   Pencil,
+  ClipboardList,
+  Search,
   Eye,
   EyeOff,
   CheckCircle2,
@@ -67,6 +69,9 @@ import {
   PieChart,
   Pie
 } from "recharts";
+import { auditService, type AuditLog } from "@/services/auditService";
+import { getActorLabel, getActionLabel } from "@/hooks/useAuditLogs";
+import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 
 type ShopProfile = {
@@ -188,7 +193,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="shops" className="w-full" dir="rtl">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
             <TabsTrigger value="shops" className="flex flex-col gap-1 py-2">
               <Store className="h-4 w-4" /> <span className="text-xs">فروشگاه‌ها</span>
             </TabsTrigger>
@@ -216,6 +221,9 @@ const Admin = () => {
             <TabsTrigger value="analytics" className="flex flex-col gap-1 py-2">
               <BarChart className="h-4 w-4" /> <span className="text-xs">آمار کل</span>
             </TabsTrigger>
+            <TabsTrigger value="audit" className="flex flex-col gap-1 py-2">
+              <ClipboardList className="h-4 w-4" /> <span className="text-xs">رویدادها</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="shops"><ShopsTab /></TabsContent>
@@ -227,6 +235,7 @@ const Admin = () => {
           <TabsContent value="payments"><PaymentsTab /></TabsContent>
           <TabsContent value="ads"><AdsTab /></TabsContent>
           <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
+          <TabsContent value="audit"><AuditTab /></TabsContent>
         </Tabs>
       </div>
     </div>
@@ -1029,6 +1038,104 @@ const AdsTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </Card>
+  );
+};
+
+// ============ AUDIT LOG TAB ============
+const AuditTab = () => {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actorFilter, setActorFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [targetFilter, setTargetFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    const result = await auditService.search({
+      actor_id: actorFilter || undefined,
+      action: actionFilter || undefined,
+      target_type: targetFilter || undefined,
+      actor_type: (typeFilter as any) || undefined,
+      limit: 100,
+    });
+    setLogs(result.logs);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const doSearch = () => load();
+
+  const ACTOR_COLORS: Record<string, string> = {
+    user: "bg-blue-100 text-blue-800",
+    seller: "bg-emerald-100 text-emerald-800",
+    admin: "bg-red-100 text-red-800",
+    system: "bg-purple-100 text-purple-800",
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>رویدادهای سیستم (Audit Log)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Input placeholder="شناسه بازیگر" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)} />
+          <Input placeholder="نوع هدف (مثال: product)" value={targetFilter} onChange={(e) => setTargetFilter(e.target.value)} />
+          <Input placeholder="عملیات (مثال: product_created)" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} />
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger><SelectValue placeholder="نوع بازیگر" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">همه</SelectItem>
+              <SelectItem value="user">کاربر</SelectItem>
+              <SelectItem value="seller">فروشنده</SelectItem>
+              <SelectItem value="admin">مدیر</SelectItem>
+              <SelectItem value="system">سیستم</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={doSearch} className="gap-1"><Search size={14} /> جستجو</Button>
+        </div>
+
+        {loading ? (
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mt-8" />
+        ) : logs.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">رویدادی ثبت نشده است</p>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>زمان</TableHead>
+                  <TableHead>بازیگر</TableHead>
+                  <TableHead>هدف</TableHead>
+                  <TableHead>عملیات</TableHead>
+                  <TableHead>جزئیات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-xs whitespace-nowrap">{formatPersianDate(l.created_at)}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${ACTOR_COLORS[l.actor_type] || "bg-gray-100 text-gray-800"}`}>
+                        {getActorLabel(l.actor_type)}
+                        <span className="text-[10px] opacity-70">({l.actor_id?.slice(0, 8)}...)</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs">{l.target_type}{l.target_id ? ` (${l.target_id.slice(0, 8)}...)` : ""}</TableCell>
+                    <TableCell className="text-xs font-medium">{getActionLabel(l.action)}</TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate" title={JSON.stringify(l.new_values)}>
+                      {Object.keys(l.new_values || {}).length > 0 ? `${Object.keys(l.new_values).length} فیلد` : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };
