@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
+import { ProfileTrustPills } from "@/components/ProfileTrustPills";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -150,18 +151,21 @@ const ShopDetail = () => {
             <header className="mb-10 p-6 md:p-8 rounded-xl border border-border bg-card">
               <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
                 <h1 className="text-3xl md:text-4xl font-display text-gold font-bold">{profile.brand_name}</h1>
-                {profile.contact_published && (
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
-                      <BadgeCheck size={14} /> اطلاعات تأیید شده
-                    </span>
-                    {profile.contact_published_at && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <CalendarCheck size={12} /> آخرین تأیید: {formatPersianDate(profile.contact_published_at)}
+                <div className="flex flex-col items-end gap-1">
+                  {profile.contact_published && (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                        <BadgeCheck size={14} /> اطلاعات تأیید شده
                       </span>
-                    )}
-                  </div>
-                )}
+                      {profile.contact_published_at && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CalendarCheck size={12} /> آخرین تأیید: {formatPersianDate(profile.contact_published_at)}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <ProfileTrustPills profileId={profile.id} size="xs" />
+                </div>
               </div>
               {profile.description && (
                 <p className="text-muted-foreground leading-relaxed mb-4 max-w-3xl">{profile.description}</p>
