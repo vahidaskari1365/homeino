@@ -101,7 +101,7 @@ export function useMyAds() {
         return false;
       }
       toast({ title: "آگهی بروزرسانی شد" });
-      trackEvent("ad_edited", { entityType: "ad", entityId: id });
+      trackEvent("ad_updated", { entityType: "ad", entityId: id });
       await load();
       return true;
     },
