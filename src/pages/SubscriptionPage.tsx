@@ -90,7 +90,7 @@ export default function SubscriptionPage() {
                     <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> طراحی AI نامحدود</p>
                   )}
                   {plan.has_analytics && (
-                    <p className="text-xs flex items-center gap-2"><Sparkles size={12} className="text-gold" /> آنالیتیکس هوش مصنوعی</p>
+                    <p className="text-xs flex items-center gap-2"><Sparkles size={12} className="text-gold" /> آنالیتیکس هومینو استودیو</p>
                   )}
                   {plan.storage_limit_mb && (
                     <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> {plan.storage_limit_mb} مگابایت فضای ذخیره‌سازی</p>

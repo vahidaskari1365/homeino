@@ -111,7 +111,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
     بازدید: p.views,
     کلیک: p.clicks,
     "ذخیره شده": p.saves,
-    "پیشنهاد هوش مصنوعی": p.ai_recommendations,
+    "پیشنهاد هومینو استودیو": p.ai_recommendations,
   }));
 
   const trendData = overview?.popularity_trend || [];
@@ -121,7 +121,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
       {/* ── Stat Cards ─────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<Eye size={18} />} label="بازدید محصولات" value={overview?.total_views ?? 0} color="blue" />
-        <StatCard icon={<Sparkles size={18} />} label="پیشنهاد هوش مصنوعی" value={overview?.total_ai_recommendations ?? 0} color="emerald" />
+        <StatCard icon={<Sparkles size={18} />} label="پیشنهاد هومینو استودیو" value={overview?.total_ai_recommendations ?? 0} color="emerald" />
         <StatCard icon={<MousePointerClick size={18} />} label="کلیک محصولات" value={overview?.total_clicks ?? 0} color="purple" />
         <StatCard icon={<Heart size={18} />} label="محصولات ذخیره‌شده" value={overview?.total_saves ?? 0} color="rose" />
       </div>
@@ -171,7 +171,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
         <TabsList className="w-full grid grid-cols-3 mb-4">
           <TabsTrigger value="overview" className="gap-2"><BarChart3 size={14} /> نمای کلی</TabsTrigger>
           <TabsTrigger value="products" className="gap-2"><Layers size={14} /> محصولات</TabsTrigger>
-          <TabsTrigger value="insights" className="gap-2"><Palette size={14} /> بینش هوش مصنوعی</TabsTrigger>
+          <TabsTrigger value="insights" className="gap-2"><Palette size={14} /> بینش هومینو استودیو</TabsTrigger>
         </TabsList>
 
         {/* ── Overview Tab ──────────────────────────── */}
@@ -203,7 +203,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">نرخ پیشنهاد هوش مصنوعی</p>
+                  <p className="text-xs text-muted-foreground">نرخ پیشنهاد هومینو استودیو</p>
                   <Sparkles size={14} className="text-emerald-500" />
                 </div>
                 <p className="text-2xl font-bold mt-1">
@@ -317,7 +317,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
                         <th className="text-center py-2 px-2 font-medium text-muted-foreground">بازدید</th>
                         <th className="text-center py-2 px-2 font-medium text-muted-foreground">کلیک</th>
                         <th className="text-center py-2 px-2 font-medium text-muted-foreground">CTR</th>
-                        <th className="text-center py-2 px-2 font-medium text-muted-foreground">پیشنهاد هوش مصنوعی</th>
+                        <th className="text-center py-2 px-2 font-medium text-muted-foreground">پیشنهاد هومینو استودیو</th>
                         <th className="text-center py-2 px-2 font-medium text-muted-foreground">نرخ پیشنهاد</th>
                         <th className="text-center py-2 px-2 font-medium text-muted-foreground">علاقه‌مندی</th>
                       </tr>
@@ -363,7 +363,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 <Palette size={40} className="mx-auto mb-3 opacity-30" />
-                <p className="text-sm">بینش هوش مصنوعی پس از تعامل کاربران با محصولات شما نمایش داده می‌شود.</p>
+                <p className="text-sm">بینش هومینو استودیو پس از تعامل کاربران با محصولات شما نمایش داده می‌شود.</p>
               </CardContent>
             </Card>
           ) : (
@@ -481,7 +481,7 @@ export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
                   <PieChart size={16} className="text-gold" />
-                  توزیع پیشنهادات هوش مصنوعی
+                  توزیع پیشنهادات هومینو استودیو
                 </CardTitle>
               </CardHeader>
               <CardContent>

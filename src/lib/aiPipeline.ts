@@ -105,7 +105,7 @@ export function runAIDesignPipeline<TProduct extends DBProduct>(
   // ---- VALIDATION ----
   const validation = RawAIResponseSchema.safeParse(raw);
   if (!validation.success) {
-    return safeFallback("invalid", "پاسخ هوش مصنوعی نامعتبر بود.");
+    return safeFallback("invalid", "پاسخ هومینو استودیو نامعتبر بود.");
   }
   const parsed = validation.data;
 

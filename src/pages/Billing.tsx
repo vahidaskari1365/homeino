@@ -79,7 +79,7 @@ const Billing = () => {
           </div>
           <h1 className="text-3xl font-bold mb-2">مدیریت اعتبار و توکن‌ها</h1>
           <p className="text-muted-foreground">
-            با خرید توکن، از طراحی هوشمند با جمینی بیشتر استفاده کنید.
+            با خرید توکن، از طراحی هوشمند با هومینو استودیو بیشتر استفاده کنید.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ const Billing = () => {
               <div className="flex gap-2">
                 <Link to="/ai-design">
                   <Button variant="outline" size="sm" className="gap-2">
-                    <Crown size={14} /> طراحی با هوش مصنوعی
+                    <Crown size={14} /> طراحی با هومینو استودیو
                   </Button>
                 </Link>
               </div>
@@ -318,7 +318,7 @@ const Billing = () => {
                           <span className="font-medium">{isUnlimited(plan.max_featured) ? "نامحدود" : fmt(plan.max_featured)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground flex items-center gap-1"><Sparkles size={12} /> طراحی هوش مصنوعی</span>
+                          <span className="text-muted-foreground flex items-center gap-1"><Sparkles size={12} /> طراحی هومینو استودیو</span>
                           <span className="font-medium">{isUnlimited(plan.ai_designs_per_month) ? "نامحدود" : `${fmt(plan.ai_designs_per_month)} / ماه`}</span>
                         </div>
                         <div className="flex items-center justify-between">

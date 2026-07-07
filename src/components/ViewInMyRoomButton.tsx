@@ -88,7 +88,7 @@ const ViewInMyRoomButton = ({
     <button
       type="button"
       onClick={handleClick}
-      title={productName ? `نمایش ${productName} در اتاق با هوش مصنوعی` : "مشاهده در اتاق"}
+      title={productName ? `نمایش ${productName} در اتاق با هومینو استودیو` : "مشاهده در اتاق"}
       aria-label="مشاهده در اتاق"
       className={cn(
         "w-9 h-9 rounded-full flex items-center justify-center transition-colors border",

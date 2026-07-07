@@ -29,7 +29,7 @@ const cards = [
   },
   {
     icon: Sparkles,
-    title: "پیشنهادات هوش مصنوعی",
+    title: "پیشنهادات هومینو استودیو",
     description: "بگذار AI هومینو بهترین مبلمان و دکوراسیون را بر اساس نوع فضا، بودجه و سبک تو پیشنهاد کند.",
     button: "دریافت پیشنهاد",
     action: "onStartSuggest" as const,

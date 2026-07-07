@@ -13,7 +13,7 @@ export interface TrustBadge {
 const BADGE_META: Record<string, TrustBadge> = {
   verified: { slug: "verified", label: "فروشگاه تأیید شده", icon: "shield-check", color: "text-blue-500" },
   premium: { slug: "premium", label: "فروشگاه ویژه", icon: "crown", color: "text-gold" },
-  ai_optimized: { slug: "ai_optimized", label: "بهینه‌سازی هوش مصنوعی", icon: "sparkles", color: "text-purple-500" },
+  ai_optimized: { slug: "ai_optimized", label: "بهینه‌سازی هومینو استودیو", icon: "sparkles", color: "text-purple-500" },
   top_rated: { slug: "top_rated", label: "برترین فروشگاه", icon: "star", color: "text-gold" },
   trending: { slug: "trending", label: "فروشگاه محبوب", icon: "trending-up", color: "text-emerald-brand" },
   profile_completed: { slug: "profile_completed", label: "پروفایل کامل", icon: "check-circle", color: "text-emerald-brand" },

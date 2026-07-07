@@ -233,7 +233,7 @@ const AIDesign = () => {
     startStageProgression();
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("برای استفاده از هوش مصنوعی ابتدا وارد حساب کاربری شوید"); return; }
+      if (!session) { toast.error("برای استفاده از هومینو استودیو ابتدا وارد حساب کاربری شوید"); return; }
       const allowed = await consumeDesignCredit();
       if (!allowed) return;
       trackEvent("ai_started", { metadata: { style, budget: budgetNum, product_count: selectedList.length } });
@@ -259,7 +259,7 @@ const AIDesign = () => {
       setCurrentStage("RENDERING");
       await new Promise((r) => setTimeout(r, 400));
       if (result.status !== "ok") {
-        toast.error("هوش مصنوعی نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
+        toast.error("هومینو استودیو نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
         trackAIDesignResult("failed", { errorMessage: result.status, style, budget: budgetNum });
         const sessionId = searchParams.get("session");
         if (sessionId) supabase.from("design_sessions").update({ status: "abandoned" }).eq("id", sessionId).then();
@@ -346,10 +346,10 @@ const AIDesign = () => {
                   backgroundClip: "text",
                   color: "transparent",
                 }}>
-                اتاق خودت را با هوش مصنوعی طراحی کن
+                خانه خودت را با هومینو استودیو طراحی کن
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed px-2">
-                یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هوش مصنوعی چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
+                یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هومینو استودیو چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
               </p>
             </div>
 
@@ -417,7 +417,7 @@ const AIDesign = () => {
                 <Sofa size={20} className="text-accent shrink-0" />
                 <div className="flex-1 text-sm">
                   <span className="font-bold text-accent">{selectedList[0]?.name}</span>
-                  <span className="text-muted-foreground"> پیش‌انتخاب شد. عکس اتاق را آپلود کن — جمینی جای آن را مشخص می‌کند.</span>
+                  <span className="text-muted-foreground"> پیش‌انتخاب شد. عکس اتاق را آپلود کن — هومینو استودیو جای آن را مشخص می‌کند.</span>
                 </div>
                 <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground shrink-0">
                   <X size={16} />
@@ -558,7 +558,7 @@ const AIDesign = () => {
                     disabled={!imageBase64 || selectedList.length === 0}
                     className="btn-3d font-bold py-3 px-6 text-sm flex items-center justify-center gap-2 w-full max-w-md">
                     <Wand2 size={16} />
-                    چیدمان هوشمند با جمینی
+                    چیدمان هوشمند با هومینو استودیو
                   </button>
                 )}
 
@@ -608,7 +608,7 @@ const AIDesign = () => {
                           try {
                             await navigator.share({
                               title: "طراحی هوشمند هومینو",
-                              text: "این طراحی رو با هوش مصنوعی هومینو انجام دادم",
+                              text: "این طراحی رو با هومینو استودیو هومینو انجام دادم",
                               url: window.location.href,
                             });
                           } catch {
@@ -677,7 +677,7 @@ const AIDesign = () => {
                           className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                             analyticsTab === "consultation" ? "bg-accent/15 text-accent" : "text-muted-foreground"
                           }`}>
-                          <Lightbulb size={13} /> مشاوره جمینی
+                          <Lightbulb size={13} /> مشاوره هومینو استودیو
                         </button>
                         <button onClick={() => setAnalyticsTab("placements")}
                           className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -815,7 +815,7 @@ const AIDesign = () => {
                   {/* Generate button in sidebar when ready */}
                   {imageBase64 && selectedList.length > 0 && !loading && (
                     <button onClick={generate} className="btn-3d w-full font-bold py-3 text-sm flex items-center justify-center gap-2">
-                      <Wand2 size={16} /> چیدمان با جمینی
+                      <Wand2 size={16} /> چیدمان با هومینو استودیو
                     </button>
                   )}
                 </div>

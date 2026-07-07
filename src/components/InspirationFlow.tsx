@@ -87,7 +87,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
           <span className="text-accent text-xs font-semibold">جستجوی بصری هوشمند هومینو</span>
         </div>
         <p className="text-muted-foreground text-xs max-w-xl mx-auto">
-          یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هوش مصنوعی تک‌تک اشیاء را تشخیص می‌دهد
+          یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هومینو استودیو تک‌تک اشیاء را تشخیص می‌دهد
         </p>
       </div>
 
@@ -134,7 +134,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
               <div>
                 <p className="font-bold text-sm">
                   {objectSearch.status === "uploading" && "در حال آپلود تصویر..."}
-                  {objectSearch.status === "detecting" && "هوش مصنوعی در حال شناسایی اشیاء..."}
+                  {objectSearch.status === "detecting" && "هومینو استودیو در حال شناسایی اشیاء..."}
                   {objectSearch.status === "matching" && "در حال جستجوی محصولات مشابه برای هر شیء..."}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">لطفاً صبر کنید</p>
@@ -193,7 +193,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
             <Card>
               <CardContent className="p-3 space-y-2">
                 <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-2">
-                  <Sparkles size={12} className="text-accent" /> تحلیل هوش مصنوعی
+                  <Sparkles size={12} className="text-accent" /> تحلیل هومینو استودیو
                 </p>
                 {objectSearch.overallStyle && (
                   <div>

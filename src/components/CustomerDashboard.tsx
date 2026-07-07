@@ -711,7 +711,7 @@ const ProfileSection = ({
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">پروفایل خانه (بهبود پیشنهادات هوش مصنوعی)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">پروفایل خانه (بهبود پیشنهادات هومینو استودیو)</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <Label>نوع ملک</Label>

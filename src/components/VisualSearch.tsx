@@ -90,7 +90,7 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
             <ImageIcon size={24} className="text-accent" />
           </div>
           <p className="text-sm font-semibold text-foreground mb-1">جستجو با عکس</p>
-          <p className="text-xs text-muted-foreground">یک عکس از محصول مورد نظر آپلود کن — هوش مصنوعی مشابه‌های آن را پیدا می‌کند</p>
+          <p className="text-xs text-muted-foreground">یک عکس از محصول مورد نظر آپلود کن — هومینو استودیو مشابه‌های آن را پیدا می‌کند</p>
           <input ref={inputRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
         </div>
@@ -100,7 +100,7 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
       {loading && (
         <div className="flex flex-col items-center py-8 text-muted-foreground gap-3">
           <Loader2 className="animate-spin" size={28} />
-          <p className="text-sm">هوش مصنوعی در حال تحلیل تصویر و جستجوی محصولات مشابه...</p>
+          <p className="text-sm">هومینو استودیو در حال تحلیل تصویر و جستجوی محصولات مشابه...</p>
         </div>
       )}
 
@@ -130,7 +130,7 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
         <div className="space-y-2">
           {analysis.search_keywords && (
             <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">تشخیص هوش مصنوعی:</span> {analysis.search_keywords}
+              <span className="font-semibold text-foreground">تشخیص هومینو استودیو:</span> {analysis.search_keywords}
             </p>
           )}
           <div className="flex flex-wrap gap-1.5">
