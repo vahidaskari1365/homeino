@@ -105,6 +105,20 @@ const AIDesign = () => {
   const resultRef     = useRef<HTMLDivElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
 
+  const goHome = useCallback(() => {
+    setMode("home");
+    setImageBase64(null);
+    setSelected({});
+    setQuantities({});
+    setGeminiResult(null);
+    setAiError(null);
+    setLoading(false);
+    setStyle("modern");
+    setBudget("");
+    setPrompt("");
+    navigate("/ai-design", { replace: true });
+  }, [navigate]);
+
   const { freeDesignsRemaining, tokenBalance, hasCredit, consumeDesignCredit } = useTokens();
 
   useEffect(() => {
@@ -305,7 +319,10 @@ const AIDesign = () => {
 
         {/* Back link — only when not in home mode */}
         {mode !== "home" && (
-          <button onClick={() => setMode("home")} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-3 py-1.5 rounded-xl">
+          <button onClick={() => {
+            if (mode === "design") goHome();
+            else setMode("home");
+          }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-3 py-1.5 rounded-xl">
             <ArrowLeft size={16} /> بازگشت
           </button>
         )}
@@ -352,7 +369,7 @@ const AIDesign = () => {
               <p className="text-sm text-muted-foreground">به سؤالات زیر پاسخ دهید تا بهترین محصولات را پیشنهاد کنیم</p>
             </div>
             <AISuggestionAssistant
-              onBack={() => setMode("home")}
+              onBack={goHome}
               onComplete={(params) => {
                 setStyle(params.style);
                 const budgetMap: Record<string, string> = {
@@ -392,7 +409,7 @@ const AIDesign = () => {
         )}
 
         {/* ── DESIGN MODE: Full design flow ────────── */}
-        {(mode === "design" || searchParams.get("products") || imageBase64 || selectedList.length > 0) && (
+        {(mode === "design" || searchParams.get("products")) && (
           <>
             {/* ViewInMyRoom banner */}
             {selectedList.length > 0 && searchParams.get("products") && (
