@@ -315,14 +315,14 @@ const AIDesign = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <main className="container mx-auto px-3 sm:px-4 pt-28 sm:pt-32 pb-8">
 
         {/* Back link — only when not in home mode */}
         {mode !== "home" && (
           <button onClick={() => {
             if (mode === "design") goHome();
             else setMode("home");
-          }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-4 py-2 rounded-xl">
+          }} className="inline-flex items-center gap-2 mb-6 text-sm font-semibold text-accent-foreground bg-accent hover:bg-accent/90 px-4 py-2.5 rounded-xl shadow-md transition-all">
             <ArrowLeft size={16} /> بازگشت
           </button>
         )}
