@@ -425,7 +425,7 @@ const AIDesign = () => {
               </div>
             )}
 
-            <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_320px]" : "lg:grid-cols-1 xl:grid-cols-[1fr_380px]"}`}>
+            <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_320px]" : "grid-cols-1"}`}>
 
               {/* ── MAIN CONTENT ────────────────── */}
               <div className="space-y-5 min-w-0">
