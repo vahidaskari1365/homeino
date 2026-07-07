@@ -245,7 +245,7 @@ export function useVisualSearch() {
           rank: i + 1,
         }));
 
-        await supabase.from("visual_matches").insert(matchInserts as any);
+        await supabase.from("visual_matches").insert(matchInserts as unknown as never);
       }
 
       setState((prev) => ({ ...prev, matches, status: "done" }));
@@ -312,7 +312,7 @@ export function useVisualSearch() {
           product_id: pid,
           sort_order: i,
         }));
-        await supabase.from("saved_inspiration_products").insert(productInserts as any);
+        await supabase.from("saved_inspiration_products").insert(productInserts as unknown as never);
       }
 
       toast({ title: "ذخیره شد", description: "الهام با موفقیت ذخیره شد" });

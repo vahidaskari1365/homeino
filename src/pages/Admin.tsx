@@ -1043,14 +1043,14 @@ const AuditTab = () => {
       actor_id: actorFilter || undefined,
       action: actionFilter || undefined,
       target_type: targetFilter || undefined,
-      actor_type: (typeFilter as any) || undefined,
+      actor_type: typeFilter || undefined,
       limit: 100,
     });
     setLogs(result.logs);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const doSearch = () => load();
 

@@ -2413,7 +2413,6 @@ export type Database = {
         Relationships: []
       }
       seller_store_overview: {
-      seller_store_overview: {
         Row: {
           active_product_count: number | null
           featured_count: number | null

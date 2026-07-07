@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { ProfileCompletionBar } from "@/components/ProfileCompletionBar";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  const updateField = (field: string, value: any) => setProfile((prev: any) => ({ ...prev, [field]: value }));
+  const updateField = (field: string, value: string | number) => setProfile((prev) => prev ? { ...prev, [field]: value } : prev);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-gold" size={32} /></div>;
 

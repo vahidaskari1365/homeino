@@ -2,7 +2,7 @@ import { useTrustScore } from "@/hooks/useTrustScore";
 import { trustService } from "@/services/trustService";
 import { ShieldCheck, Crown, Sparkles, Star, Loader2 } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   "shield-check": ShieldCheck,
   crown: Crown,
   sparkles: Sparkles,

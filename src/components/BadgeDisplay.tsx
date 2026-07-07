@@ -4,7 +4,7 @@ import {
   ShieldCheck, Crown, Sparkles, Star, TrendingUp, BadgeCheck,
 } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   "pen-tool": PenTool, layers: Layers, award: Award, heart: Heart,
   megaphone: Megaphone, "check-circle": CheckCircle, "shield-check": ShieldCheck,
   crown: Crown, sparkles: Sparkles, star: Star, "trending-up": TrendingUp,

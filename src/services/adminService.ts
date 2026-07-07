@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Json, Tables } from "@/integrations/supabase/types";
 
 export interface AdminDashboardStats {
   total_users: number;
@@ -54,33 +54,33 @@ export const adminService = {
     });
   },
 
-  async getSubscriptions(): Promise<any> {
+  async getSubscriptions(): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_subscriptions");
-    return data as any;
+    return data as Json;
   },
 
-  async getAiLogs(limit = 50, offset = 0): Promise<any> {
+  async getAiLogs(limit = 50, offset = 0): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_ai_logs", { p_limit: limit, p_offset: offset });
-    return data as any;
+    return data as Json;
   },
 
-  async getSystemHealth(): Promise<any> {
+  async getSystemHealth(): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_system_health");
-    return data as any;
+    return data as Json;
   },
 
-  async getStoresDetailed(): Promise<any> {
+  async getStoresDetailed(): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_stores_detailed");
-    return data as any;
+    return data as Json;
   },
 
-  async getAdvertisements(): Promise<any> {
+  async getAdvertisements(): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_advertisements");
-    return data as any;
+    return data as Json;
   },
 
-  async getReportsSummary(): Promise<any> {
+  async getReportsSummary(): Promise<Json> {
     const { data } = await supabase.rpc("admin_get_reports_summary");
-    return data as any;
+    return data as Json;
   },
 };

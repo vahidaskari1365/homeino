@@ -29,7 +29,7 @@ export interface TopCategory {
 export const analyticsService = {
   async getProductAnalytics(storeId: string): Promise<ProductAnalytics[]> {
     const { data } = await supabase.rpc("get_store_product_analytics", { p_store_id: storeId });
-    return ((data as any[]) ?? []).map((r) => ({
+    return ((data as Record<string, unknown>[]) ?? []).map((r) => ({
       product_id: r.product_id,
       product_name: r.product_name,
       views: Number(r.views) || 0,

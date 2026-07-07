@@ -45,7 +45,7 @@ export default function BadgesPage() {
   }
 
   const earnedSlugs = new Set(earnedBadges.map((b) => b.badge_definitions?.slug));
-  const sellerEarnedSlugs = new Set(sellerBadges.map((b: any) => b.badge_definitions?.slug));
+  const sellerEarnedSlugs = new Set(sellerBadges.map((b) => b.badge_definitions?.slug));
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">
@@ -95,7 +95,7 @@ export default function BadgesPage() {
           <Card className="p-6 bg-card border-border mt-6">
             <h2 className="font-bold mb-4">نشان‌های فروشگاهی کسب شده</h2>
             <div className="space-y-2">
-              {sellerBadges.map((b: any) => (
+              {sellerBadges.map((b) => (
                 <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background">
                   {b.badge_definitions && <BadgeDisplay badge={b.badge_definitions} size="sm" />}
                   <div>

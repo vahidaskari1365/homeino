@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { badgeService, type BadgeDefinition, type UserBadge } from "@/services/badgeService";
+import { badgeService, type BadgeDefinition, type UserBadge, type SellerBadge } from "@/services/badgeService";
 
 export function useUserBadges() {
   const [badges, setBadges] = useState<UserBadge[]>([]);
@@ -35,7 +35,7 @@ export function useBadges() {
 }
 
 export function useSellerBadges(storeId?: string | null) {
-  const [badges, setBadges] = useState<any[]>([]);
+  const [badges, setBadges] = useState<SellerBadge[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
