@@ -339,7 +339,7 @@ const AIDesign = () => {
                 <Sparkles size={14} className="text-accent" />
                 <span className="text-accent text-xs font-semibold">طراح داخلی هوشمند هومینو</span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-bold tracking-tight"
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight break-words"
                 style={{
                   backgroundImage: "linear-gradient(180deg, hsl(158 54% 22%) 0%, hsl(158 48% 34%) 55%, hsl(28 28% 14%) 100%)",
                   WebkitBackgroundClip: "text",
@@ -348,7 +348,7 @@ const AIDesign = () => {
                 }}>
                 اتاق خودت را با هوش مصنوعی طراحی کن
               </h1>
-              <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+              <p className="text-muted-foreground text-xs sm:text-sm md:text-base leading-relaxed px-2">
                 یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هوش مصنوعی چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
               </p>
             </div>
