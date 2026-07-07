@@ -301,12 +301,14 @@ const AIDesign = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
 
-        {/* Back link */}
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm">
-          <ArrowLeft size={16} /> بازگشت به خانه
-        </Link>
+        {/* Back link — only when not in home mode */}
+        {mode !== "home" && (
+          <button onClick={() => setMode("home")} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-3 py-1.5 rounded-xl">
+            <ArrowLeft size={16} /> بازگشت
+          </button>
+        )}
 
         {/* ── HOME MODE: Three entry cards ──────────── */}
         {mode === "home" && !searchParams.get("products") && (
@@ -406,7 +408,7 @@ const AIDesign = () => {
               </div>
             )}
 
-            <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_320px]" : "lg:grid-cols-[1fr_380px]"}`}>
+            <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_320px]" : "lg:grid-cols-1 xl:grid-cols-[1fr_380px]"}`}>
 
               {/* ── MAIN CONTENT ────────────────── */}
               <div className="space-y-5 min-w-0">
@@ -481,7 +483,7 @@ const AIDesign = () => {
                     {currentProducts.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-6">هنوز محصولی در این دسته ثبت نشده.</p>
                     ) : (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[320px] overflow-y-auto">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[320px] overflow-y-auto">
                         {currentProducts.map((p) => {
                           const isSel = !!selected[p.id];
                           return (

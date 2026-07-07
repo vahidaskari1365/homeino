@@ -38,10 +38,10 @@ const Navbar = () => {
     <nav className="fixed top-4 right-4 left-4 md:right-8 md:left-8 z-50 rounded-2xl bg-background/75 backdrop-blur-xl border border-white/10 shadow-luxury transition-all duration-500 mx-auto max-w-7xl">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <a href="#" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <img src={logo} alt="Homeino" className="h-10 w-10 rounded-lg object-cover" />
           <span className="text-2xl font-display text-gold font-bold tracking-wide">هومینو</span>
-        </a>
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-8">
