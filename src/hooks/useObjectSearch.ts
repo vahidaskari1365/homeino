@@ -86,13 +86,17 @@ export function useObjectSearch() {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
-    setState((prev) => ({
-      ...prev,
-      status: "uploading",
-      error: null,
-      objects: [],
-      selections: {},
-    }));
+    setState((prev) => {
+      if (prev.imageUrl) URL.revokeObjectURL(prev.imageUrl);
+      return {
+        ...prev,
+        status: "uploading",
+        error: null,
+        objects: [],
+        selections: {},
+        imageUrl: null,
+      };
+    });
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -297,7 +301,10 @@ export function useObjectSearch() {
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
-    setState(INITIAL);
+    setState((prev) => {
+      if (prev.imageUrl) URL.revokeObjectURL(prev.imageUrl);
+      return INITIAL;
+    });
   }, []);
 
   return {

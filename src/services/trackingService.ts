@@ -21,7 +21,9 @@ export type AnalyticsEventType =
   | "object_detected" | "object_selected" | "object_skipped" | "object_cleared"
   | "design_started_from_objects"
   | "similarity_click"
-  | "purchase_conversion";
+  | "purchase_conversion"
+  | "add_to_cart" | "remove_from_cart"
+  | "checkout_started" | "order_placed";
 
 export interface TrackEventOptions {
   entityType?: string;

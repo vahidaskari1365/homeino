@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  Upload, Wand2, Loader2, ArrowRight, Sparkles, X, ShoppingBag, RefreshCw,
+  Upload, Wand2, Loader2, ArrowRight, Sparkles, X, ShoppingBag, RefreshCw, Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -235,6 +235,21 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                 </p>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">
+              برای هر شیء، محصولات هومینو را انتخاب کنید (چندتا مجاز)
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => objectSearch.saveInspiration?.("الهام جدید")}
+              className="gap-1.5 h-7 text-[10px]"
+            >
+              <Heart size={10} /> ذخیره الهام
+            </Button>
           </div>
 
           {/* Object sections */}

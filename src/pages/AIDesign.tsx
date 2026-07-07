@@ -95,8 +95,10 @@ const AIDesign = () => {
   const [catMap, setCatMap]               = useState<Record<string, string>>({});
   const [products, setProducts]           = useState<Record<string, Product[]>>({});
   const [selected, setSelected]           = useState<Record<string, Product>>({});
+  const [quantities, setQuantities]       = useState<Record<string, number>>({});
   const [analyticsTab, setAnalyticsTab]   = useState<"consultation" | "placements">("consultation");
   const [fullscreen, setFullscreen]       = useState(false);
+  const [showBefore, setShowBefore]       = useState(false);
 
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
@@ -185,14 +187,23 @@ const AIDesign = () => {
   const toggleProduct = (p: Product) => {
     setSelected((prev) => {
       const next = { ...prev };
-      if (next[p.id]) delete next[p.id];
-      else next[p.id] = p;
+      if (next[p.id]) {
+        delete next[p.id];
+        setQuantities((q) => { const q2 = { ...q }; delete q2[p.id]; return q2; });
+      } else {
+        next[p.id] = p;
+        setQuantities((q) => ({ ...q, [p.id]: 1 }));
+      }
       return next;
     });
   };
 
+  const setQuantity = (id: string, qty: number) => {
+    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, qty) }));
+  };
+
   const selectedList = useMemo(() => Object.values(selected), [selected]);
-  const total        = selectedList.reduce((s, p) => s + (Number(p.price) || 0), 0);
+  const total        = selectedList.reduce((s, p) => s + (Number(p.price) || 0) * (quantities[p.id] || 1), 0);
 
   const selectedMap = useMemo(
     () => selectedList.reduce<Record<string, Product>>((acc, p) => { acc[p.id] = p; return acc; }, {}),
@@ -402,7 +413,7 @@ const AIDesign = () => {
 
                 {/* Upload — compact */}
                 {!imageBase64 && !loading && (
-                  <div className="max-w-md">
+                  <div className="max-w-[500px]">
                     <div
                       onClick={() => inputRef.current?.click()}
                       onDragOver={(e) => e.preventDefault()}
@@ -422,7 +433,7 @@ const AIDesign = () => {
 
                 {/* Image preview — compact */}
                 {imageBase64 && !loading && (
-                  <div className="max-w-md">
+                  <div className="max-w-[500px]">
                     <div className="relative rounded-2xl overflow-hidden bg-card border border-border group">
                       <img src={imageBase64} alt="فضا" className="w-full aspect-video object-cover" />
                       <button onClick={() => { setImageBase64(null); setGeminiResult(null); }}
@@ -486,9 +497,11 @@ const AIDesign = () => {
                                 <p className="text-[10px] text-accent mt-0.5">{fmt(p.price)}</p>
                               </div>
                               {isSel && (
-                                <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
-                                  <CheckCircle2 size={10} />
-                                </span>
+                                <div className="absolute top-1 left-1 flex items-center gap-0.5">
+                                  <span className="w-4 h-4 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
+                                    <CheckCircle2 size={10} />
+                                  </span>
+                                </div>
                               )}
                             </button>
                           );
@@ -558,10 +571,32 @@ const AIDesign = () => {
                         <button onClick={() => setFullscreen(!fullscreen)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
                           {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                         </button>
-                        <button onClick={() => { /* download placeholder */ }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
+                        <button onClick={() => {
+                          const img = resultRef.current?.querySelector("img");
+                          if (img) {
+                            const link = document.createElement("a");
+                            link.download = "homeino-design.png";
+                            link.href = img.src;
+                            link.click();
+                            toast.success("تصویر ذخیره شد");
+                          } else {
+                            toast.error("تصویری برای ذخیره وجود ندارد");
+                          }
+                        }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
                           <Download size={14} />
                         </button>
-                        <button onClick={() => { /* share */ }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
+                        <button onClick={async () => {
+                          try {
+                            await navigator.share({
+                              title: "طراحی هوشمند هومینو",
+                              text: "این طراحی رو با هوش مصنوعی هومینو انجام دادم",
+                              url: window.location.href,
+                            });
+                          } catch {
+                            navigator.clipboard?.writeText(window.location.href);
+                            toast.success("لینک کپی شد");
+                          }
+                        }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
                           <Share2 size={14} />
                         </button>
                       </div>
@@ -578,12 +613,36 @@ const AIDesign = () => {
                     )}
 
                     {geminiResult.status === "ok" && imageBase64 && (
-                      <div className="rounded-2xl overflow-hidden border border-border shadow-lg bg-card">
-                        <ProductOverlay
-                          roomImage={imageBase64}
-                          placements={geminiResult.placements}
-                          onProductClick={addToCart}
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShowBefore(false)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+                              !showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
+                            }`}
+                          >
+                            نتیجه AI
+                          </button>
+                          <button
+                            onClick={() => setShowBefore(true)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+                              showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
+                            }`}
+                          >
+                            تصویر اصلی
+                          </button>
+                        </div>
+                        <div className="rounded-2xl overflow-hidden border border-border shadow-lg bg-card">
+                          {showBefore ? (
+                            <img src={imageBase64} alt="فضای اصلی" className="w-full" />
+                          ) : (
+                            <ProductOverlay
+                              roomImage={imageBase64}
+                              placements={geminiResult.placements}
+                              onProductClick={addToCart}
+                            />
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -702,20 +761,28 @@ const AIDesign = () => {
                       <p className="text-xs text-muted-foreground">هنوز وسیله‌ای انتخاب نشده. از بخش محصولات انتخاب کن.</p>
                     ) : (
                       <div className="space-y-2 max-h-52 overflow-y-auto">
-                        {selectedList.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-8 h-8 rounded-lg bg-muted overflow-hidden shrink-0">
-                              {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
+                        {selectedList.map((p) => {
+                          const qty = quantities[p.id] || 1;
+                          return (
+                            <div key={p.id} className="flex items-center gap-2 text-xs">
+                              <div className="w-8 h-8 rounded-lg bg-muted overflow-hidden shrink-0">
+                                {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="line-clamp-1 font-medium text-[11px]">{p.name}</p>
+                                <p className="text-accent text-[10px]">{fmt((p.price || 0) * qty)}</p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => setQuantity(p.id, qty + 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] hover:bg-accent/10">+</button>
+                                <span className="text-[10px] font-bold w-4 text-center">{qty}</span>
+                                <button onClick={() => qty > 1 ? setQuantity(p.id, qty - 1) : toggleProduct(p)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] hover:bg-accent/10">-</button>
+                              </div>
+                              <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive shrink-0">
+                                <X size={12} />
+                              </button>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="line-clamp-1 font-medium text-[11px]">{p.name}</p>
-                              <p className="text-accent text-[10px]">{fmt(p.price)}</p>
-                            </div>
-                            <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive shrink-0">
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {selectedList.length > 0 && (
@@ -736,8 +803,8 @@ const AIDesign = () => {
               )}
             </div>
 
-            {/* Floating selected products panel (when there's a result) */}
-            {geminiResult?.status === "ok" && selectedList.length > 0 && (
+            {/* Floating selected products panel */}
+            {!loading && selectedList.length > 0 && (
               <SelectedProductsFloatingPanel
                 products={selectedList}
                 total={total}

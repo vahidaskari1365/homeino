@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
+import { trackEvent } from "@/lib/tracking";
 
 export interface CartItem {
   product_id: string;
@@ -59,12 +60,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       return [...prev, { ...item, quantity: Math.min(qty, item.stock || 99) }];
     });
+
+    trackEvent("add_to_cart", {
+      entityType: "product",
+      entityId: item.product_id,
+      metadata: { name: item.name, price: item.price, quantity: qty },
+    });
     
     return { ok: true };
   }, []);
 
   const removeItem = useCallback((product_id: string) => {
-    setItems((prev) => prev.filter((p) => p.product_id !== product_id));
+    setItems((prev) => {
+      const removed = prev.find((p) => p.product_id === product_id);
+      if (removed) {
+        trackEvent("remove_from_cart", {
+          entityType: "product",
+          entityId: product_id,
+          metadata: { name: removed.name, price: removed.price },
+        });
+      }
+      return prev.filter((p) => p.product_id !== product_id);
+    });
   }, []);
 
   const updateQuantity = useCallback((product_id: string, qty: number) => {
