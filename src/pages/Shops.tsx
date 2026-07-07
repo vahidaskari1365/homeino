@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedImage from "@/components/OptimizedImage";
 import SEO from "@/components/SEO";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -415,9 +416,19 @@ const Shops = () => {
                               ) : (
                                 <span className="text-gray-300 text-xs font-semibold">استعلام قیمت</span>
                               )}
-                              <span className="text-[11px] font-bold text-white bg-gold/80 px-2.5 py-1 rounded-lg">
-                                مشاهده جزئیات
-                              </span>
+                              <div className="flex gap-1">
+                                <ViewInMyRoomButton
+                                  productId={p.id}
+                                  productName={p.name}
+                                  productImage={p.image_url}
+                                  productPrice={p.price}
+                                  variant="full"
+                                  className="text-[10px] bg-accent/90 text-white font-bold px-2 py-1 rounded-lg border-0 hover:bg-accent"
+                                />
+                                <span className="text-[11px] font-bold text-white bg-gold/80 px-2.5 py-1 rounded-lg">
+                                  مشاهده جزئیات
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>

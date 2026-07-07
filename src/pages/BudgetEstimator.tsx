@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { ArrowRight, Calculator, Plus, Trash2, Check, Sparkles, Filter, Info, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -554,23 +555,33 @@ const BudgetEstimator = () => {
                         <span className="text-xs text-muted-foreground">قیمت مستقیم:</span>
                         <span className="text-gold font-extrabold text-base">{formatPersianPrice(product.price)}</span>
                       </div>
-                      <Button 
-                        onClick={(e) => {
-                          e.stopPropagation(); // Don't trigger the select item action
-                          addItem({
-                            product_id: product.id,
-                            profile_id: "budget-estimator",
-                            name: product.name,
-                            price: product.price,
-                            image_url: product.image_url,
-                            stock: 99
-                          });
-                          toast.success(`"${product.name}" به سبد خریدتان اضافه شد.`);
-                        }}
-                        className="w-full mt-3 bg-secondary hover:bg-secondary/80 text-foreground font-semibold text-xs py-2 h-9 rounded-lg"
-                      >
-                        افزودن به سبد خرید
-                      </Button>
+                      <div className="flex gap-2 mt-3">
+                        <Button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addItem({
+                              product_id: product.id,
+                              profile_id: "budget-estimator",
+                              name: product.name,
+                              price: product.price,
+                              image_url: product.image_url,
+                              stock: 99
+                            });
+                            toast.success(`"${product.name}" به سبد خریدتان اضافه شد.`);
+                          }}
+                          className="flex-1 bg-secondary hover:bg-secondary/80 text-foreground font-semibold text-xs py-2 h-9 rounded-lg"
+                        >
+                          افزودن به سبد خرید
+                        </Button>
+                        <ViewInMyRoomButton
+                          productId={product.id}
+                          productName={product.name}
+                          productImage={product.image_url}
+                          productPrice={product.price}
+                          variant="full"
+                          className="text-xs h-9"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 );

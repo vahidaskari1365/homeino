@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Heart, Share2, ArrowRight, ShoppingBag, Info, ExternalLink } from "lucide-react";
+import { Bookmark, Heart, Share2, ArrowRight, ShoppingBag, Info, ExternalLink, Sofa } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSavedInspirations } from "@/hooks/useSavedInspirations";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -127,6 +128,16 @@ const InspirationDetail = () => {
                       <p className="text-[10px] text-primary font-bold mt-1">
                         {item.product?.price ? `${item.product.price.toLocaleString()} تومان` : "تماس بگیرید"}
                       </p>
+                      <div className="mt-2">
+                        <ViewInMyRoomButton
+                          productId={item.product_id}
+                          productName={item.product?.name || ""}
+                          productImage={item.product?.image_url}
+                          productPrice={item.product?.price}
+                          variant="full"
+                          className="w-full text-[10px]"
+                        />
+                      </div>
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45" />
                     </div>
                   </div>
@@ -223,21 +234,32 @@ const InspirationDetail = () => {
                 </h3>
                 <div className="space-y-4">
                   {inspiration.products.map((item) => (
-                    <Link
+                    <div
                       key={item.id}
-                      to={`/product/${item.product?.id}`}
                       className="flex items-center gap-4 p-2 rounded-2xl hover:bg-muted transition-colors group"
                       onMouseEnter={() => setHoveredProduct(item.product_id)}
                       onMouseLeave={() => setHoveredProduct(null)}
                     >
-                      <img src={item.product?.image_url || ''} className="w-16 h-16 object-cover rounded-xl shadow-sm" />
-                      <div className="flex-1">
-                        <h4 className="font-bold text-xs line-clamp-1 group-hover:text-primary transition-colors">{item.product?.name}</h4>
+                      <Link to={`/product/${item.product?.id}`}>
+                        <img src={item.product?.image_url || ''} className="w-16 h-16 object-cover rounded-xl shadow-sm" />
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/product/${item.product?.id}`}>
+                          <h4 className="font-bold text-xs line-clamp-1 group-hover:text-primary transition-colors">{item.product?.name}</h4>
+                        </Link>
                         <p className="text-[11px] text-primary font-bold mt-0.5">
                           {item.product?.price ? `${item.product.price.toLocaleString()} تومان` : "مشاهده قیمت"}
                         </p>
+                        <ViewInMyRoomButton
+                          productId={item.product_id}
+                          productName={item.product?.name || ""}
+                          productImage={item.product?.image_url}
+                          productPrice={item.product?.price}
+                          variant="full"
+                          className="mt-1"
+                        />
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>

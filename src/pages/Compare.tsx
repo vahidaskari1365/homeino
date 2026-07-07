@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { X, ArrowRight, Scale } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Scale, ArrowLeft, Star, X, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useCompare } from "@/contexts/CompareContext";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompare } from "@/contexts/CompareContext";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import { cn } from "@/lib/utils";
 
 type Enriched = {
@@ -102,6 +104,14 @@ const Compare = () => {
                           )}
                         </div>
                         <div className="font-semibold text-foreground">{it.name}</div>
+                        <ViewInMyRoomButton
+                          productId={it.id}
+                          productName={it.name}
+                          productImage={it.image_url}
+                          productPrice={it.price}
+                          variant="full"
+                          className="mt-1"
+                        />
                       </div>
                     </th>
                   ))}

@@ -1,41 +1,34 @@
-// ============================================================
-// Homeino — "View in My Room" Button
-// ============================================================
-// Universal button that appears on EVERY product listing in the
-// marketplace. Clicking navigates to the AI Design page with the
-// product pre-selected.
-// ============================================================
-
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Sofa } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Wand2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/tracking";
 
 interface ViewInMyRoomButtonProps {
   productId: string;
   productName?: string;
-  variant?: "default" | "outline" | "ghost" | "link";
-  size?: "default" | "sm" | "lg" | "icon";
+  productImage?: string | null;
+  productPrice?: number | null;
+  variant?: "icon" | "full";
+  size?: "sm" | "default";
   className?: string;
-  /** If true, appends to existing products rather than replacing */
   multiSelect?: boolean;
-  /** Currently selected product IDs (for multi-select mode) */
   currentSelected?: string[];
-  /** Callback when products change (for multi-select mode) */
   onSelectionChange?: (productIds: string[]) => void;
 }
 
-export function ViewInMyRoomButton({
+const ViewInMyRoomButton = ({
   productId,
   productName,
-  variant = "outline",
-  size = "sm",
-  className = "",
+  productImage,
+  productPrice,
+  variant = "icon",
+  className,
   multiSelect = false,
   currentSelected,
   onSelectionChange,
-}: ViewInMyRoomButtonProps) {
+}: ViewInMyRoomButtonProps) => {
   const navigate = useNavigate();
 
   const handleClick = useCallback(
@@ -44,7 +37,6 @@ export function ViewInMyRoomButton({
       e.stopPropagation();
 
       if (multiSelect && onSelectionChange && currentSelected) {
-        // Toggle selection
         const isSelected = currentSelected.includes(productId);
         if (isSelected) {
           onSelectionChange(currentSelected.filter((id) => id !== productId));
@@ -54,10 +46,11 @@ export function ViewInMyRoomButton({
         return;
       }
 
-      // Direct navigation to AI Design with this product
       const params = new URLSearchParams();
       params.set("products", productId);
       if (productName) params.set("product_name", productName);
+      if (productImage) params.set("product_image", productImage);
+      if (productPrice != null) params.set("product_price", String(productPrice));
 
       trackEvent("product_clicked", {
         entityType: "product",
@@ -67,26 +60,48 @@ export function ViewInMyRoomButton({
 
       navigate(`/ai-design?${params.toString()}`);
     },
-    [navigate, productId, productName, multiSelect, currentSelected, onSelectionChange]
+    [navigate, productId, productName, productImage, productPrice, multiSelect, currentSelected, onSelectionChange]
   );
 
+  if (variant === "full") {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className={cn(
+          "inline-flex items-center justify-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full transition-all",
+          "bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20",
+          className
+        )}
+      >
+        <Sofa size={12} />
+        {multiSelect
+          ? currentSelected?.includes(productId)
+            ? "حذف"
+            : "انتخاب"
+          : "مشاهده در اتاق"}
+      </button>
+    );
+  }
+
   return (
-    <Button
-      variant={variant}
-      size={size}
+    <button
+      type="button"
       onClick={handleClick}
-      className={`gap-1.5 ${className}`}
-      title="مشاهده این محصول در طراحی اتاق با هوش مصنوعی"
+      title={productName ? `نمایش ${productName} در اتاق با هوش مصنوعی` : "مشاهده در اتاق"}
+      aria-label="مشاهده در اتاق"
+      className={cn(
+        "w-9 h-9 rounded-full flex items-center justify-center transition-colors border",
+        "bg-background/80 border-border text-muted-foreground hover:text-accent hover:border-accent/50",
+        className
+      )}
     >
-      <Wand2 size={size === "sm" ? 12 : 14} />
-      {multiSelect
-        ? currentSelected?.includes(productId)
-          ? "حذف از طراحی"
-          : "انتخاب برای طراحی"
-        : "مشاهده در اتاق"}
-    </Button>
+      <Sofa size={16} />
+    </button>
   );
-}
+};
+
+export default ViewInMyRoomButton;
 
 /**
  * Creates the product selection bar for multi-select mode.
@@ -108,7 +123,7 @@ export function DesignSelectionBar({
         size="lg"
         className="shadow-xl gap-2 px-6"
       >
-        <Wand2 size={16} />
+        <Sofa size={16} />
         طراحی اتاق با {selectedIds.length} محصول انتخاب شده
       </Button>
     </div>

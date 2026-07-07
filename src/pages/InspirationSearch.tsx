@@ -24,7 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ViewInMyRoomButton, DesignSelectionBar } from "@/components/ViewInMyRoomButton";
+import ViewInMyRoomButton, { DesignSelectionBar } from "@/components/ViewInMyRoomButton";
 import { useVisualSearch, type VisualMatchProduct } from "@/hooks/useVisualSearch";
 
 const fmt = (n: number | null | undefined) =>

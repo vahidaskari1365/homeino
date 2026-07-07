@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.inspiration-cron]
 verify_jwt = false
+
+[functions.visual-search]
+verify_jwt = false

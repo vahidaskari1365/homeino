@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWishlist, type WishlistItem, type WishlistItemType } from "@/hooks/useWishlist";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 
 const TYPE_META: Record<WishlistItemType, { label: string; icon: typeof Package }> = {
   product: { label: "محصولات", icon: Package },
@@ -38,12 +39,22 @@ const ItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: () => void
         </p>
         )}
         <div className="flex gap-2 mt-2">
-        <Link to={item.item_type === 'product' ? `/product/${item.item_id}` : '/wishlist'} className="flex-1">
-          <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
-        </Link>
-        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive p-2" onClick={onRemove}>
-          <Trash2 size={14} />
-        </Button>
+          <Link to={item.item_type === 'product' ? `/product/${item.item_id}` : '/wishlist'} className="flex-1">
+            <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
+          </Link>
+          {item.item_type === 'product' && (
+            <ViewInMyRoomButton
+              productId={item.item_id}
+              productName={item.title}
+              productImage={item.image_url}
+              productPrice={item.price}
+              variant="full"
+              className="text-xs"
+            />
+          )}
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive p-2" onClick={onRemove}>
+            <Trash2 size={14} />
+          </Button>
         </div>
         </CardContent>
         </Card>

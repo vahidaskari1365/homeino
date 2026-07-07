@@ -441,6 +441,23 @@ const AIDesign = () => {
               </div>
             </section>
 
+            {/* ViewInMyRoom banner */}
+            {selectedList.length > 0 && searchParams.get("products") && (
+              <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 flex items-center gap-3 mb-4">
+                <Sofa size={20} className="text-accent shrink-0" />
+                <div className="flex-1 text-sm">
+                  <span className="font-bold text-accent">{selectedList[0]?.name}</span>
+                  <span className="text-muted-foreground"> پیش‌انتخاب شد. عکس اتاق را آپلود کن — جمینی جای آن را مشخص می‌کند.</span>
+                </div>
+                <button
+                  onClick={() => setSelected({})}
+                  className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
             {/* Step 2: Style */}
             <section>
               <div className="flex items-center gap-3 mb-4">
