@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   Upload, Wand2, Loader2, ArrowRight, Sparkles, X, ShoppingBag, RefreshCw, Heart,
+  ArrowUpDown, Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ObjectSection from "@/components/ObjectSection";
 import DesignSummary from "@/components/DesignSummary";
@@ -20,6 +22,8 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
   const objectSearch = useObjectSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("similarity");
+  const [priceFilter, setPriceFilter] = useState<string>("all");
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -252,6 +256,25 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
             </Button>
           </div>
 
+          {/* Sort & Filter controls */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px] h-8 text-[10px]">
+                <ArrowUpDown size={10} className="ml-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="similarity" className="text-[10px]">بیشترین شباهت</SelectItem>
+                <SelectItem value="price_asc" className="text-[10px]">قیمت: کم به زیاد</SelectItem>
+                <SelectItem value="price_desc" className="text-[10px]">قیمت: زیاد به کم</SelectItem>
+                <SelectItem value="name" className="text-[10px]">نام محصول</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-[10px] text-muted-foreground">
+              {allProducts.length} محصول مشابه
+            </span>
+          </div>
+
           {/* Object sections */}
           <div className="space-y-3">
             {objectSearch.objects.map((obj, i) => {
@@ -263,6 +286,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                   object={obj}
                   selection={sel}
                   index={i}
+                  sortBy={sortBy as "similarity" | "price_asc" | "price_desc" | "name"}
                   onSelect={(product) => objectSearch.selectProduct(obj.label, product)}
                   onSkip={() => objectSearch.skipObject(obj.label)}
                   onClear={() => objectSearch.clearObject(obj.label)}

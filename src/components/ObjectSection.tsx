@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Check, X, Star, RotateCcw, Sofa } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,29 @@ interface ObjectSectionProps {
   onSkip: () => void;
   onClear: () => void;
   index: number;
+  sortBy?: "similarity" | "price_asc" | "price_desc" | "name";
 }
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
-const ObjectSection = ({ object, selection, onSelect, onSkip, onClear, index }: ObjectSectionProps) => {
+const ObjectSection = ({ object, selection, onSelect, onSkip, onClear, index, sortBy = "similarity" }: ObjectSectionProps) => {
   const [expanded, setExpanded] = useState(true);
   const { selectedProducts, skipped } = selection;
+
+  const sortedMatches = useMemo(() => {
+    const matches = [...object.matches];
+    switch (sortBy) {
+      case "price_asc":
+        return matches.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+      case "price_desc":
+        return matches.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      case "name":
+        return matches.sort((a, b) => a.product_name.localeCompare(b.product_name));
+      default:
+        return matches.sort((a, b) => b.confidence - a.confidence);
+    }
+  }, [object.matches, sortBy]);
 
   return (
     <Card className={`overflow-hidden border transition-all ${skipped ? "opacity-50" : "border-border hover:border-accent/30"}`}>
@@ -142,7 +157,7 @@ const ObjectSection = ({ object, selection, onSelect, onSkip, onClear, index }: 
             <div className="px-4 pb-4">
               <p className="text-[10px] text-muted-foreground mb-2">برای انتخاب کلیک کنید (چندتا مجاز):</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {object.matches.map((product) => {
+                {sortedMatches.map((product) => {
                   const isSelected = selectedProducts.some((p) => p.product_id === product.product_id);
                   return (
                     <div
