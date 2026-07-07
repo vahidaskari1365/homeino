@@ -13,8 +13,6 @@ import logo from "@/assets/homeino-logo.jpg";
 const navLinks = [
   { label: "خانه", href: "/" },
   { label: "دسته‌بندی‌ها", href: "/#categories" },
-  { label: "جستجوی بصری", href: "/ai-design?mode=inspiration" },
-  { label: "الهام دکوراسیون", href: "/inspirations" },
   { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
   { label: "فروشگاه‌ها", href: "/shops" },
   { label: "آگهی دست دوم", href: "/second-hand" },
