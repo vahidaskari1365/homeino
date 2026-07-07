@@ -31,8 +31,7 @@ export interface ProductMatch {
 
 export interface ObjectSelection {
   objectLabel: string;
-  selectedProduct: ProductMatch | null;
-  replacedProduct: ProductMatch | null;
+  selectedProducts: ProductMatch[];
   skipped: boolean;
 }
 
@@ -63,11 +62,10 @@ const INITIAL: ObjectSearchState = {
 function createInitialSelection(objects: DetectedObject[]): Record<string, ObjectSelection> {
   const sel: Record<string, ObjectSelection> = {};
   objects.forEach((obj) => {
-    const best = obj.matches.length > 0 ? obj.matches[0] : null;
+    const best = obj.matches.length > 0 ? [obj.matches[0]] : [];
     sel[obj.label] = {
       objectLabel: obj.label,
-      selectedProduct: best,
-      replacedProduct: null,
+      selectedProducts: best,
       skipped: false,
     };
   });
@@ -164,22 +162,25 @@ export function useObjectSearch() {
   const selectProduct = useCallback((objectLabel: string, product: ProductMatch) => {
     setState((prev) => {
       const current = prev.selections[objectLabel];
+      const exists = current?.selectedProducts?.some((p) => p.product_id === product.product_id);
+      const newProducts = exists
+        ? (current?.selectedProducts || []).filter((p) => p.product_id !== product.product_id)
+        : [...(current?.selectedProducts || []), product];
       return {
         ...prev,
         selections: {
           ...prev.selections,
           [objectLabel]: {
-            ...current,
-            selectedProduct: product,
-            replacedProduct: current?.selectedProduct?.product_id !== product.product_id ? current?.selectedProduct || null : null,
+            objectLabel,
+            selectedProducts: newProducts,
             skipped: false,
           },
         },
       };
     });
 
-    trackEvent("object_selected", {
-      metadata: { object_label: objectLabel, product_id: product.product_id, product_name: product.product_name },
+    trackEvent("similarity_click", {
+      metadata: { object_label: objectLabel, product_id: product.product_id, product_name: product.product_name, action: "select" },
     });
   }, []);
 
@@ -190,8 +191,8 @@ export function useObjectSearch() {
         ...prev.selections,
         [objectLabel]: {
           ...prev.selections[objectLabel],
+          selectedProducts: [],
           skipped: true,
-          selectedProduct: null,
         },
       },
     }));
@@ -201,24 +202,28 @@ export function useObjectSearch() {
     });
   }, []);
 
-  const removeObject = useCallback((objectLabel: string) => {
+  const clearObject = useCallback((objectLabel: string) => {
     setState((prev) => ({
       ...prev,
       selections: {
         ...prev.selections,
         [objectLabel]: {
           ...prev.selections[objectLabel],
-          selectedProduct: prev.selections[objectLabel]?.replacedProduct || null,
-          replacedProduct: null,
+          selectedProducts: [],
+          skipped: false,
         },
       },
     }));
+
+    trackEvent("object_cleared", {
+      metadata: { object_label: objectLabel },
+    });
   }, []);
 
   const getSelectedProducts = useCallback((): ProductMatch[] => {
     return Object.values(state.selections)
-      .filter((s) => !s.skipped && s.selectedProduct)
-      .map((s) => s.selectedProduct!);
+      .filter((s) => !s.skipped && s.selectedProducts.length > 0)
+      .flatMap((s) => s.selectedProducts);
   }, [state.selections]);
 
   const getSelectedProductIds = useCallback((): string[] => {
@@ -253,7 +258,42 @@ export function useObjectSearch() {
     });
 
     navigate(`/ai-design?${params.toString()}`);
-  }, [getSelectedProductIds, getSelectedProducts, getTotalPrice, state.selections, navigate]);
+  }, [getSelectedProductIds, getTotalPrice, state.selections, navigate]);
+
+  const saveInspiration = useCallback(async (title: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("برای ذخیره الهام وارد حساب خود شوید");
+        return;
+      }
+
+      const selectedProducts = getSelectedProducts();
+
+      const { error } = await supabase.from("design_sessions").insert({
+        user_id: session.user.id,
+        title: title || "الهام جدید",
+        reference_image: state.imageBase64,
+        status: "draft",
+        metadata: {
+          objects: state.objects.map((o) => ({ label: o.label, confidence: o.confidence })),
+          selections: Object.entries(state.selections).map(([, s]) => ({
+            object_label: s.objectLabel,
+            product_ids: s.selectedProducts.map((p) => p.product_id),
+            skipped: s.skipped,
+          })),
+          overall_style: state.overallStyle,
+          room_type: state.roomType,
+        },
+      }).select("id").single();
+
+      if (error) throw error;
+
+      toast.success("الهام با موفقیت ذخیره شد");
+    } catch (e) {
+      toast.error("خطا در ذخیره الهام");
+    }
+  }, [state, getSelectedProducts]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -265,12 +305,13 @@ export function useObjectSearch() {
     detectAndMatch,
     selectProduct,
     skipObject,
-    removeObject,
+    clearObject,
     getSelectedProducts,
     getSelectedProductIds,
     getSelectedCount,
     getTotalPrice,
     goToDesign,
+    saveInspiration,
     reset,
   };
 }

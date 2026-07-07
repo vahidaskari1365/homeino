@@ -6,6 +6,7 @@ export type AnalyticsEventType =
   | "profile_updated" | "profile_completed"
   | "room_uploaded"
   | "ai_started" | "ai_finished" | "ai_failed"
+  | "ai_suggestion_requested"
   | "design_saved" | "design_deleted"
   | "project_created" | "project_updated" | "project_deleted"
   | "product_suggested" | "product_viewed" | "product_clicked"
@@ -16,7 +17,11 @@ export type AnalyticsEventType =
   | "token_consumed" | "token_added"
   | "address_added" | "address_updated" | "address_deleted"
   | "store_viewed" | "store_followed"
-  | "design_shared" | "featured_product_viewed" | "notifications_read";
+  | "design_shared" | "featured_product_viewed" | "notifications_read"
+  | "object_detected" | "object_selected" | "object_skipped" | "object_cleared"
+  | "design_started_from_objects"
+  | "similarity_click"
+  | "purchase_conversion";
 
 export interface TrackEventOptions {
   entityType?: string;

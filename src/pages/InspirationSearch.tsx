@@ -273,7 +273,7 @@ const InspirationSearch = () => {
                     index={i}
                     onSelect={(product) => objectSearch.selectProduct(obj.label, product)}
                     onSkip={() => objectSearch.skipObject(obj.label)}
-                    onRemove={() => objectSearch.removeObject(obj.label)}
+                    onClear={() => objectSearch.clearObject(obj.label)}
                   />
                 );
               })}

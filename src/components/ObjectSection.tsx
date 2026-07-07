@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronDown, ChevronUp, Check, X, Star, RefreshCw, Sofa } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, X, Star, RotateCcw, Sofa } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,16 +11,16 @@ interface ObjectSectionProps {
   selection: ObjectSelection;
   onSelect: (product: ProductMatch) => void;
   onSkip: () => void;
-  onRemove: () => void;
+  onClear: () => void;
   index: number;
 }
 
 const fmt = (n: number | null | undefined) =>
   n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
-const ObjectSection = ({ object, selection, onSelect, onSkip, onRemove, index }: ObjectSectionProps) => {
+const ObjectSection = ({ object, selection, onSelect, onSkip, onClear, index }: ObjectSectionProps) => {
   const [expanded, setExpanded] = useState(true);
-  const { selectedProduct, skipped } = selection;
+  const { selectedProducts, skipped } = selection;
 
   return (
     <Card className={`overflow-hidden border transition-all ${skipped ? "opacity-50" : "border-border hover:border-accent/30"}`}>
@@ -58,9 +57,9 @@ const ObjectSection = ({ object, selection, onSelect, onSkip, onRemove, index }:
         <div className="flex items-center gap-2">
           {skipped ? (
             <Badge variant="outline" className="text-[10px] text-muted-foreground">حذف شده</Badge>
-          ) : selectedProduct ? (
+          ) : selectedProducts.length > 0 ? (
             <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1">
-              <Check size={10} /> انتخاب شده
+              <Check size={10} /> {selectedProducts.length} انتخاب
             </Badge>
           ) : (
             <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-200">انتخاب نشده</Badge>
@@ -85,9 +84,9 @@ const ObjectSection = ({ object, selection, onSelect, onSkip, onRemove, index }:
 
           {/* Actions */}
           <div className="px-4 pb-3 flex gap-2">
-            {!skipped && selectedProduct && (
-              <Button variant="outline" size="sm" className="text-[10px] h-7 gap-1" onClick={onRemove}>
-                <RefreshCw size={10} /> جایگزینی
+            {!skipped && selectedProducts.length > 0 && (
+              <Button variant="outline" size="sm" className="text-[10px] h-7 gap-1" onClick={onClear}>
+                <RotateCcw size={10} /> پاک کردن انتخاب
               </Button>
             )}
             {!skipped && (
@@ -102,27 +101,38 @@ const ObjectSection = ({ object, selection, onSelect, onSkip, onRemove, index }:
             )}
           </div>
 
-          {/* Selected product highlight */}
-          {selectedProduct && !skipped && (
-            <div className="mx-4 mb-3 p-3 rounded-xl bg-accent/5 border border-accent/20">
-              <p className="text-[10px] text-muted-foreground mb-2">محصول انتخاب شده</p>
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-lg bg-muted overflow-hidden shrink-0">
-                  {selectedProduct.image_url && (
-                    <img src={selectedProduct.image_url} alt={selectedProduct.product_name} className="w-full h-full object-cover" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold line-clamp-1">{selectedProduct.product_name}</p>
-                  <p className="text-xs text-accent font-bold mt-0.5">{fmt(selectedProduct.price)}</p>
-                  {selectedProduct.store_name && (
-                    <p className="text-[10px] text-muted-foreground">{selectedProduct.store_name}</p>
-                  )}
-                </div>
-                <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600">
-                  <Star size={8} className="ml-0.5" />
-                  {Math.round(selectedProduct.confidence)}%
-                </Badge>
+          {/* Selected products list */}
+          {!skipped && selectedProducts.length > 0 && (
+            <div className="mx-4 mb-3 space-y-2">
+              <p className="text-[10px] text-muted-foreground">محصولات انتخاب شده ({selectedProducts.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedProducts.map((sp) => (
+                  <div key={sp.product_id} className="flex items-center gap-2 p-2 rounded-xl bg-accent/5 border border-accent/20">
+                    <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                      {sp.image_url && (
+                        <img src={sp.image_url} alt={sp.product_name} className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 max-w-[150px]">
+                      <p className="text-xs font-bold line-clamp-1">{sp.product_name}</p>
+                      <p className="text-xs text-accent font-bold mt-0.5">{fmt(sp.price)}</p>
+                      {sp.store_name && (
+                        <p className="text-[9px] text-muted-foreground">{sp.store_name}</p>
+                      )}
+                    </div>
+                    <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 shrink-0">
+                      <Star size={8} className="ml-0.5" />
+                      {Math.round(sp.confidence)}%
+                    </Badge>
+                    <ViewInMyRoomButton
+                      productId={sp.product_id}
+                      productName={sp.product_name}
+                      productImage={sp.image_url}
+                      productPrice={sp.price}
+                      variant="compact"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -130,10 +140,10 @@ const ObjectSection = ({ object, selection, onSelect, onSkip, onRemove, index }:
           {/* Product grid */}
           {!skipped && (
             <div className="px-4 pb-4">
-              <p className="text-[10px] text-muted-foreground mb-2">محصولات مشابه از هومینو:</p>
+              <p className="text-[10px] text-muted-foreground mb-2">برای انتخاب کلیک کنید (چندتا مجاز):</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                 {object.matches.map((product) => {
-                  const isSelected = selectedProduct?.product_id === product.product_id;
+                  const isSelected = selectedProducts.some((p) => p.product_id === product.product_id);
                   return (
                     <div
                       key={product.product_id}
