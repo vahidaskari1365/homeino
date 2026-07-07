@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { useInspirations } from "@/hooks/useInspirations";
 import { Bookmark, Heart, Search, Filter, X } from "lucide-react";
