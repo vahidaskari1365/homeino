@@ -39,9 +39,22 @@ create table if not exists public.notification_preferences (
 
 create index if not exists idx_notification_preferences_user_id on public.notification_preferences(user_id);
 
-create trigger update_notification_preferences_updated_at
-  before update on public.notification_preferences
-  for each row execute function public.update_updated_at_column();
+create or replace function public.update_updated_at_column()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+do $$ begin
+  if not exists (select 1 from pg_trigger where tgname = 'update_notification_preferences_updated_at') then
+    create trigger update_notification_preferences_updated_at
+      before update on public.notification_preferences
+      for each row execute function public.update_updated_at_column();
+  end if;
+end;
+$$;
 
 alter table public.notification_preferences enable row level security;
 
