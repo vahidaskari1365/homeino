@@ -2,9 +2,10 @@ import { badgeService, type BadgeDefinition } from "@/services/badgeService";
 import {
   Award, PenTool, Layers, Heart, Megaphone, CheckCircle,
   ShieldCheck, Crown, Sparkles, Star, TrendingUp, BadgeCheck,
+  type LucideIcon,
 } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   "pen-tool": PenTool, layers: Layers, award: Award, heart: Heart,
   megaphone: Megaphone, "check-circle": CheckCircle, "shield-check": ShieldCheck,
   crown: Crown, sparkles: Sparkles, star: Star, "trending-up": TrendingUp,
