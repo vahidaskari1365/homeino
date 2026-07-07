@@ -1,4 +1,5 @@
-import { badgeService, type BadgeDefinition } from "@/services/badgeService";
+import { badgeService } from "@/services/badgeService";
+type BadgeDefinition = { icon: string; name: string; [k: string]: any };
 import {
   Award, PenTool, Layers, Heart, Megaphone, CheckCircle,
   ShieldCheck, Crown, Sparkles, Star, TrendingUp, BadgeCheck,
