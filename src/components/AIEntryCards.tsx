@@ -9,9 +9,9 @@ interface AIEntryCardsProps {
 const cards = [
   {
     icon: Wand2,
-    title: "Design My Room",
-    description: "Upload a photo of your own room and decorate it with products from Homeino.",
-    button: "Start Designing",
+    title: "طراحی اتاق من",
+    description: "عکس اتاق خودت را آپلود کن و با محصولات هومینو دکور کن.",
+    button: "شروع طراحی",
     action: "onStartDesign" as const,
     gradient: "from-accent/20 to-accent/5",
     border: "border-accent/20 hover:border-accent/40",
@@ -19,9 +19,9 @@ const cards = [
   },
   {
     icon: Search,
-    title: "Visual Inspiration Search",
-    description: "Upload a screenshot from Pinterest, Instagram or any website. AI detects every object and finds similar Homeino products.",
-    button: "Find Similar Products",
+    title: "جستجوی بصری الهام",
+    description: "یک اسکرین‌شات از پینترست، اینستاگرام یا هر سایتی آپلود کن. AI تک‌تک اشیاء را تشخیص می‌دهد و محصولات مشابه هومینو را پیدا می‌کند.",
+    button: "یافتن محصولات مشابه",
     action: "onStartInspiration" as const,
     gradient: "from-gold/20 to-gold/5",
     border: "border-gold/20 hover:border-gold/40",
@@ -29,9 +29,9 @@ const cards = [
   },
   {
     icon: Sparkles,
-    title: "AI Suggestions",
-    description: "Let Homeino AI automatically recommend the best furniture and decoration based on your room type, budget and style.",
-    button: "Get Suggestions",
+    title: "پیشنهادات هوش مصنوعی",
+    description: "بگذار AI هومینو بهترین مبلمان و دکوراسیون را بر اساس نوع فضا، بودجه و سبک تو پیشنهاد کند.",
+    button: "دریافت پیشنهاد",
     action: "onStartSuggest" as const,
     gradient: "from-emerald-500/20 to-emerald-500/5",
     border: "border-emerald-500/20 hover:border-emerald-500/40",
