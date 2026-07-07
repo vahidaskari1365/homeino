@@ -9,8 +9,8 @@ interface AIEntryCardsProps {
 const cards = [
   {
     icon: Wand2,
-    title: "طراحی اتاق من",
-    description: "عکس اتاق خودت را آپلود کن و با محصولات هومینو دکور کن.",
+    title: "طراحی خانه من",
+    description: "عکس خانه خودت را آپلود کن و با محصولات هومینو دکور کن.",
     button: "شروع طراحی",
     action: "onStartDesign" as const,
     gradient: "from-accent/20 to-accent/5",
