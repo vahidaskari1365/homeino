@@ -6,6 +6,7 @@ import { Search, Loader2, Package, Store, Palette, Tag, Image as ImageIcon } fro
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VisualSearch from "./VisualSearch";
+import ViewInMyRoomButton from "./ViewInMyRoomButton";
 
 interface SearchDialogProps {
   open: boolean;
@@ -110,16 +111,26 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
                   <h4 className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1"><Package size={14} /> محصولات</h4>
                   <div className="space-y-1">
                     {products.map((p) => (
-                      <Link key={p.id} to={`/product/${p.id}`} onClick={close}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-muted transition">
-                        <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
-                          {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{p.name}</p>
-                          {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("fa-IR")} تومان</p>}
-                        </div>
-                      </Link>
+                      <div key={p.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted transition group">
+                        <Link to={`/product/${p.id}`} onClick={close}
+                          className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                            {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("fa-IR")} تومان</p>}
+                          </div>
+                        </Link>
+                        <ViewInMyRoomButton
+                          productId={p.id}
+                          productName={p.name}
+                          productImage={p.image_url}
+                          productPrice={p.price}
+                          variant="full"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] shrink-0"
+                        />
+                      </div>
                     ))}
                   </div>
                 </section>

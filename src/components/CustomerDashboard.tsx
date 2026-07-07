@@ -27,6 +27,7 @@ import { useNotifications, type NotificationType } from "@/hooks/useNotification
 import { useTokens } from "@/hooks/useTokens";
 import { useAddresses, type AddressInput } from "@/hooks/useAddresses";
 import { AvatarUploader } from "@/components/AvatarUploader";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import { useMyAds, useAdCategories, type AdInput } from "@/hooks/useMyAds";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -334,9 +335,21 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
                   <CardContent className="p-4">
                     <h4 className="font-bold truncate">{item.title}</h4>
                     <p className="text-gold font-bold mt-1">{fmtToman(item.price)}</p>
-                    <Link to={item.item_type === "product" ? `/product/${item.item_id}` : "/wishlist"} className="block mt-3">
-                      <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
-                    </Link>
+                    <div className="flex gap-2 mt-3">
+                      <Link to={item.item_type === "product" ? `/product/${item.item_id}` : "/wishlist"} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">مشاهده</Button>
+                      </Link>
+                      {item.item_type === "product" && (
+                        <ViewInMyRoomButton
+                          productId={item.item_id}
+                          productName={item.title}
+                          productImage={item.image_url}
+                          productPrice={item.price}
+                          variant="full"
+                          className="text-xs flex-1"
+                        />
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
