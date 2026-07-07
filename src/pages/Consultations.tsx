@@ -191,7 +191,7 @@ const Consultations = () => {
                       </CardHeader>
                       <CardContent className="text-sm text-muted-foreground">
                         <div>{typeLabels[c.consultation_type]}</div>
-                        {c.final_price && <div className="text-gold mt-1">قیمت نهایی: {Number(c.final_price).toLocaleString("fa-IR")} تومان</div>}
+                        {c.final_price && <div className="text-gold mt-1">قیمت نهایی: {Number(c.final_price).toLocaleString("en-US")} تومان</div>}
                       </CardContent>
                     </Card>
                   ))}

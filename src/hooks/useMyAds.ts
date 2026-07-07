@@ -87,7 +87,7 @@ export function useMyAds() {
         return null;
       }
       toast({ title: data.is_free ? "آگهی رایگان شما ثبت شد 🎉" : "آگهی ثبت شد" });
-      trackEvent("ad_created", { entityType: "ad", entityId: data.id });
+      trackEvent("advertisement_created", { entityType: "ad", entityId: data.id });
       await load();
       return data;
     },
@@ -102,7 +102,7 @@ export function useMyAds() {
         return false;
       }
       toast({ title: "آگهی بروزرسانی شد" });
-      trackEvent("ad_updated", { entityType: "ad", entityId: id });
+      trackEvent("advertisement_updated", { entityType: "ad", entityId: id });
       await load();
       return true;
     },
@@ -130,7 +130,7 @@ export function useMyAds() {
         return false;
       }
       toast({ title: "آگهی حذف شد" });
-      trackEvent("ad_deleted", { entityType: "ad", entityId: id });
+      trackEvent("advertisement_deleted", { entityType: "ad", entityId: id });
       await load();
       return true;
     },

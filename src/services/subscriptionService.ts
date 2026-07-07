@@ -38,6 +38,6 @@ export const subscriptionService = {
 
   formatPrice(price: number): string {
     if (price === 0) return "رایگان";
-    return `${price.toLocaleString("fa-IR")} تومان`;
+    return `${price.toLocaleString("en-US")} تومان`;
   },
 };

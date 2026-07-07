@@ -771,7 +771,7 @@ const Dashboard = () => {
                         <h3 className="font-bold text-foreground line-clamp-1">{p.name}</h3>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gold font-bold">
-                            {p.price ? `${p.price.toLocaleString("fa-IR")} تومان` : "—"}
+                            {p.price ? `${p.price.toLocaleString("en-US")} تومان` : "—"}
                           </span>
                           <span className="text-muted-foreground text-xs">موجودی: {p.stock}</span>
                         </div>
@@ -827,13 +827,13 @@ const Dashboard = () => {
                         {(o.order_items ?? []).map((it) => (
                           <div key={it.id} className="flex justify-between text-sm">
                             <span className="text-foreground">{it.product_name} × {it.quantity}</span>
-                            <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("fa-IR")} ت</span>
+                            <span className="text-muted-foreground">{(it.unit_price * it.quantity).toLocaleString("en-US")} ت</span>
                           </div>
                         ))}
                       </div>
                       <div className="flex items-center justify-between pt-3 mt-3 border-t border-border">
                         <span className="text-sm font-bold">جمع کل:</span>
-                        <span className="text-gold font-bold">{o.total_amount.toLocaleString("fa-IR")} تومان</span>
+                        <span className="text-gold font-bold">{o.total_amount.toLocaleString("en-US")} تومان</span>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-border items-center">
                         <Label className="text-xs text-muted-foreground">تغییر وضعیت:</Label>
@@ -880,12 +880,12 @@ const Dashboard = () => {
                           </div>
                           <p className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
                             <span className="flex items-center gap-1"><Clock size={12} /> {formatPersianDate(q.created_at)}</span>
-                            {q.quantity != null && <span>تعداد: {q.quantity.toLocaleString("fa-IR")}</span>}
+                            {q.quantity != null && <span>تعداد: {q.quantity.toLocaleString("en-US")}</span>}
                           </p>
                           {q.notes && <p className="text-sm text-foreground whitespace-pre-wrap mb-2">{q.notes}</p>}
                           {q.proposed_price != null && (
                             <p className="text-sm font-bold text-emerald-brand">
-                              قیمت پیشنهادی شما: {q.proposed_price.toLocaleString("fa-IR")} تومان
+                              قیمت پیشنهادی شما: {q.proposed_price.toLocaleString("en-US")} تومان
                             </p>
                           )}
                         </div>
@@ -924,28 +924,28 @@ const Dashboard = () => {
                     <span className="text-xs text-muted-foreground">کل محصولات</span>
                     <Package size={15} className="text-gold" />
                   </div>
-                  <p className="text-xl font-bold text-foreground mt-1">{(overview.product_count ?? 0).toLocaleString("fa-IR")}</p>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.product_count ?? 0).toLocaleString("en-US")}</p>
                 </Card>
                 <Card className="p-4 bg-card border-border">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">محصولات فعال</span>
                     <CheckCircle2 size={15} className="text-emerald-brand" />
                   </div>
-                  <p className="text-xl font-bold text-foreground mt-1">{(overview.active_product_count ?? 0).toLocaleString("fa-IR")}</p>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.active_product_count ?? 0).toLocaleString("en-US")}</p>
                 </Card>
                 <Card className="p-4 bg-card border-border">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">محصولات ویژه</span>
                     <Sparkles size={15} className="text-gold" />
                   </div>
-                  <p className="text-xl font-bold text-foreground mt-1">{(overview.featured_count ?? 0).toLocaleString("fa-IR")}</p>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.featured_count ?? 0).toLocaleString("en-US")}</p>
                 </Card>
                 <Card className="p-4 bg-card border-border">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">ناموجود</span>
                     <Boxes size={15} className="text-destructive" />
                   </div>
-                  <p className="text-xl font-bold text-foreground mt-1">{(overview.out_of_stock_count ?? 0).toLocaleString("fa-IR")}</p>
+                  <p className="text-xl font-bold text-foreground mt-1">{(overview.out_of_stock_count ?? 0).toLocaleString("en-US")}</p>
                 </Card>
               </div>
             )}
@@ -957,7 +957,7 @@ const Dashboard = () => {
                   <Eye size={16} className="text-gold" />
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-2">
-                  {totalViews30d.toLocaleString("fa-IR")}
+                  {totalViews30d.toLocaleString("en-US")}
                 </p>
               </Card>
               <Card className="p-5 bg-card border-border">
@@ -966,7 +966,7 @@ const Dashboard = () => {
                   <ShoppingCart size={16} className="text-gold" />
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-2">
-                  {orders.reduce((s, o) => s + o.total_amount, 0).toLocaleString("fa-IR")} <span className="text-xs">تومان</span>
+                  {orders.reduce((s, o) => s + o.total_amount, 0).toLocaleString("en-US")} <span className="text-xs">تومان</span>
                 </p>
               </Card>
               <Card className="p-5 bg-card border-border">
@@ -975,7 +975,7 @@ const Dashboard = () => {
                   <MessageSquare size={16} className="text-gold" />
                 </div>
                 <p className="text-2xl font-bold text-foreground mt-2">
-                  {pendingQuotes.toLocaleString("fa-IR")}
+                  {pendingQuotes.toLocaleString("en-US")}
                 </p>
               </Card>
             </div>
@@ -996,7 +996,7 @@ const Dashboard = () => {
                       <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false}
                         tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
                       <Tooltip
-                        formatter={(v: number) => [`${v.toLocaleString("fa-IR")} تومان`, "فروش"]}
+                        formatter={(v: number) => [`${v.toLocaleString("en-US")} تومان`, "فروش"]}
                         contentStyle={{
                           background: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
@@ -1055,7 +1055,7 @@ const Dashboard = () => {
                       <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
                         <span className="text-foreground text-sm line-clamp-1">{p.name}</span>
                         <span className="text-sm font-bold text-gold flex items-center gap-1">
-                          <Eye size={14} /> {v.toLocaleString("fa-IR")}
+                          <Eye size={14} /> {v.toLocaleString("en-US")}
                         </span>
                       </div>
                     ))}

@@ -144,8 +144,8 @@ export function useVisualSearch() {
     setState((prev) => ({ ...prev, status: "analyzing" }));
 
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth?.user?.id) throw new Error("Not authenticated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
 
       // Get the reference image URL
       const { data: refImage, error: refErr } = await supabase
@@ -162,7 +162,7 @@ export function useVisualSearch() {
           action: "analyze_inspiration",
           image_url: refImage.image_url,
         },
-        headers: { Authorization: `Bearer ${auth.session?.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (error) throw new Error(error.message || "خطا در تحلیل تصویر");

@@ -283,7 +283,7 @@ const ShopDetail = () => {
                         <div className="flex items-center justify-between pt-2 border-t border-border/40">
                           {p.price ? (
                             <span className="text-gold font-extrabold text-base">
-                              {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                              {new Intl.NumberFormat("en-US").format(p.price)} تومان
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>

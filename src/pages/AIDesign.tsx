@@ -235,6 +235,7 @@ const AIDesign = () => {
       if (!session) { toast.error("برای استفاده از هومینو استودیو ابتدا وارد حساب کاربری شوید"); return; }
       const allowed = await consumeDesignCredit();
       if (!allowed) return;
+      const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
       trackEvent("ai_started", { metadata: { style, budget: budgetNum, product_count: selectedList.length } });
       const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
       const geminiProducts = selectedList.map((p) => {
@@ -246,9 +247,8 @@ const AIDesign = () => {
           tags: [] as string[], is_featured: p.is_featured || false,
         };
       });
-      const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
       const { data, error } = await supabase.functions.invoke("gemini-decorator", {
-        body: { image_base64: base64, products: geminiProducts, budget: budgetNum, ...(prompt.trim() ? { room_id: undefined } : {}) },
+        body: { image_base64: base64, products: geminiProducts, budget: budgetNum, ...(prompt.trim() ? { prompt } : {}) },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error) throw new Error(error.message || "خطا در اتصال به سرور");

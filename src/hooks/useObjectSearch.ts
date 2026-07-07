@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/tracking";
@@ -77,6 +77,12 @@ export function useObjectSearch() {
   const [state, setState] = useState<ObjectSearchState>(INITIAL);
   const navigate = useNavigate();
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+    };
+  }, [state.imageUrl]);
 
   const detectAndMatch = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {

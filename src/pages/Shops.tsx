@@ -411,7 +411,7 @@ const Shops = () => {
                             <div className="flex items-center justify-between border-t border-white/20 pt-2 mt-1">
                               {p.price ? (
                                 <span className="text-gold font-extrabold text-sm">
-                                  {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
+                                  {new Intl.NumberFormat("en-US").format(p.price)} تومان
                                 </span>
                               ) : (
                                 <span className="text-gray-300 text-xs font-semibold">استعلام قیمت</span>
@@ -445,7 +445,7 @@ const Shops = () => {
                             )}
                           </div>
                           <div className="text-gold font-bold text-xs pt-1 border-t border-border/40 mt-1">
-                            {p.price ? `${new Intl.NumberFormat("fa-IR").format(p.price)} تومان` : "استعلام قیمت"}
+                            {p.price ? `${new Intl.NumberFormat("en-US").format(p.price)} تومان` : "استعلام قیمت"}
                           </div>
                         </div>
                       </Card>

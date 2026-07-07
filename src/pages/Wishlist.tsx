@@ -35,7 +35,7 @@ const ItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: () => void
       )}
       {item.price != null && (
         <p className="text-gold font-bold">
-          {new Intl.NumberFormat("fa-IR").format(item.price)} تومان
+          {new Intl.NumberFormat("en-US").format(item.price)} تومان
         </p>
         )}
         <div className="flex gap-2 mt-2">
