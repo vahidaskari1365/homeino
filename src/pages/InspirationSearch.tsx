@@ -1,30 +1,23 @@
-// ============================================================
-// Homeino — Inspiration Search Page
-// ============================================================
-// Users upload a reference image from Pinterest, Instagram, etc.
-// AI detects furniture and style. Similar Homeino products are
-// recommended. Users can select products and "Design My Room".
-// ============================================================
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Upload, Wand2, Loader2, ArrowRight, Search, Image as ImageIcon,
-  Sparkles, Palette, Sofa, Layers, X, Check, ShoppingBag,
-  Camera, Heart, Filter, ChevronDown, Star, RefreshCw,
+  Sparkles, Sofa, Layers, X, Check, ShoppingBag,
+  Camera, Heart, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { trackEvent } from "@/lib/tracking";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import ViewInMyRoomButton, { DesignSelectionBar } from "@/components/ViewInMyRoomButton";
+import ObjectSection from "@/components/ObjectSection";
+import DesignSummary from "@/components/DesignSummary";
+import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
+import { useObjectSearch, type DetectedObject, type ProductMatch } from "@/hooks/useObjectSearch";
 import { useVisualSearch, type VisualMatchProduct } from "@/hooks/useVisualSearch";
 
 const fmt = (n: number | null | undefined) =>
@@ -32,21 +25,21 @@ const fmt = (n: number | null | undefined) =>
 
 const InspirationSearch = () => {
   const navigate = useNavigate();
+  const objectSearch = useObjectSearch();
   const visualSearch = useVisualSearch();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [selectedForDesign, setSelectedForDesign] = useState<string[]>([]);
+  const [tab, setTab] = useState<"objects" | "flat">("objects");
+  const [showSummary, setShowSummary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"confidence" | "price_asc" | "price_desc" | "newest">("confidence");
 
-  // Handle file upload
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("لطفاً یک تصویر معتبر انتخاب کنید");
       return;
     }
-    setSelectedForDesign([]);
-    await visualSearch.uploadAndSearch(file);
-  }, [visualSearch]);
+    setShowSummary(false);
+    await objectSearch.detectAndMatch(file);
+  }, [objectSearch]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -71,53 +64,9 @@ const InspirationSearch = () => {
     return () => document.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
 
-  // Start design with selected products
-  const handleStartDesign = useCallback(async () => {
-    if (selectedForDesign.length === 0) {
-      toast.error("حداقل یک محصول انتخاب کنید");
-      return;
-    }
-
-    const params = new URLSearchParams();
-    params.set("products", selectedForDesign.join(","));
-    params.set("from", "inspiration");
-
-    trackEvent("ai_started", {
-      metadata: {
-        source: "inspiration_search",
-        product_count: selectedForDesign.length,
-        has_reference: !!visualSearch.referenceImageId,
-      },
-    });
-
-    navigate(`/ai-design?${params.toString()}`);
-  }, [selectedForDesign, navigate, visualSearch.referenceImageId]);
-
-  // Filter and sort matches
-  const sortedMatches = visualSearch.matches
-    .filter((m) => {
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        m.product_name.toLowerCase().includes(q) ||
-        m.category.toLowerCase().includes(q) ||
-        m.style.toLowerCase().includes(q) ||
-        m.store_name?.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "confidence": return b.confidence - a.confidence;
-        case "price_asc": return (a.price || 0) - (b.price || 0);
-        case "price_desc": return (b.price || 0) - (a.price || 0);
-        case "newest": return 0; // already sorted by DB
-        default: return 0;
-      }
-    });
-
-  // Pagination
-  const [visibleCount, setVisibleCount] = useState(12);
-  const visibleMatches = sortedMatches.slice(0, visibleCount);
+  const selectedCount = objectSearch.getSelectedCount();
+  const totalPrice = objectSearch.getTotalPrice();
+  const allProducts = objectSearch.objects.flatMap((obj) => obj.matches);
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -134,17 +83,17 @@ const InspirationSearch = () => {
               border: "1px solid hsl(var(--accent)/0.3)",
             }}>
             <Sparkles size={14} className="text-accent" />
-            <span className="text-accent text-xs font-semibold">جستجوی بصری هومینو</span>
+            <span className="text-accent text-xs font-semibold">جستجوی بصری هوشمند هومینو</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">از هر تصویری ایده بگیر</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">اشیاء را شناسایی کن، محصولات را انتخاب کن</h1>
           <p className="text-muted-foreground max-w-xl mx-auto text-sm leading-relaxed">
-            یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هوش مصنوعی هومینو
-            محصولات مشابه را در بازار پیدا می‌کند.
+            یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هوش مصنوعی تک‌تک اشیاء دکوراسیون را تشخیص می‌دهد
+            و برای هر کدام نزدیک‌ترین محصولات هومینو را پیشنهاد می‌کند.
           </p>
         </div>
 
         {/* ── Upload Area ────────────────────────── */}
-        {visualSearch.status === "idle" && (
+        {objectSearch.status === "idle" && (
           <Card
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
@@ -177,7 +126,7 @@ const InspirationSearch = () => {
         )}
 
         {/* ── Progress States ────────────────────── */}
-        {(visualSearch.status === "uploading" || visualSearch.status === "analyzing" || visualSearch.status === "searching") && (
+        {(objectSearch.status === "uploading" || objectSearch.status === "detecting" || objectSearch.status === "matching") && (
           <div className="max-w-md mx-auto space-y-4">
             <Card>
               <CardContent className="p-6 text-center space-y-4">
@@ -186,31 +135,26 @@ const InspirationSearch = () => {
                 </div>
                 <div>
                   <p className="font-bold text-sm">
-                    {visualSearch.status === "uploading" && "در حال آپلود تصویر..."}
-                    {visualSearch.status === "analyzing" && "در حال تحلیل تصویر با هوش مصنوعی..."}
-                    {visualSearch.status === "searching" && "در حال جستجوی محصولات مشابه..."}
+                    {objectSearch.status === "uploading" && "در حال آپلود تصویر..."}
+                    {objectSearch.status === "detecting" && "هوش مصنوعی در حال شناسایی اشیاء..."}
+                    {objectSearch.status === "matching" && "در حال جستجوی محصولات مشابه برای هر شیء..."}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">لطفاً صبر کنید</p>
                 </div>
                 <Progress
                   value={
-                    visualSearch.status === "uploading" ? 25 :
-                    visualSearch.status === "analyzing" ? 55 : 85
+                    objectSearch.status === "uploading" ? 20 :
+                    objectSearch.status === "detecting" ? 50 : 80
                   }
                   className="h-2"
                 />
               </CardContent>
             </Card>
-            {visualSearch.imageUrl && (
-              <div className="w-24 h-24 rounded-xl overflow-hidden mx-auto border border-border">
-                <img src={visualSearch.imageUrl} alt="reference" className="w-full h-full object-cover" />
-              </div>
-            )}
           </div>
         )}
 
         {/* ── Error State ────────────────────────── */}
-        {visualSearch.status === "error" && (
+        {objectSearch.status === "error" && (
           <div className="max-w-md mx-auto">
             <Card className="border-destructive/30">
               <CardContent className="p-6 text-center space-y-4">
@@ -218,8 +162,8 @@ const InspirationSearch = () => {
                   <X size={20} className="text-destructive" />
                 </div>
                 <p className="font-bold text-destructive">خطا در پردازش تصویر</p>
-                <p className="text-xs text-muted-foreground">{visualSearch.error}</p>
-                <Button variant="outline" onClick={visualSearch.reset} className="gap-2">
+                <p className="text-xs text-muted-foreground">{objectSearch.error}</p>
+                <Button variant="outline" onClick={objectSearch.reset} className="gap-2">
                   <RefreshCw size={14} /> تلاش مجدد
                 </Button>
               </CardContent>
@@ -227,280 +171,177 @@ const InspirationSearch = () => {
           </div>
         )}
 
-        {/* ── Results ────────────────────────────── */}
-        {visualSearch.status === "done" && (
+        {/* ── Results: Object-Level View ─────────── */}
+        {objectSearch.status === "done" && (
           <div className="space-y-6">
-            {/* Image + Analysis Row */}
+            {/* Image + Overall Analysis Row */}
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Reference Image */}
-              {visualSearch.imageUrl && (
+              {objectSearch.imageBase64 && (
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-muted-foreground">تصویر مرجع</p>
-                      <Button variant="ghost" size="sm" onClick={visualSearch.reset} className="h-7 text-xs gap-1">
+                      <Button variant="ghost" size="sm" onClick={objectSearch.reset} className="h-7 text-xs gap-1">
                         <X size={12} /> حذف
                       </Button>
                     </div>
                     <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                      <img src={visualSearch.imageUrl} alt="مرجع" className="w-full h-full object-cover" />
+                      <img src={objectSearch.imageBase64} alt="مرجع" className="w-full h-full object-cover" />
                     </div>
                   </CardContent>
                 </Card>
               )}
 
-              {/* AI Analysis */}
-              {visualSearch.analysis && (
-                <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                      <Sparkles size={14} className="text-accent" /> تحلیل هوش مصنوعی
-                    </p>
-
-                    {/* Detected Style */}
-                    {visualSearch.analysis.style && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">سبک تشخیص داده شده</p>
-                        <Badge variant="outline" className="bg-accent/10 text-accent">
-                          {visualSearch.analysis.style === "modern" ? "مدرن" :
-                           visualSearch.analysis.style === "classic" ? "کلاسیک" :
-                           visualSearch.analysis.style === "minimalist" ? "مینیمال" :
-                           visualSearch.analysis.style === "industrial" ? "صنعتی" :
-                           visualSearch.analysis.style === "scandinavian" ? "اسکاندیناوی" :
-                           visualSearch.analysis.style === "luxury" ? "لوکس" :
-                           visualSearch.analysis.style === "bohemian" ? "بوهمی" :
-                           visualSearch.analysis.style}
+              {/* Analysis summary */}
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+                    <Sparkles size={14} className="text-accent" /> تحلیل هوش مصنوعی
+                  </p>
+                  {objectSearch.overallStyle && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">سبک کلی فضا</p>
+                      <Badge variant="outline" className="bg-accent/10 text-accent text-[10px]">
+                        {objectSearch.overallStyle === "modern" ? "مدرن" :
+                         objectSearch.overallStyle === "classic" ? "کلاسیک" :
+                         objectSearch.overallStyle === "minimalist" ? "مینیمال" :
+                         objectSearch.overallStyle === "industrial" ? "صنعتی" :
+                         objectSearch.overallStyle === "scandinavian" ? "اسکاندیناوی" :
+                         objectSearch.overallStyle === "luxury" ? "لوکس" :
+                         objectSearch.overallStyle === "bohemian" ? "بوهمی" :
+                         objectSearch.overallStyle}
+                      </Badge>
+                    </div>
+                  )}
+                  {objectSearch.roomType && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">نوع فضا</p>
+                      <span className="text-xs font-medium">
+                        {objectSearch.roomType === "living" ? "نشیمن" :
+                         objectSearch.roomType === "bedroom" ? "اتاق خواب" :
+                         objectSearch.roomType === "kitchen" ? "آشپزخانه" :
+                         objectSearch.roomType === "bathroom" ? "حمام" :
+                         objectSearch.roomType === "dining" ? "ناهارخوری" :
+                         objectSearch.roomType === "office" ? "اتاق کار" :
+                         objectSearch.roomType}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">اشیاء تشخیص داده شده</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {objectSearch.objects.map((obj, i) => (
+                        <Badge key={i} variant="secondary" className="text-[10px]">
+                          {obj.label}
+                          <span className="mr-1 opacity-60">{Math.round(obj.confidence * 100)}%</span>
                         </Badge>
-                      </div>
-                    )}
-
-                    {/* Detected Objects */}
-                    {visualSearch.analysis.objects.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">اشیاء تشخیص داده شده</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {visualSearch.analysis.objects.map((obj, i) => (
-                            <Badge key={i} variant="secondary" className="text-[10px]">
-                              {obj.furniture}
-                              <span className="mr-1 opacity-60">
-                                {Math.round(obj.confidence * 100)}%
-                              </span>
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Colors */}
-                    {visualSearch.analysis.colors.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">رنگ‌های تشخیص داده شده</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {visualSearch.analysis.colors.map((color, i) => (
-                            <div key={i} className="flex items-center gap-1.5 text-xs">
-                              <div
-                                className="w-4 h-4 rounded-full border border-border"
-                                style={{ backgroundColor: color }}
-                              />
-                              <span className="text-muted-foreground">{color}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Materials */}
-                    {visualSearch.analysis.materials.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">متریال‌ها</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {visualSearch.analysis.materials.map((m, i) => (
-                            <Badge key={i} variant="outline" className="text-[10px]">{m}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {objectSearch.objects.length} شیء · {allProducts.length} محصول مشابه
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Controls: Search, Sort, Save */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1 max-w-xs w-full">
-                <div className="relative w-full">
-                  <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="جستجو در نتایج..."
-                    className="pr-9 h-9 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="h-9 rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent"
-                >
-                  <option value="confidence">بیشترین شباهت</option>
-                  <option value="price_asc">قیمت: کم به زیاد</option>
-                  <option value="price_desc">قیمت: زیاد به کم</option>
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => visualSearch.saveInspiration("الهام جدید")}
-                  className="gap-1.5 h-9 text-xs"
-                  disabled={!visualSearch.referenceImageId}
-                >
-                  <Heart size={12} /> ذخیره الهام
-                </Button>
-              </div>
-            </div>
-
-            {/* Result Count */}
+            {/* Controls */}
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                {sortedMatches.length} محصول مشابه پیدا شد
+                برای هر شیء، بهترین محصولات هومینو را انتخاب کنید
               </p>
-              {selectedForDesign.length > 0 && (
-                <p className="text-xs font-bold text-accent">
-                  {selectedForDesign.length} محصول برای طراحی انتخاب شده
-                </p>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => objectSearch.saveInspiration?.("الهام جدید")}
+                className="gap-1.5 h-8 text-xs"
+              >
+                <Heart size={12} /> ذخیره الهام
+              </Button>
             </div>
 
-            {/* Products Grid */}
-            {visibleMatches.length === 0 ? (
-              <div className="text-center py-12">
-                <ImageIcon size={40} className="mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">محصول مشابهی یافت نشد</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  محصولات نزدیک‌تر در بازار هومینو نمایش داده می‌شوند
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {visibleMatches.map((match) => {
-                  const isSelected = selectedForDesign.includes(match.product_id);
-                  return (
-                    <Card
-                      key={match.product_id}
-                      className={`group relative overflow-hidden transition-all hover:shadow-lg ${
-                        isSelected ? "ring-2 ring-accent border-accent" : "border-border"
-                      }`}
-                    >
-                      {/* Similarity Badge */}
-                      <div className="absolute top-2 right-2 z-10">
-                        <Badge className={`text-[10px] ${
-                          match.confidence >= 80 ? "bg-emerald-500" :
-                          match.confidence >= 60 ? "bg-amber-500" : "bg-blue-500"
-                        } text-white`}>
-                          <Star size={8} className="ml-0.5" />
-                          {Math.round(match.confidence)}%
-                        </Badge>
-                      </div>
+            {/* Object sections */}
+            <div className="space-y-4">
+              {objectSearch.objects.map((obj, i) => {
+                const sel = objectSearch.selections[obj.label];
+                if (!sel) return null;
+                return (
+                  <ObjectSection
+                    key={obj.label}
+                    object={obj}
+                    selection={sel}
+                    index={i}
+                    onSelect={(product) => objectSearch.selectProduct(obj.label, product)}
+                    onSkip={() => objectSearch.skipObject(obj.label)}
+                    onRemove={() => objectSearch.removeObject(obj.label)}
+                  />
+                );
+              })}
+            </div>
 
-                      {/* Select for design */}
-                      <div className="absolute top-2 left-2 z-10">
+            {/* Floating action bar */}
+            {objectSearch.status === "done" && (
+              <div className="sticky bottom-6 z-40">
+                <Card className="shadow-xl border-accent/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">انتخاب شده</p>
+                          <p className="text-lg font-black text-accent">{selectedCount}</p>
+                        </div>
+                        <div className="h-10 w-px bg-border" />
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">جمع قیمت</p>
+                          <p className="text-sm font-black text-accent">{fmt(totalPrice)}</p>
+                        </div>
+                        <div className="h-10 w-px bg-border" />
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">تشخیص داده شده</p>
+                          <p className="text-sm font-black text-foreground">{objectSearch.objects.length}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
                         <Button
-                          variant={isSelected ? "default" : "outline"}
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedForDesign((prev) =>
-                              isSelected
-                                ? prev.filter((id) => id !== match.product_id)
-                                : [...prev, match.product_id]
-                            );
-                          }}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSummary(true)}
+                          className="gap-1.5"
+                          disabled={selectedCount === 0}
                         >
-                          {isSelected ? <Check size={12} /> : <PlusIcon size={12} />}
+                          <ShoppingBag size={14} /> مشاهده مجموعه
+                        </Button>
+                        <Button
+                          onClick={() => objectSearch.goToDesign()}
+                          disabled={selectedCount === 0}
+                          className="gap-2"
+                        >
+                          <Wand2 size={16} />
+                          طراحی با AI
                         </Button>
                       </div>
-
-                      <Link to={`/product/${match.product_id}`}>
-                        <div className="aspect-square bg-muted overflow-hidden">
-                          {match.image_url && (
-                            <img
-                              src={match.image_url}
-                              alt={match.product_name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          )}
-                        </div>
-                      </Link>
-
-                      <CardContent className="p-2.5 space-y-1.5">
-                        <Link to={`/product/${match.product_id}`}>
-                          <p className="text-xs font-medium line-clamp-1 hover:text-accent transition-colors">
-                            {match.product_name}
-                          </p>
-                        </Link>
-                        <p className="text-xs text-accent font-bold">{fmt(match.price)}</p>
-                        {match.store_name && (
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">{match.store_name}</p>
-                        )}
-                        {match.match_reason && (
-                          <Badge variant="outline" className="text-[9px] bg-muted/50">
-                            {match.match_reason}
-                          </Badge>
-                        )}
-                        <div className="pt-1">
-                          <ViewInMyRoomButton
-                            productId={match.product_id}
-                            productName={match.product_name}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-[10px] h-7"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Load More */}
-            {visibleCount < sortedMatches.length && (
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setVisibleCount((prev) => prev + 12)}
-                  className="gap-2"
-                >
-                  <ChevronDown size={14} /> نمایش بیشتر ({sortedMatches.length - visibleCount} باقیمانده)
-                </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
         )}
-
-        <div className="h-24" />
       </main>
 
-      {/* Design Selection Bar */}
-      <DesignSelectionBar
-        selectedIds={selectedForDesign}
-        onStartDesign={handleStartDesign}
+      {/* Design Summary Modal */}
+      <DesignSummary
+        selections={objectSearch.selections}
+        totalPrice={totalPrice}
+        selectedCount={selectedCount}
+        onStartDesign={() => { setShowSummary(false); objectSearch.goToDesign(); }}
+        onClose={() => setShowSummary(false)}
+        open={showSummary}
       />
 
       <Footer />
     </div>
   );
 };
-
-// PlusIcon inline component
-const PlusIcon = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
 
 export default InspirationSearch;
