@@ -23,6 +23,8 @@ import AIDesignProgress from "@/components/AIDesignProgress";
 import type { ProgressStep } from "@/components/AIDesignProgress";
 import SelectedProductsFloatingPanel from "@/components/SelectedProductsFloatingPanel";
 import AISuggestionAssistant from "@/components/AISuggestionAssistant";
+import InspirationFlow from "@/components/InspirationFlow";
+import type { ProductMatch } from "@/hooks/useObjectSearch";
 
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
 
@@ -78,8 +80,8 @@ const fmt = (n: number | null | undefined) =>
 const AIDesign = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<"home" | "design" | "suggest">(
-    searchParams.get("products") ? "design" : "home"
+  const [mode, setMode] = useState<"home" | "design" | "suggest" | "inspiration">(
+    searchParams.get("products") ? "design" : searchParams.get("mode") === "inspiration" ? "inspiration" : "home"
   );
   const [imageBase64, setImageBase64]     = useState<string | null>(null);
   const [style, setStyle]                 = useState("modern");
@@ -323,7 +325,7 @@ const AIDesign = () => {
 
             <AIEntryCards
               onStartDesign={() => setMode("design")}
-              onStartInspiration={() => navigate("/inspiration-search")}
+              onStartInspiration={() => setMode("inspiration")}
               onStartSuggest={() => setMode("suggest")}
             />
           </div>
@@ -352,6 +354,28 @@ const AIDesign = () => {
               }}
             />
           </div>
+        )}
+
+        {/* ── INSPIRATION MODE: Object Detection ── */}
+        {mode === "inspiration" && !searchParams.get("products") && (
+          <InspirationFlow
+            onProceedToDesign={(products: ProductMatch[], totalPrice: number) => {
+              const sel: Record<string, Product> = {};
+              products.forEach((p) => {
+                sel[p.product_id] = {
+                  id: p.product_id,
+                  name: p.product_name,
+                  price: p.price,
+                  image_url: p.image_url,
+                  category_id: p.category,
+                  profile_id: p.store_id || undefined,
+                };
+              });
+              setSelected(sel);
+              setMode("design");
+            }}
+            onBack={() => setMode("home")}
+          />
         )}
 
         {/* ── DESIGN MODE: Full design flow ────────── */}
