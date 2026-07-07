@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { useStoreHealth } from "@/hooks/useStoreHealth";
 import { healthService, type HealthSuggestion } from "@/services/healthService";

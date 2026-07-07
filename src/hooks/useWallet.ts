@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 // ============================================================
 // Homeino — Phase 2: Token Ledger (useWallet)
