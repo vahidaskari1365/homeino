@@ -59,9 +59,9 @@ const AIEntryCards = ({ onStartDesign, onStartInspiration, onStartSuggest }: AIE
             <div className={`w-12 h-12 rounded-xl ${card.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
               <Icon size={22} />
             </div>
-            <h3 className="font-bold text-base mb-2">{card.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-4">{card.description}</p>
-            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all bg-background/80 border border-border group-hover:bg-foreground group-hover:text-background group-hover:border-foreground`}>
+            <h3 className="font-bold text-lg mb-2">{card.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">{card.description}</p>
+            <span className={`inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-full transition-all bg-background/80 border border-border group-hover:bg-foreground group-hover:text-background group-hover:border-foreground`}>
               {Icon === Wand2 && <Wand2 size={12} />}
               {Icon === Search && <Search size={12} />}
               {Icon === Sparkles && <Sparkles size={12} />}

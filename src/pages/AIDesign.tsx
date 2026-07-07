@@ -322,7 +322,7 @@ const AIDesign = () => {
           <button onClick={() => {
             if (mode === "design") goHome();
             else setMode("home");
-          }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-3 py-1.5 rounded-xl">
+          }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm bg-card border border-border px-4 py-2 rounded-xl">
             <ArrowLeft size={16} /> بازگشت
           </button>
         )}
@@ -348,7 +348,7 @@ const AIDesign = () => {
                 }}>
                 اتاق خودت را با هوش مصنوعی طراحی کن
               </h1>
-              <p className="text-muted-foreground text-xs sm:text-sm md:text-base leading-relaxed px-2">
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed px-2">
                 یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هوش مصنوعی چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
               </p>
             </div>
@@ -366,7 +366,7 @@ const AIDesign = () => {
           <div className="max-w-lg mx-auto space-y-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2">پیشنهاد هوشمند هومینو</h2>
-              <p className="text-sm text-muted-foreground">به سؤالات زیر پاسخ دهید تا بهترین محصولات را پیشنهاد کنیم</p>
+              <p className="text-base text-muted-foreground">به سؤالات زیر پاسخ دهید تا بهترین محصولات را پیشنهاد کنیم</p>
             </div>
             <AISuggestionAssistant
               onBack={goHome}
@@ -486,7 +486,7 @@ const AIDesign = () => {
                         const Icon = c.Icon;
                         return (
                           <button key={c.slug} onClick={() => setActiveCat(c.slug)}
-                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all ${
+                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                               isActive ? "bg-accent/10 text-accent border-accent/30" : "bg-muted/30 text-muted-foreground border-border hover:border-accent/30"
                             }`}>
                             <Icon size={13} />
@@ -511,9 +511,9 @@ const AIDesign = () => {
                               <div className="aspect-square bg-muted overflow-hidden">
                                 {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
                               </div>
-                              <div className="p-1.5">
-                                <p className="text-[10px] font-medium line-clamp-1">{p.name}</p>
-                                <p className="text-[10px] text-accent mt-0.5">{fmt(p.price)}</p>
+                              <div className="p-2">
+                                <p className="text-xs font-medium line-clamp-1">{p.name}</p>
+                                <p className="text-xs text-accent mt-0.5">{fmt(p.price)}</p>
                               </div>
                               {isSel && (
                                 <div className="absolute top-1 left-1 flex items-center gap-0.5">
@@ -773,7 +773,7 @@ const AIDesign = () => {
                         <ShoppingCart size={16} /> انتخاب شده ({selectedList.length})
                       </h3>
                       {selectedList.length > 0 && (
-                        <button onClick={() => setSelected({})} className="text-[10px] text-muted-foreground hover:text-foreground">پاک کردن</button>
+                        <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">پاک کردن</button>
                       )}
                     </div>
                     {selectedList.length === 0 ? (
@@ -788,8 +788,8 @@ const AIDesign = () => {
                                 {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="line-clamp-1 font-medium text-[11px]">{p.name}</p>
-                                <p className="text-accent text-[10px]">{fmt((p.price || 0) * qty)}</p>
+                              <p className="line-clamp-1 font-medium text-xs">{p.name}</p>
+                              <p className="text-accent text-xs">{fmt((p.price || 0) * qty)}</p>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button onClick={() => setQuantity(p.id, qty + 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] hover:bg-accent/10">+</button>
