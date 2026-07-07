@@ -54,6 +54,7 @@ import {
   EyeOff,
   CheckCircle2,
   XCircle,
+  Crown,
 } from "lucide-react";
 import {
   LineChart,
@@ -253,27 +254,11 @@ const AnalyticsTab = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [
-        { count: userCount },
-        { count: shopCount },
-        { count: productCount },
-        { count: orderCount },
-        { data: payments },
-        { data: views }
-      ] = await Promise.all([
-        supabase.from("user_roles").select("*", { count: "exact", head: true }),
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("products").select("*", { count: "exact", head: true }),
-        supabase.from("orders").select("*", { count: "exact", head: true }),
-        supabase.from("payments").select("amount, status, created_at"),
+      const [dashStats, { data: views }] = await Promise.all([
+        adminService.getDashboardStats(),
         supabase.from("product_daily_views").select("views, day").order("day", { ascending: true })
       ]);
 
-      const totalRevenue = (payments || [])
-        .filter(p => p.status === "paid")
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
-
-      // Group views by day
       const dailyViews = (views || []).reduce((acc: { day: string; views: number }[], curr: { day: string; views: number }) => {
         const existing = acc.find(a => a.day === curr.day);
         if (existing) {
@@ -286,13 +271,14 @@ const AnalyticsTab = () => {
 
       setData({
         stats: [
-          { label: "کل کاربران", value: userCount || 0, icon: Users, color: "text-blue-600" },
-          { label: "فروشگاه‌ها", value: shopCount || 0, icon: Store, color: "text-emerald-600" },
-          { label: "محصولات", value: productCount || 0, icon: Package, color: "text-orange-600" },
-          { label: "سفارش‌ها", value: orderCount || 0, icon: ShoppingBag, color: "text-purple-600" },
-          { label: "درآمد کل", value: `${(totalRevenue / 1000000).toFixed(1)}M`, icon: CreditCard, color: "text-gold" },
+          { label: "کل کاربران", value: dashStats?.total_users ?? 0, icon: Users, color: "text-blue-600" },
+          { label: "فروشگاه‌ها", value: dashStats?.total_stores ?? 0, icon: Store, color: "text-emerald-600" },
+          { label: "محصولات", value: dashStats?.total_products ?? 0, icon: Package, color: "text-orange-600" },
+          { label: "سفارش‌ها", value: dashStats?.total_orders ?? 0, icon: ShoppingBag, color: "text-purple-600" },
+          { label: "درآمد کل", value: `${((dashStats?.total_revenue ?? 0) / 1000000).toFixed(1)}M`, icon: CreditCard, color: "text-gold" },
+          { label: "اشتراک‌های فعال", value: dashStats?.active_subscriptions ?? 0, icon: Crown, color: "text-amber-600" },
         ],
-        dailyViews: dailyViews.slice(-14), // Last 14 days
+        dailyViews: dailyViews.slice(-14),
       });
       setLoading(false);
     };
@@ -304,7 +290,7 @@ const AnalyticsTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {data.stats.map((s, i) => (
           <Card key={i}>
             <CardContent className="p-6">
@@ -313,7 +299,7 @@ const AnalyticsTab = () => {
               </div>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">{s.label}</p>
-                <h3 className="text-2xl font-bold">{s.value.toLocaleString("fa-IR")}</h3>
+                <h3 className="text-2xl font-bold">{typeof s.value === "number" ? s.value.toLocaleString("fa-IR") : s.value}</h3>
               </div>
             </CardContent>
           </Card>

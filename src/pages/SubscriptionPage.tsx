@@ -12,7 +12,7 @@ export default function SubscriptionPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { plan: currentPlan, subscription } = useSubscription(storeId);
+  const { storeSubscription } = useSubscription();
 
   useEffect(() => {
     const init = async () => {
@@ -40,17 +40,17 @@ export default function SubscriptionPage() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             <Crown className="text-gold" /> پلن‌های اشتراک
           </h1>
-          {currentPlan && (
+          {storeSubscription?.plan && (
             <p className="text-muted-foreground mt-1">
-              پلن فعلی: <span className="font-bold text-gold">{currentPlan.name}</span>
-              {subscription?.status === "trialing" && " (دوره آزمایشی)"}
+              پلن فعلی: <span className="font-bold text-gold">{storeSubscription.plan.name}</span>
+              {storeSubscription.subscription?.status === "trialing" && " (دوره آزمایشی)"}
             </p>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
-            const isCurrent = currentPlan?.id === plan.id;
+            const isCurrent = storeSubscription?.plan?.id === plan.id;
             const features = (plan.features as string[]) ?? [];
             return (
               <Card key={plan.id} className={`p-6 bg-card border-border relative ${isCurrent ? "ring-2 ring-gold" : ""}`}>

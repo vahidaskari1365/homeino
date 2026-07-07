@@ -28,16 +28,17 @@ export interface TopCategory {
 
 export const analyticsService = {
   async getProductAnalytics(storeId: string): Promise<ProductAnalytics[]> {
-    const { data } = await supabase.rpc("get_store_analytics", { p_store_id: storeId });
-    return ((data as ProductAnalytics[]) ?? []).map((r) => ({
-      ...r,
+    const { data } = await supabase.rpc("get_store_product_analytics", { p_store_id: storeId });
+    return ((data as any[]) ?? []).map((r) => ({
+      product_id: r.product_id,
+      product_name: r.product_name,
       views: Number(r.views) || 0,
       clicks: Number(r.clicks) || 0,
-      favorites: Number(r.favorites) || 0,
+      favorites: Number(r.saves ?? r.favorites) || 0,
       ai_recommendations: Number(r.ai_recommendations) || 0,
       ctr: Number(r.ctr) || 0,
       recommendation_rate: Number(r.recommendation_rate) || 0,
-      monthly_growth: Number(r.monthly_growth) || 0,
+      monthly_growth: 0,
     }));
   },
 

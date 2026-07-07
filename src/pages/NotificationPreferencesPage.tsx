@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function NotificationPreferencesPage() {
   const navigate = useNavigate();
-  const { prefs, loading, updatePrefs, refresh } = useNotificationPrefs();
+  const { prefs, loading, update, refresh } = useNotificationPrefs();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function NotificationPreferencesPage() {
     if (!prefs) return;
     setSaving(true);
     try {
-      await updatePrefs({ [channel]: value });
+      await update({ [channel]: value });
     } catch {
       toast({ title: "خطا در ذخیره", variant: "destructive" });
       refresh();

@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionService } from "@/services/subscriptionService";
 import type { Tables } from "@/integrations/supabase/types";
 import { trackEvent } from "@/lib/tracking";
 
@@ -153,17 +154,20 @@ export function useSubscription() {
         return { allowed: false, reason: "فروشگاهی یافت نشد", code: "no_store" };
       }
 
-      const { data, error } = await supabase.rpc("check_store_limit", {
-        p_store_id: storeId,
-        p_limit_type: limitType,
-        p_quantity: quantity,
-      });
+      const result = await subscriptionService.checkLimit(storeId, limitType as "products" | "featured" | "ai_designs" | "advertisements");
 
-      if (error || !data) {
-        return { allowed: false, reason: error?.message || "خطا در بررسی محدودیت", code: "error" };
+      if (!result.allowed) {
+        return { allowed: false, reason: result.reason || "خطا در بررسی محدودیت", code: "error" };
       }
 
-      return data as unknown as LimitCheck;
+      return {
+        allowed: result.allowed,
+        reason: result.reason || "",
+        code: "ok",
+        max: result.limit ?? undefined,
+        used: result.current,
+        available: result.limit !== null && result.current !== undefined ? result.limit - result.current : undefined,
+      };
     },
     [storeSubscription.storeId],
   );
