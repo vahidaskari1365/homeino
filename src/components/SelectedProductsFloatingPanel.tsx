@@ -1,4 +1,5 @@
 import { ShoppingCart, X, ShoppingBag, Banknote } from "lucide-react";
+import { formatPrice as fmt } from "@/lib/formatPrice";
 
 interface Product {
   id: string;
@@ -15,9 +16,6 @@ interface SelectedProductsFloatingPanelProps {
   onBuyAll: () => void;
   onClear: () => void;
 }
-
-const fmt = (n: number | null | undefined) =>
-  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 const SelectedProductsFloatingPanel = ({
   products,

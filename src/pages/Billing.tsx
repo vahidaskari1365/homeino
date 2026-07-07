@@ -21,8 +21,8 @@ import { useSubscription, getAnalyticsTierLabel, SUBSCRIPTION_STATUS_LABELS, typ
 // Payment gateway is NOT implemented — this is architecture-ready.
 // ============================================================
 
-const fmt = (n: number) => new Intl.NumberFormat("fa-IR").format(n);
-const fmtToman = (n: number | null | undefined) => n && n > 0 ? `${fmt(n)} تومان` : "رایگان";
+import { formatPrice as fmt, formatNumber } from "@/lib/formatPrice";
+const fmtToman = (n: number | null | undefined) => n && n > 0 ? `${formatNumber(n)} تومان` : "رایگان";
 const fmtDate = (d: string) =>
   new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(d));
 

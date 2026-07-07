@@ -86,9 +86,9 @@ export default function SubscriptionPage() {
                   )}
                   <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> {plan.max_featured} محصول ویژه</p>
                   {plan.max_ai_designs !== null ? (
-                    <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> تا {plan.max_ai_designs} طراحی AI</p>
+                    <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> تا {plan.max_ai_designs} طراحی هومینو استودیو</p>
                   ) : (
-                    <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> طراحی AI نامحدود</p>
+                    <p className="text-xs flex items-center gap-2"><Check size={12} className="text-emerald-brand" /> طراحی هومینو استودیو نامحدود</p>
                   )}
                   {plan.has_analytics && (
                     <p className="text-xs flex items-center gap-2"><Sparkles size={12} className="text-gold" /> آنالیتیکس هومینو استودیو</p>

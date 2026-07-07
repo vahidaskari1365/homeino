@@ -35,5 +35,5 @@ export const calculateCartTotal = (items: CartItem[]): number => {
  * @returns Formatted string with 'تومان' suffix
  */
 export const formatPersianPrice = (amount: number): string => {
-  return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
+  return new Intl.NumberFormat('en-US').format(amount) + ' تومان';
 };

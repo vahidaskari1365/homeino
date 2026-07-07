@@ -86,7 +86,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
           <Sparkles size={14} className="text-accent" />
           <span className="text-accent text-xs font-semibold">جستجوی بصری هوشمند هومینو</span>
         </div>
-        <p className="text-muted-foreground text-xs max-w-xl mx-auto">
+        <p className="text-muted-foreground text-xs max-w-xl mx-auto break-words">
           یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هومینو استودیو تک‌تک اشیاء را تشخیص می‌دهد
         </p>
       </div>
@@ -104,13 +104,13 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
               <Upload size={22} className="text-accent" />
             </div>
             <p className="font-semibold text-sm mb-1">تصویر الهام خود را آپلود کنید</p>
-            <p className="text-[10px] text-muted-foreground mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               کلیک کنید یا بکشید · Ctrl+V برای چسباندن
             </p>
-            <div className="flex flex-wrap justify-center gap-1.5 text-[9px] text-muted-foreground">
-              <Badge variant="outline" className="text-[9px]">پینترست</Badge>
-              <Badge variant="outline" className="text-[9px]">اینستاگرام</Badge>
-              <Badge variant="outline" className="text-[9px]">گوگل</Badge>
+            <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-muted-foreground">
+              <Badge variant="outline" className="text-[10px]">پینترست</Badge>
+              <Badge variant="outline" className="text-[10px]">اینستاگرام</Badge>
+              <Badge variant="outline" className="text-[10px]">گوگل</Badge>
             </div>
             <input
               ref={inputRef}
@@ -137,7 +137,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                   {objectSearch.status === "detecting" && "هومینو استودیو در حال شناسایی اشیاء..."}
                   {objectSearch.status === "matching" && "در حال جستجوی محصولات مشابه برای هر شیء..."}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">لطفاً صبر کنید</p>
+                <p className="text-xs text-muted-foreground mt-1">لطفاً صبر کنید</p>
               </div>
               <Progress
                 value={
@@ -160,7 +160,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                 <X size={20} className="text-destructive" />
               </div>
               <p className="font-bold text-destructive text-sm">خطا در پردازش تصویر</p>
-              <p className="text-[10px] text-muted-foreground">{objectSearch.error}</p>
+              <p className="text-xs text-muted-foreground">{objectSearch.error}</p>
               <Button variant="outline" size="sm" onClick={objectSearch.reset} className="gap-2 text-xs">
                 <RefreshCw size={12} /> تلاش مجدد
               </Button>
@@ -178,8 +178,8 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
               <Card>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-bold text-muted-foreground">تصویر مرجع</p>
-                    <Button variant="ghost" size="sm" onClick={objectSearch.reset} className="h-6 text-[10px] gap-1">
+                    <p className="text-xs font-bold text-muted-foreground">تصویر مرجع</p>
+                    <Button variant="ghost" size="sm" onClick={objectSearch.reset} className="h-6 text-xs gap-1">
                       <X size={10} /> حذف
                     </Button>
                   </div>
@@ -192,13 +192,13 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
 
             <Card>
               <CardContent className="p-3 space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-2">
+                <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                   <Sparkles size={12} className="text-accent" /> تحلیل هومینو استودیو
                 </p>
                 {objectSearch.overallStyle && (
                   <div>
-                    <p className="text-[9px] text-muted-foreground">سبک کلی فضا</p>
-                    <Badge variant="outline" className="bg-accent/10 text-accent text-[9px]">
+                    <p className="text-[10px] text-muted-foreground">سبک کلی فضا</p>
+                    <Badge variant="outline" className="bg-accent/10 text-accent text-[10px]">
                       {objectSearch.overallStyle === "modern" ? "مدرن" :
                        objectSearch.overallStyle === "classic" ? "کلاسیک" :
                        objectSearch.overallStyle === "minimalist" ? "مینیمال" :
@@ -212,8 +212,8 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                 )}
                 {objectSearch.roomType && (
                   <div>
-                    <p className="text-[9px] text-muted-foreground">نوع فضا</p>
-                    <span className="text-[10px] font-medium">
+                    <p className="text-[10px] text-muted-foreground">نوع فضا</p>
+                    <span className="text-xs font-medium">
                       {objectSearch.roomType === "living" ? "نشیمن" :
                        objectSearch.roomType === "bedroom" ? "اتاق خواب" :
                        objectSearch.roomType === "kitchen" ? "آشپزخانه" :
@@ -243,14 +243,14 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
 
           {/* Controls */}
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               برای هر شیء، محصولات هومینو را انتخاب کنید (چندتا مجاز)
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => objectSearch.saveInspiration?.("الهام جدید")}
-              className="gap-1.5 h-7 text-[10px]"
+              className="gap-1.5 h-7 text-xs"
             >
               <Heart size={10} /> ذخیره الهام
             </Button>
@@ -259,18 +259,18 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
           {/* Sort & Filter controls */}
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] h-8 text-[10px]">
+              <SelectTrigger className="w-[140px] h-8 text-xs">
                 <ArrowUpDown size={10} className="ml-1" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="similarity" className="text-[10px]">بیشترین شباهت</SelectItem>
-                <SelectItem value="price_asc" className="text-[10px]">قیمت: کم به زیاد</SelectItem>
-                <SelectItem value="price_desc" className="text-[10px]">قیمت: زیاد به کم</SelectItem>
-                <SelectItem value="name" className="text-[10px]">نام محصول</SelectItem>
+                <SelectItem value="similarity" className="text-xs">بیشترین شباهت</SelectItem>
+                <SelectItem value="price_asc" className="text-xs">قیمت: کم به زیاد</SelectItem>
+                <SelectItem value="price_desc" className="text-xs">قیمت: زیاد به کم</SelectItem>
+                <SelectItem value="name" className="text-xs">نام محصول</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {allProducts.length} محصول مشابه
             </span>
           </div>
@@ -303,19 +303,19 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground">انتخاب شده</p>
+                        <p className="text-xs text-muted-foreground">انتخاب شده</p>
                         <p className="text-lg font-black text-accent">{selectedCount}</p>
                       </div>
                       <div className="h-10 w-px bg-border" />
                       <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground">جمع قیمت</p>
+                        <p className="text-xs text-muted-foreground">جمع قیمت</p>
                         <p className="text-sm font-black text-accent">
-                          {totalPrice == null ? "—" : new Intl.NumberFormat("fa-IR").format(totalPrice) + " تومان"}
+                          {totalPrice == null ? "—" : new Intl.NumberFormat("en-US").format(totalPrice) + " تومان"}
                         </p>
                       </div>
                       <div className="h-10 w-px bg-border" />
                       <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground">تشخیص داده شده</p>
+                        <p className="text-xs text-muted-foreground">تشخیص داده شده</p>
                         <p className="text-sm font-black text-foreground">{objectSearch.objects.length}</p>
                       </div>
                     </div>
@@ -335,7 +335,7 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
                         className="gap-2"
                       >
                         <Wand2 size={16} />
-                        طراحی با AI
+                        طراحی با هومینو استودیو
                       </Button>
                     </div>
                   </div>

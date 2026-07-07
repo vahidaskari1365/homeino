@@ -300,7 +300,7 @@ const AnalyticsTab = () => {
               </div>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">{s.label}</p>
-                <h3 className="text-2xl font-bold">{typeof s.value === "number" ? s.value.toLocaleString("fa-IR") : s.value}</h3>
+                <h3 className="text-2xl font-bold">{typeof s.value === "number" ? s.value.toLocaleString() : s.value}</h3>
               </div>
             </CardContent>
           </Card>

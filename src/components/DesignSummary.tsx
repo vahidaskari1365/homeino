@@ -11,8 +11,6 @@ interface DesignSummaryProps {
   open: boolean;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat("fa-IR").format(n);
-
 const DesignSummary = ({ selections, totalPrice, selectedCount, onStartDesign, onClose, open }: DesignSummaryProps) => {
   if (!open) return null;
 

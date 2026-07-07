@@ -2,6 +2,7 @@
 // ============================================================
 // Homeino — Seller Dashboard: Analytics Engine
 // ============================================================
+import { formatNumber as fmt } from "@/lib/formatPrice";
 // Full analytics dashboard with beautiful recharts visualizations:
 // - Product performance bar chart (views, clicks, saves)
 // - Monthly trend line chart
@@ -49,8 +50,6 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 
 const PIE_COLORS = ["#D4A853", "#1B4332", "#7C3AED", "#059669", "#DC2626", "#2563EB", "#D97706", "#EC4899"];
 const BAR_COLORS = { views: "#2563EB", clicks: "#7C3AED", saves: "#D4A853", ai: "#059669" };
-
-const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
 
 // ─── Component ────────────────────────────────────────────
 export const SellerAnalyticsPanel = ({ ownerId }: { ownerId: string }) => {

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState, useCallback } from "react";
+import { formatNumber as fmt } from "@/lib/formatPrice";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowRight, ShoppingBag, Minus, Plus, Store, MapPin, Phone, BadgeCheck,
@@ -46,8 +47,6 @@ type Product = {
   attributes?: Record<string, unknown> | null;
   rating?: number | null;
 };
-
-const fmt = (n: number) => new Intl.NumberFormat("fa-IR").format(n);
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();

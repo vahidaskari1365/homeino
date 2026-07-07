@@ -120,7 +120,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{p.name}</p>
-                            {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("fa-IR")} تومان</p>}
+                            {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("en-US")} تومان</p>}
                           </div>
                         </Link>
                         <ViewInMyRoomButton
@@ -171,7 +171,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
                     {second.map((it) => (
                       <Link key={it.id} to="/second-hand" onClick={close} className="block p-2 rounded hover:bg-muted text-sm">
                         <span className="font-medium">{it.title}</span>
-                        {it.price && <span className="text-gold text-xs"> — {it.price.toLocaleString("fa-IR")} تومان</span>}
+                        {it.price && <span className="text-gold text-xs"> — {it.price.toLocaleString("en-US")} تومان</span>}
                       </Link>
                     ))}
                   </div>

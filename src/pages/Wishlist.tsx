@@ -13,7 +13,7 @@ import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 const TYPE_META: Record<WishlistItemType, { label: string; icon: typeof Package }> = {
   product: { label: "محصولات", icon: Package },
   set: { label: "ست‌های دکوراسیون", icon: Layers },
-  ai_design: { label: "طراحی‌های AI", icon: Sparkles },
+  ai_design: { label: "طراحی‌های هومینو استودیو", icon: Sparkles },
 };
 
 const ItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: () => void }) => (

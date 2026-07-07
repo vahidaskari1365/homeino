@@ -87,7 +87,7 @@ const PromoteListingDialog = ({ listingId, userId, trigger, onDone }: Props) => 
                   <div className="font-semibold">{p.label}</div>
                   <p className="text-xs text-muted-foreground min-h-10">{p.desc}</p>
                   <Badge variant="secondary">{p.days} روز</Badge>
-                  <div className="text-gold font-bold">{p.price.toLocaleString("fa-IR")} تومان</div>
+                  <div className="text-gold font-bold">{p.price.toLocaleString("en-US")} تومان</div>
                 </CardContent>
               </Card>
             );

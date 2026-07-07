@@ -135,17 +135,17 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
           )}
           <div className="flex flex-wrap gap-1.5">
             {analysis.category && (
-              <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-semibold">
+              <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full font-semibold">
                 {analysis.category}
               </span>
             )}
             {analysis.style && (
-              <span className="text-[10px] bg-gold/10 text-gold px-2 py-0.5 rounded-full font-semibold">
+              <span className="text-xs bg-gold/10 text-gold px-2 py-0.5 rounded-full font-semibold">
                 سبک {analysis.style}
               </span>
             )}
             {analysis.colors?.map((c) => (
-              <span key={c} className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+              <span key={c} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 {c}
               </span>
             ))}
@@ -168,7 +168,7 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{p.name}</p>
-                    {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("fa-IR")} تومان</p>}
+                    {p.price && <p className="text-xs text-gold">{p.price.toLocaleString("en-US")} تومان</p>}
                   </div>
                 </Link>
                 <ViewInMyRoomButton

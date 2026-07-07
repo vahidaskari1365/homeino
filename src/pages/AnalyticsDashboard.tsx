@@ -56,14 +56,14 @@ export default function AnalyticsDashboard() {
               <span className="text-xs text-muted-foreground">بازدید کل</span>
               <Eye size={16} className="text-gold" />
             </div>
-            <p className="text-2xl font-bold">{totalViews.toLocaleString("fa-IR")}</p>
+            <p className="text-2xl font-bold">{totalViews.toLocaleString("en-US")}</p>
           </Card>
           <Card className="p-4 bg-card border-border">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-muted-foreground">کلیک کل</span>
               <MousePointerClick size={16} className="text-gold" />
             </div>
-            <p className="text-2xl font-bold">{totalClicks.toLocaleString("fa-IR")}</p>
+            <p className="text-2xl font-bold">{totalClicks.toLocaleString("en-US")}</p>
           </Card>
           <Card className="p-4 bg-card border-border">
             <div className="flex items-center justify-between mb-1">
@@ -77,7 +77,7 @@ export default function AnalyticsDashboard() {
               <span className="text-xs text-muted-foreground">محصولات</span>
               <Package size={16} className="text-gold" />
             </div>
-            <p className="text-2xl font-bold">{productAnalytics.length.toLocaleString("fa-IR")}</p>
+            <p className="text-2xl font-bold">{productAnalytics.length.toLocaleString("en-US")}</p>
           </Card>
         </div>
 
@@ -150,7 +150,7 @@ export default function AnalyticsDashboard() {
                     <th className="text-center p-2 text-muted-foreground">بازدید</th>
                     <th className="text-center p-2 text-muted-foreground">کلیک</th>
                     <th className="text-center p-2 text-muted-foreground">علاقه‌مندی</th>
-                    <th className="text-center p-2 text-muted-foreground">AI</th>
+                    <th className="text-center p-2 text-muted-foreground">هومینو استودیو</th>
                     <th className="text-center p-2 text-muted-foreground">CTR</th>
                     <th className="text-center p-2 text-muted-foreground">رشد</th>
                   </tr>
@@ -159,10 +159,10 @@ export default function AnalyticsDashboard() {
                   {productAnalytics.map((p) => (
                     <tr key={p.product_id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="p-2 font-medium">{p.product_name}</td>
-                      <td className="text-center p-2">{p.views.toLocaleString("fa-IR")}</td>
-                      <td className="text-center p-2">{p.clicks.toLocaleString("fa-IR")}</td>
-                      <td className="text-center p-2">{p.favorites.toLocaleString("fa-IR")}</td>
-                      <td className="text-center p-2">{p.ai_recommendations.toLocaleString("fa-IR")}</td>
+                      <td className="text-center p-2">{p.views.toLocaleString("en-US")}</td>
+                      <td className="text-center p-2">{p.clicks.toLocaleString("en-US")}</td>
+                      <td className="text-center p-2">{p.favorites.toLocaleString("en-US")}</td>
+                      <td className="text-center p-2">{p.ai_recommendations.toLocaleString("en-US")}</td>
                       <td className="text-center p-2">{p.ctr.toFixed(1)}%</td>
                       <td className={`text-center p-2 ${p.monthly_growth >= 0 ? "text-emerald-brand" : "text-destructive"}`}>
                         {p.monthly_growth > 0 ? "+" : ""}{p.monthly_growth.toFixed(1)}%

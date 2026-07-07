@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
+import { formatPrice as fmtPrice } from "@/lib/formatPrice";
 import { Link, useSearchParams } from "react-router-dom";
 import { Scale, ArrowLeft, Star, X, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -53,9 +54,6 @@ const Compare = () => {
     });
     return Array.from(keys);
   }, [items, enriched]);
-
-  const fmtPrice = (p: number | null) =>
-    p == null ? "—" : new Intl.NumberFormat("fa-IR").format(p) + " تومان";
 
   return (
     <div className="min-h-screen bg-background">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useOverlayGeometry } from "@/lib/overlayGeometry";
+import { formatPrice as fmt } from "@/lib/formatPrice";
 import type { EnrichedPlacement, DBProduct } from "@/lib/aiPipeline";
 
 // --- Strict layer separation ---
@@ -20,9 +21,6 @@ interface ProductOverlayProps<TProduct extends DBProduct> {
   placements: EnrichedPlacement<TProduct>[];
   onProductClick?: (product: TProduct) => void;
 }
-
-const fmt = (n: number | null | undefined) =>
-  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 function ProductOverlay<TProduct extends DBProduct>({ roomImage, placements, onProductClick }: ProductOverlayProps<TProduct>) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);

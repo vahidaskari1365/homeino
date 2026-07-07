@@ -26,6 +26,7 @@ import SelectedProductsFloatingPanel from "@/components/SelectedProductsFloating
 import AISuggestionAssistant from "@/components/AISuggestionAssistant";
 import InspirationFlow from "@/components/InspirationFlow";
 import type { ProductMatch } from "@/hooks/useObjectSearch";
+import { formatPrice as fmt } from "@/lib/formatPrice";
 
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
 
@@ -74,9 +75,6 @@ type Product = {
   stock?: number;
   is_featured?: boolean;
 };
-
-const fmt = (n: number | null | undefined) =>
-  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 const AIDesign = () => {
   const navigate = useNavigate();
@@ -349,7 +347,7 @@ const AIDesign = () => {
                 }}>
                 خانه خودت را با هومینو استودیو طراحی کن
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed px-2">
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed px-2 max-w-prose break-words">
                 یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هومینو استودیو چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
               </p>
             </div>
@@ -444,7 +442,7 @@ const AIDesign = () => {
                         <Upload size={20} className="text-accent" />
                       </div>
                       <p className="text-sm font-semibold mb-1">عکس فضای خانه را آپلود کنید</p>
-                      <p className="text-[10px] text-muted-foreground">کلیک کنید یا بکشید · JPG / PNG · حداکثر ۱۰ مگابایت</p>
+                      <p className="text-xs text-muted-foreground">کلیک کنید یا بکشید · JPG / PNG · حداکثر ۱۰ مگابایت</p>
                       <input ref={inputRef} type="file" accept="image/*" className="hidden"
                         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
                     </div>
@@ -535,17 +533,17 @@ const AIDesign = () => {
                 {!loading && (
                   <div className="grid sm:grid-cols-2 gap-3 max-w-lg">
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground mb-1">بودجه (اختیاری)</p>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">بودجه (اختیاری)</p>
                       <div className="relative">
                         <input type="text" inputMode="numeric" value={budget}
                           onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="مثلاً: ۵۰۰۰۰۰۰" dir="ltr"
                           className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors" />
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">تومان</span>
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">تومان</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground mb-1">توضیحات (اختیاری)</p>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">توضیحات (اختیاری)</p>
                       <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
                         placeholder="مثلاً: مبل سمت پنجره..."
                         className="w-full bg-card border border-border rounded-xl p-2 text-sm h-[38px] outline-none focus:border-accent transition-colors resize-none" />
@@ -637,15 +635,15 @@ const AIDesign = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setShowBefore(false)}
-                            className={`px-3 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                               !showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
                             }`}
                           >
-                            نتیجه AI
+                            نتیجه طراحی
                           </button>
                           <button
                             onClick={() => setShowBefore(true)}
-                            className={`px-3 py-1 rounded-full text-[10px] font-semibold border transition-all ${
+                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
                               showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
                             }`}
                           >
@@ -697,7 +695,7 @@ const AIDesign = () => {
                           </div>
                           <div className="flex gap-2 items-start">
                             <Lightbulb size={15} className="text-accent shrink-0 mt-0.5" />
-                            <p className="text-sm leading-loose text-foreground">{geminiResult.consultation}</p>
+                            <p className="text-sm leading-loose text-foreground break-words whitespace-pre-wrap">{geminiResult.consultation}</p>
                           </div>
                           <div className="flex items-center gap-2 pt-2 border-t border-accent/20">
                             <Banknote size={14} className="text-accent shrink-0" />

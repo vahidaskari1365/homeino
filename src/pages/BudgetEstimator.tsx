@@ -310,7 +310,7 @@ const BudgetEstimator = () => {
   };
 
   const formatPersianPrice = (num: number) => {
-    return num.toLocaleString("fa-IR") + " تومان";
+    return new Intl.NumberFormat("en-US").format(num) + " تومان";
   };
 
   return (

@@ -84,7 +84,7 @@ interface Order {
   order_items: { id: string; product_name: string; quantity: number; unit_price: number }[];
 }
 
-const fmtToman = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("fa-IR")} تومان`;
+const fmtToman = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("en-US")} تومان`;
 
 export const CustomerDashboard = ({ userId }: { userId: string }) => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -165,7 +165,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
               <Sparkles size={16} className="text-emerald-brand shrink-0" />
               <div className="text-xs">
                 <p className="text-muted-foreground">طراحی رایگان باقیمانده</p>
-                <p className="font-bold text-emerald-brand">{tokens.freeDesignsRemaining.toLocaleString("fa-IR")}</p>
+                <p className="font-bold text-emerald-brand">{tokens.freeDesignsRemaining.toLocaleString("en-US")}</p>
               </div>
             </div>
 
@@ -173,7 +173,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
               <Coins size={16} className="text-gold shrink-0" />
               <div className="text-xs">
                 <p className="text-muted-foreground">موجودی توکن</p>
-                <p className="font-bold text-gold">🪙 {tokens.tokenBalance.toLocaleString("fa-IR")}</p>
+                <p className="font-bold text-gold">🪙 {tokens.tokenBalance.toLocaleString("en-US")}</p>
               </div>
               <Link to="/billing">
                 <Button size="sm" variant="outline" className="h-7 text-[11px] border-gold/40 text-gold hover:bg-gold/10">
@@ -208,7 +208,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
             </TabsTrigger>
             <TabsTrigger value="notifications" className="rounded-none border-b-2 border-transparent data-[state=active]:border-gold data-[state=active]:bg-transparent py-3 px-4 shrink-0">
               <Bell size={16} className="ml-2" /> اعلان‌ها
-              {unreadCount > 0 && <Badge variant="destructive" className="mr-2 px-1.5 py-0.5 text-[10px]">{unreadCount.toLocaleString("fa-IR")}</Badge>}
+              {unreadCount > 0 && <Badge variant="destructive" className="mr-2 px-1.5 py-0.5 text-[10px]">{unreadCount.toLocaleString("en-US")}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="profile" className="rounded-none border-b-2 border-transparent data-[state=active]:border-gold data-[state=active]:bg-transparent py-3 px-4 shrink-0">
               <User size={16} className="ml-2" /> پروفایل
@@ -222,7 +222,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
         {/* ── HOME ── */}
         <TabsContent value="home" className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <SummaryCard icon={<Sparkles size={20} />} label="کل طراحی‌های AI" value={designs.length} color="emerald-brand" />
+            <SummaryCard icon={<Sparkles size={20} />} label="کل طراحی‌های هومینو استودیو" value={designs.length} color="emerald-brand" />
             <SummaryCard icon={<Coins size={20} />} label="طراحی رایگان باقیمانده" value={tokens.freeDesignsRemaining} color="gold" />
             <SummaryCard icon={<Coins size={20} />} label="موجودی توکن" value={tokens.tokenBalance} color="gold" />
             <SummaryCard icon={<Megaphone size={20} />} label="آگهی‌های فعال" value={ads.items.filter((a) => a.status === "active").length} color="blue-500" />
@@ -306,7 +306,7 @@ export const CustomerDashboard = ({ userId }: { userId: string }) => {
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{formatPersianDate(r.created_at)}</span>
-                        <Badge variant="outline">{count.toLocaleString("fa-IR")} طراحی</Badge>
+                        <Badge variant="outline">{count.toLocaleString("en-US")} طراحی</Badge>
                       </div>
                       {r.budget && <p className="text-xs text-muted-foreground">بودجه: {fmtToman(r.budget)}</p>}
                       <Link to="/ai-design"><Button variant="outline" size="sm" className="w-full">ادامه طراحی</Button></Link>
@@ -475,7 +475,7 @@ const SummaryCard = ({ icon, label, value, color }: { icon: React.ReactNode; lab
     <Card className={cls.card}>
       <CardContent className="p-4">
         <div className={`h-9 w-9 rounded-full flex items-center justify-center mb-2 ${cls.iconWrap}`}>{icon}</div>
-        <p className="text-xl font-bold">{value.toLocaleString("fa-IR")}</p>
+        <p className="text-xl font-bold">{value.toLocaleString("en-US")}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
       </CardContent>
     </Card>
@@ -570,8 +570,8 @@ const MyAdsSection = ({ ads, categories }: { ads: ReturnType<typeof useMyAds>; c
                 <h4 className="font-bold truncate">{ad.title}</h4>
                 {ad.price != null && <p className="text-gold font-bold">{fmtToman(ad.price)}</p>}
                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  <span>{(ad.views_count ?? 0).toLocaleString("fa-IR")} بازدید</span>
-                  <span>{(ad.clicks_count ?? 0).toLocaleString("fa-IR")} کلیک</span>
+                  <span>{(ad.views_count ?? 0).toLocaleString("en-US")} بازدید</span>
+                  <span>{(ad.clicks_count ?? 0).toLocaleString("en-US")} کلیک</span>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(ad)}><Pencil size={13} /> ویرایش</Button>
