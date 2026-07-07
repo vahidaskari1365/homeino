@@ -36,6 +36,9 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard.tsx";
 import StoreHealthPage from "./pages/StoreHealthPage.tsx";
 import SubscriptionPage from "./pages/SubscriptionPage.tsx";
 import BadgesPage from "./pages/BadgesPage.tsx";
+import AddressesPage from "./pages/AddressesPage.tsx";
+import NotificationPreferencesPage from "./pages/NotificationPreferencesPage.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -80,6 +83,9 @@ const App = () => (
                     <Route path="/store-health" element={<StoreHealthPage />} />
                     <Route path="/subscription" element={<SubscriptionPage />} />
                     <Route path="/badges" element={<BadgesPage />} />
+                    <Route path="/addresses" element={<AddressesPage />} />
+                    <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

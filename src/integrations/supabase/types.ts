@@ -2279,6 +2279,129 @@ export type Database = {
         }
         Relationships: [{ foreignKeyName: "admin_audit_logs_admin_id_fkey"; columns: ["admin_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
       }
+      audit_logs: {
+        Row: {
+          id: string; actor_id: string; actor_type: string; target_type: string | null
+          target_id: string | null; action: string | null; old_values: Json; new_values: Json
+          ip_address: string | null; created_at: string
+        }
+        Insert: {
+          id?: string; actor_id: string; actor_type: string; target_type?: string | null
+          target_id?: string | null; action?: string | null; old_values?: Json; new_values?: Json
+          ip_address?: string | null; created_at?: string
+        }
+        Update: {
+          id?: string; actor_id?: string; actor_type?: string; target_type?: string | null
+          target_id?: string | null; action?: string | null; old_values?: Json; new_values?: Json
+          ip_address?: string | null; created_at?: string
+        }
+        Relationships: [{ foreignKeyName: "audit_logs_actor_id_fkey"; columns: ["actor_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      wallet_transactions: {
+        Row: {
+          id: string; wallet_id: string; user_id: string; credit: number; debit: number
+          balance_after: number; reason: string; reference_type: string | null
+          reference_id: string | null; description: string | null; created_at: string
+        }
+        Insert: {
+          id?: string; wallet_id: string; user_id: string; credit?: number; debit?: number
+          balance_after: number; reason: string; reference_type?: string | null
+          reference_id?: string | null; description?: string | null; created_at?: string
+        }
+        Update: {
+          id?: string; wallet_id?: string; user_id?: string; credit?: number; debit?: number
+          balance_after?: number; reason?: string; reference_type?: string | null
+          reference_id?: string | null; description?: string | null; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "wallet_transactions_wallet_id_fkey"; columns: ["wallet_id"]; isOneToOne: false; referencedRelation: "wallets"; referencedColumns: ["id"] },
+          { foreignKeyName: "wallet_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      reference_images: {
+        Row: {
+          id: string; user_id: string; image_url: string; detected_objects: Json
+          style_analysis: Json | null; color_palette: string[] | null; status: string; created_at: string
+        }
+        Insert: {
+          id?: string; user_id: string; image_url: string; detected_objects?: Json
+          style_analysis?: Json | null; color_palette?: string[] | null; status?: string; created_at?: string
+        }
+        Update: {
+          id?: string; user_id?: string; image_url?: string; detected_objects?: Json
+          style_analysis?: Json | null; color_palette?: string[] | null; status?: string; created_at?: string
+        }
+        Relationships: [{ foreignKeyName: "reference_images_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      visual_matches: {
+        Row: {
+          id: string; reference_image_id: string; product_id: string; score: number
+          match_type: string; metadata: Json; created_at: string
+        }
+        Insert: {
+          id?: string; reference_image_id: string; product_id: string; score: number
+          match_type: string; metadata?: Json; created_at?: string
+        }
+        Update: {
+          id?: string; reference_image_id?: string; product_id?: string; score?: number
+          match_type?: string; metadata?: Json; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "visual_matches_reference_image_id_fkey"; columns: ["reference_image_id"]; isOneToOne: false; referencedRelation: "reference_images"; referencedColumns: ["id"] },
+          { foreignKeyName: "visual_matches_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] },
+        ]
+      }
+      saved_inspirations: {
+        Row: {
+          id: string; user_id: string; title: string; description: string | null
+          source_image_url: string | null; style: string | null; room_type: string | null
+          metadata: Json; created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: string; user_id: string; title?: string; description?: string | null
+          source_image_url?: string | null; style?: string | null; room_type?: string | null
+          metadata?: Json; created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: string; user_id?: string; title?: string; description?: string | null
+          source_image_url?: string | null; style?: string | null; room_type?: string | null
+          metadata?: Json; created_at?: string; updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "saved_inspirations_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      saved_inspiration_products: {
+        Row: {
+          id: string; saved_inspiration_id: string; product_id: string; note: string | null; created_at: string
+        }
+        Insert: {
+          id?: string; saved_inspiration_id: string; product_id: string; note?: string | null; created_at?: string
+        }
+        Update: {
+          id?: string; saved_inspiration_id?: string; product_id?: string; note?: string | null; created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "saved_inspiration_products_saved_inspiration_id_fkey"; columns: ["saved_inspiration_id"]; isOneToOne: false; referencedRelation: "saved_inspirations"; referencedColumns: ["id"] },
+          { foreignKeyName: "saved_inspiration_products_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] },
+        ]
+      }
+      design_sessions: {
+        Row: {
+          id: string; user_id: string; inspiration_id: string | null; title: string
+          source_image_url: string | null; design_metadata: Json; status: string; created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: string; user_id: string; inspiration_id?: string | null; title?: string
+          source_image_url?: string | null; design_metadata?: Json; status?: string; created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: string; user_id?: string; inspiration_id?: string | null; title?: string
+          source_image_url?: string | null; design_metadata?: Json; status?: string; created_at?: string; updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "design_sessions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "design_sessions_inspiration_id_fkey"; columns: ["inspiration_id"]; isOneToOne: false; referencedRelation: "inspirations"; referencedColumns: ["id"] },
+        ]
+      }
     }
     Views: {
       product_analytics_view: {
@@ -2429,48 +2552,43 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_advertisements: { Args: Record<string, never>; Returns: Json }
+      admin_get_ai_logs: { Args: { p_limit?: number; p_offset?: number }; Returns: Json }
+      admin_get_reports_summary: { Args: Record<string, never>; Returns: Json }
+      admin_get_stores_detailed: { Args: Record<string, never>; Returns: Json }
+      admin_get_subscriptions: { Args: Record<string, never>; Returns: Json }
+      admin_get_system_health: { Args: Record<string, never>; Returns: Json }
+      admin_search_audit_logs: { Args: { p_actor_id?: string; p_actor_type?: string; p_target_type?: string; p_action?: string; p_from_date?: string; p_to_date?: string; p_limit?: number; p_offset?: number }; Returns: Json }
+      calculate_profile_completion: { Args: { p_user_id: string }; Returns: number }
+      calculate_trust_score: { Args: { p_store_id: string }; Returns: Json }
+      check_and_award_user_badges: { Args: { p_user_id?: string }; Returns: Json }
+      check_plan_limit: { Args: { p_store_id: string; p_limit_type: string; p_quantity?: number }; Returns: Json }
+      check_store_limit: { Args: { p_limit_type: string; p_quantity?: number; p_store_id: string }; Returns: Json }
       consume_design_credit: { Args: { p_user_id: string }; Returns: Json }
-      credit_tokens: {
-        Args: { p_amount: number; p_reason?: string; p_user_id: string }
-        Returns: Json
-      }
-      get_store_daily_views: {
-        Args: { p_days?: number; p_store_id: string }
-        Returns: {
-          day: string
-          views: number
-        }[]
-      }
-      get_store_product_analytics: {
-        Args: { p_store_id: string }
-        Returns: {
-          ai_recommendations: number
-          clicks: number
-          product_id: string
-          product_name: string
-          saves: number
-          views: number
-        }[]
-      }
-      create_notification: {
-        Args: {
-          _body?: string
-          _link?: string
-          _metadata?: Json
-          _title: string
-          _type: Database["public"]["Enums"]["notification_type"]
-          _user_id: string
-        }
-        Returns: string
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      create_audit_log: { Args: { p_actor_id: string; p_actor_type: string; p_target_type: string; p_target_id?: string; p_action?: string; p_old_values?: Json; p_new_values?: Json }; Returns: string }
+      create_notification: { Args: { _body?: string; _link?: string; _metadata?: Json; _title: string; _type: Database["public"]["Enums"]["notification_type"]; _user_id: string }; Returns: string }
+      credit_tokens: { Args: { p_amount: number; p_reason?: string; p_user_id: string }; Returns: Json }
+      credit_wallet: { Args: { p_amount: number; p_reason?: string; p_user_id: string }; Returns: Json }
+      debit_wallet: { Args: { p_amount: number; p_reason?: string; p_user_id: string }; Returns: Json }
+      ensure_wallet: { Args: { p_user_id: string }; Returns: string }
+      get_admin_dashboard_stats: { Args: Record<string, never>; Returns: Json }
+      get_cached_object_detection: { Args: { p_image_hash: string }; Returns: Json }
+      get_store_analytics: { Args: { p_store_id: string }; Returns: Json }
+      get_store_analytics_ai_insights: { Args: { p_store_id: string }; Returns: Json }
+      get_store_analytics_overview: { Args: { p_store_id: string }; Returns: Json }
+      get_store_daily_views: { Args: { p_days?: number; p_store_id: string }; Returns: { day: string; views: number }[] }
+      get_store_health_report: { Args: { p_store_id: string }; Returns: Json }
+      get_store_limits: { Args: { p_store_id: string }; Returns: Json }
+      get_store_product_analytics: { Args: { p_store_id: string }; Returns: { ai_recommendations: number; clicks: number; product_id: string; product_name: string; saves: number; views: number }[] }
+      has_role: { Args: { _role: Database["public"]["Enums"]["app_role"]; _user_id: string }; Returns: boolean }
+      increment_store_usage: { Args: { p_limit_type: string; p_store_id: string }; Returns: void }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      run_store_health_check: { Args: { p_store_id: string }; Returns: Json }
+      save_object_detection_cache: { Args: { p_image_hash: string; p_user_id: string; p_analysis: Json }; Returns: string }
+      save_object_matches: { Args: { p_detection_id: string; p_matches: Json }; Returns: void }
+      search_all: { Args: { p_query: string; p_limit?: number }; Returns: Json }
+      search_products_for_object: { Args: { p_object_name: string; p_limit?: number; p_store_id?: string }; Returns: Json }
+      search_similar_products: { Args: { p_embedding?: number[]; p_limit?: number; p_store_id?: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

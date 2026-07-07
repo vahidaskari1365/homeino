@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, ArrowRight, Sparkles, LogOut, Plus, Pencil, Trash2,
   Package, ImageIcon, Save, CheckCircle2, AlertCircle, Send, EyeOff,
-  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check, User,
+  ShoppingCart, MessageSquare, BarChart3, Eye, Phone, MapPin, Clock, Check, User, Bell, ClipboardList,
   Boxes, Store as StoreIcon, Tag,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -565,10 +565,22 @@ const Dashboard = () => {
               <Link to="/analytics"><BarChart3 size={16} /> آنالیتیکس</Link>
             </Button>
             <Button variant="outline" asChild className="gap-2">
+              <Link to="/store-health"><ClipboardList size={16} /> سلامت</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
               <Link to="/subscription"><Sparkles size={16} /> اشتراک</Link>
             </Button>
             <Button variant="outline" asChild className="gap-2">
               <Link to="/badges"><Package size={16} /> نشان‌ها</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/profile"><User size={16} /> پروفایل</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/addresses"><MapPin size={16} /> آدرس‌ها</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <Link to="/notification-preferences"><Bell size={16} /> اعلان‌ها</Link>
             </Button>
             <Button variant="outline" onClick={handleSignOut} className="gap-2">
               <LogOut size={16} /> خروج
