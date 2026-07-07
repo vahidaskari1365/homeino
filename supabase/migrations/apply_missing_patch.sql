@@ -1,99 +1,10 @@
--- ============================================================
--- Homeino — Business Layer: Missing Objects Patch
--- ============================================================
--- Only creates objects NOT already created by individual phase
--- migrations (20260707-20260715). Safe to run on live DB.
--- ============================================================
-
--- ------------------------------------------------------------
--- 1. subscription_plans: Add plan limit columns
--- ------------------------------------------------------------
-alter table if exists public.subscription_plans
-  add column if not exists max_ai_designs int not null default -1,
-  add column if not exists max_advertisements int not null default -1,
-  add column if not exists storage_limit_mb int not null default 100,
-  add column if not exists has_analytics boolean not null default false;
-
-comment on column public.subscription_plans.max_ai_designs is '-1 = unlimited';
-comment on column public.subscription_plans.max_advertisements is '-1 = unlimited';
-comment on column public.subscription_plans.storage_limit_mb is 'Storage limit in megabytes';
-comment on column public.subscription_plans.has_analytics is 'Whether analytics dashboard is available';
-
--- ------------------------------------------------------------
--- 2. notification_preferences
--- ------------------------------------------------------------
-create table if not exists public.notification_preferences (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null references public.profiles(id) on delete cascade unique,
-  in_app     boolean not null default true,
-  email      boolean not null default false,
-  sms        boolean not null default false,
-  push       boolean not null default false,
-  order_updates    boolean not null default true,
-  design_updates   boolean not null default true,
-  marketing        boolean not null default false,
-  system_alerts    boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists idx_notification_preferences_user_id on public.notification_preferences(user_id);
-
-create trigger update_notification_preferences_updated_at
-  before update on public.notification_preferences
-  for each row execute function public.update_updated_at_column();
-
-alter table public.notification_preferences enable row level security;
-
-create policy "notification_preferences_owner_select" on public.notification_preferences
-  for select using (auth.uid() = user_id);
-create policy "notification_preferences_owner_insert" on public.notification_preferences
-  for insert with check (auth.uid() = user_id);
-create policy "notification_preferences_owner_update" on public.notification_preferences
-  for update using (auth.uid() = user_id);
-
--- ------------------------------------------------------------
--- 3. notification_logs
--- ------------------------------------------------------------
-create table if not exists public.notification_logs (
-  id              uuid primary key default gen_random_uuid(),
-  notification_id uuid references public.notifications(id) on delete set null,
-  user_id         uuid not null references public.profiles(id) on delete cascade,
-  channel         text not null check (channel in ('in_app','email','sms','push')),
-  status          text not null default 'pending' check (status in ('pending','sent','delivered','failed','read')),
-  error_message   text,
-  delivered_at    timestamptz,
-  read_at         timestamptz,
-  created_at      timestamptz not null default now()
-);
-
-create index if not exists idx_notification_logs_user_id on public.notification_logs(user_id);
-create index if not exists idx_notification_logs_notification_id on public.notification_logs(notification_id);
-
-alter table public.notification_logs enable row level security;
-
-create policy "notification_logs_owner_select" on public.notification_logs
-  for select using (auth.uid() = user_id);
-
--- ------------------------------------------------------------
 -- 4. Enum: Add new notification types
--- ------------------------------------------------------------
-do $$ begin
-  alter type public.notification_type add value if not exists 'design_shared';
-exception when duplicate_object then null;
-end $$;
-do $$ begin
-  alter type public.notification_type add value if not exists 'featured_product_viewed';
-exception when duplicate_object then null;
-end $$;
 do $$ begin
   alter type public.notification_type add value if not exists 'notifications_read';
 exception when duplicate_object then null;
 end $$;
 
--- ------------------------------------------------------------
 -- 5. check_plan_limit function
--- ------------------------------------------------------------
 create or replace function public.check_plan_limit(
   p_store_id  uuid,
   p_limit_type text,
@@ -128,9 +39,7 @@ begin
 end;
 $$;
 
--- ------------------------------------------------------------
 -- 6. get_store_analytics function
--- ------------------------------------------------------------
 drop function if exists public.get_store_analytics(uuid);
 create or replace function public.get_store_analytics(p_store_id uuid)
 returns jsonb language plpgsql security definer as $$
@@ -153,9 +62,7 @@ begin
 end;
 $$;
 
--- ------------------------------------------------------------
 -- 7. calculate_profile_completion function
--- ------------------------------------------------------------
 create or replace function public.calculate_profile_completion(p_user_id uuid)
 returns int language plpgsql security definer as $$
 declare
@@ -181,9 +88,7 @@ begin
 end;
 $$;
 
--- ------------------------------------------------------------
 -- 8. get_admin_dashboard_stats function
--- ------------------------------------------------------------
 create or replace function public.get_admin_dashboard_stats()
 returns jsonb language plpgsql security definer as $$
 declare
@@ -206,9 +111,7 @@ begin
 end;
 $$;
 
--- ------------------------------------------------------------
 -- 9. Performance indexes
--- ------------------------------------------------------------
 create index if not exists idx_notifications_store_id on public.notifications(store_id);
 create index if not exists idx_products_store_active on public.products(store_id, is_active);
 create index if not exists idx_products_created_at on public.products(created_at);
