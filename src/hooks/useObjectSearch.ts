@@ -174,9 +174,17 @@ export function useObjectSearch() {
     setState((prev) => {
       const current = prev.selections[objectLabel];
       const exists = current?.selectedProducts?.some((p) => p.product_id === product.product_id);
+      const isReplace = !exists && (current?.selectedProducts?.length || 0) > 0;
       const newProducts = exists
         ? (current?.selectedProducts || []).filter((p) => p.product_id !== product.product_id)
         : [...(current?.selectedProducts || []), product];
+      if (isReplace) {
+        trackEvent("object_replaced", {
+          entityType: "product",
+          entityId: product.product_id,
+          metadata: { object_label: objectLabel, product_name: product.product_name, replaced_count: current?.selectedProducts?.length },
+        });
+      }
       return {
         ...prev,
         selections: {

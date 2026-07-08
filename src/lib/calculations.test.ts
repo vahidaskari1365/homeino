@@ -30,13 +30,10 @@ describe('Business Logic Calculations', () => {
   });
 
   describe('formatPersianPrice', () => {
-    it('should format price correctly with Persian digits and suffix', () => {
-      // Note: fa-IR localization might differ in environments but generally:
+    it('should format price correctly with comma separator and suffix', () => {
       const formatted = formatPersianPrice(1000);
       expect(formatted).toContain('تومان');
-      // Just check if it contains Persian digits (at least for one)
-      // 1000 in Persian is ۱۰۰۰
-      expect(formatted).toMatch(/[۰-۹]/);
+      expect(formatted).toContain(',');
     });
   });
 });

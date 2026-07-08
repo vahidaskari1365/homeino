@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from "vitest";
 import {
   validateImageFile,
@@ -11,6 +10,7 @@ function makeFile(type: string, size: number, name = "x"): File {
   const blob = new Blob([new Uint8Array(Math.max(1, Math.min(size, 1024)))], { type });
   const file = new File([blob], name, { type });
   // Force the reported size without allocating huge buffers.
+  // @ts-expect-error `size` is readonly on File, but this is test-only
   Object.defineProperty(file, "size", { value: size });
   return file;
 }

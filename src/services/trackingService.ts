@@ -19,7 +19,7 @@ export type AnalyticsEventType =
   | "address_added" | "address_updated" | "address_deleted"
   | "store_viewed" | "store_followed"
   | "design_shared" | "featured_product_viewed" | "notifications_read"
-  | "object_detected" | "object_selected" | "object_skipped" | "object_cleared"
+  | "object_detected" | "object_selected" | "object_skipped" | "object_cleared" | "object_replaced"
   | "design_started_from_objects"
   | "similarity_click"
   | "purchase_conversion"

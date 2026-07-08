@@ -6,10 +6,19 @@
 // similarity search, and design session management.
 // ============================================================
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/tracking";
 import { toast } from "@/hooks/use-toast";
+
+// ─── In-memory analysis cache (session-only) ──────────────
+const analysisCache = new Map<string, AIAnalysisResult>();
+
+async function hashFile(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 // ─── Types ────────────────────────────────────────────────
 export interface DetectedObject {
@@ -61,6 +70,7 @@ const INITIAL: UploadState = {
 // ─── Hook ─────────────────────────────────────────────────
 export function useVisualSearch() {
   const [state, setState] = useState<UploadState>(INITIAL);
+  const fileHashRef = useRef<string | null>(null);
 
   /**
    * Upload an inspiration image to Supabase Storage and create a
@@ -70,6 +80,20 @@ export function useVisualSearch() {
     setState((prev) => ({ ...prev, status: "uploading", error: null }));
 
     try {
+      // Compute hash for cache lookup before uploading
+      const hash = await hashFile(file);
+      const cached = analysisCache.get(hash);
+      if (cached) {
+        fileHashRef.current = hash;
+        setState((prev) => ({
+          ...prev,
+          status: "done",
+          imageUrl: URL.createObjectURL(file),
+          analysis: cached,
+        }));
+        return null; // signal: cached hit, no DB record
+      }
+
       const { data: auth } = await supabase.auth.getUser();
       const userId = auth?.user?.id;
 
@@ -186,6 +210,11 @@ export function useVisualSearch() {
         })
         .eq("id", refImageId);
 
+      // Cache the analysis result for this session
+      if (fileHashRef.current) {
+        analysisCache.set(fileHashRef.current, analysis);
+      }
+
       setState((prev) => ({ ...prev, analysis }));
 
       trackEvent("product_suggested", {
@@ -264,7 +293,11 @@ export function useVisualSearch() {
    */
   const uploadAndSearch = useCallback(async (file: File) => {
     const refId = await uploadImage(file);
-    if (!refId) return;
+    // refId is null either on error OR on cache hit
+    if (refId === null) {
+      if (state.analysis) return; // cache hit already set state
+      return;
+    }
 
     const analysis = await analyzeImage(refId);
     if (!analysis) return;
