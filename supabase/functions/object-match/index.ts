@@ -229,7 +229,9 @@ serve(async (req: Request) => {
     const apiKey = Deno.env.get("ZHIPU_API_KEY");
     if (!apiKey) throw new Error("ZHIPU_API_KEY not configured");
 
-    const base64Data = image_base64.includes(",") ? image_base64.split(",")[1] : image_base64;
+    const imgParts = image_base64.split(",");
+    const base64Data = imgParts.length > 1 ? imgParts[1] : image_base64;
+    const mimeType = image_base64.includes(":") ? image_base64.split(":")[1].split(";")[0] : "image/jpeg";
 
     // Check cache: hash the image and look up in reference_images
     const imageHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base64Data.slice(0, 1000)));
@@ -267,7 +269,7 @@ serve(async (req: Request) => {
               role: "user",
               content: [
                 { type: "text", text: buildDetectionPrompt() },
-                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Data}` } },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             }],
           }),

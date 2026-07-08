@@ -90,7 +90,9 @@ serve(async (req: Request) => {
       throw new Error("ZHIPU_API_KEY not configured on server");
     }
 
-    const base64Data = image_base64.includes(",") ? image_base64.split(",")[1] : image_base64;
+    const imgParts = image_base64.split(",");
+    const base64Data = imgParts.length > 1 ? imgParts[1] : image_base64;
+    const mimeType = image_base64.includes(":") ? image_base64.split(":")[1].split(";")[0] : "image/jpeg";
 
     // Step 1: Send to Zhipu (GLM-4V) for analysis
     const zhipuRes = await fetchWithTimeout(
@@ -107,7 +109,7 @@ serve(async (req: Request) => {
             role: "user",
             content: [
               { type: "text", text: buildVisualAnalysisPrompt() },
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Data}` } },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
             ],
           }],
         }),
