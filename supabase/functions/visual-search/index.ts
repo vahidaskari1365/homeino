@@ -122,7 +122,7 @@ serve(async (req: Request) => {
 
     const zhipuData = await zhipuRes.json();
     const raw = zhipuData?.choices?.[0]?.message?.content;
-    if (!raw) throw new Error("Empty Gemini response");
+    if (!raw) throw new Error("Empty Zhipu response");
 
     let analysis: {
       search_keywords: string;
