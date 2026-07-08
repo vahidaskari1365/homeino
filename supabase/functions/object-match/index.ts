@@ -107,52 +107,33 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   accessories: ["اکسسوری", "دکوری", "گلدان", "مجسمه", "ساعت", "accessory", "vase", "decor"],
 };
 
-async function callGemini(prompt: string, base64Data: string): Promise<string> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-  const res = await fetchWithTimeout(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ inline_data: { mime_type: "image/jpeg", data: base64Data } }, { text: prompt }] }],
-        generationConfig: { temperature: 0.2, topK: 16, maxOutputTokens: 4096, responseMimeType: "application/json" },
-      }),
-    },
-    GEMINI_TIMEOUT_MS
-  );
-  if (!res.ok) { const err = await res.text(); throw new Error(`Gemini error: ${err}`); }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Empty Gemini response");
-  return text;
-}
-
-async function callZhipu(prompt: string, imageUrl: string): Promise<string> {
+async function detectWithZhipu(prompt: string, imageUrl: string): Promise<string> {
   const apiKey = Deno.env.get("ZHIPU_API_KEY");
   if (!apiKey) throw new Error("ZHIPU_API_KEY not configured");
-  const res = await fetchWithTimeout(
-    "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "glm-4v", messages: [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: imageUrl } }] }] }),
-    },
-    GEMINI_TIMEOUT_MS
-  );
-  if (!res.ok) { const err = await res.text(); throw new Error(`Zhipu error: ${err}`); }
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Empty Zhipu response");
-  return text;
-}
-
-async function detectWithFallback(prompt: string, base64Data: string, imageUrl: string): Promise<string> {
-  const errors: string[] = [];
-  try { return await callGemini(prompt, base64Data); } catch (e) { errors.push(`Gemini: ${e instanceof Error ? e.message : e}`); }
-  try { return await callZhipu(prompt, imageUrl); } catch (e) { errors.push(`Zhipu: ${e instanceof Error ? e.message : e}`); }
-  throw new Error(`All AI providers failed: ${errors.join(" | ")}`);
+  const models = ["glm-4v", "glm-4v-plus", "glm-4v-flash"];
+  for (const model of models) {
+    try {
+      const res = await fetchWithTimeout(
+        "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model, messages: [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: imageUrl } }] }] }),
+        },
+        GEMINI_TIMEOUT_MS
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text) return text;
+      } else {
+        console.error(`Zhipu ${model} failed:`, await res.text());
+      }
+    } catch (e) {
+      console.error(`Zhipu ${model} error:`, e instanceof Error ? e.message : e);
+    }
+  }
+  throw new Error("All Zhipu models failed");
 }
 
 function guessCategory(label: string): string | null {
@@ -282,19 +263,17 @@ serve(async (req: Request) => {
     const ext = mimeType.split("/")[1] || "jpg";
 
     // Upload image to Supabase Storage for Zhipu to access via URL
-    const binaryStr = atob(base64Data);
-    const imgBytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) imgBytes[i] = binaryStr.charCodeAt(i);
-    const fileName = `object-match/${crypto.randomUUID()}.${ext}`;
     let imageUrl = `data:${mimeType};base64,${base64Data}`;
     try {
       const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-      const { data: uploadData } = await svc.storage.from("inspiration-images").upload(fileName, imgBytes, { contentType: mimeType, upsert: false });
-      if (uploadData) {
-        const { data: { publicUrl } } = svc.storage.from("inspiration-images").getPublicUrl(fileName);
+      const bin = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const name = `object-match/${crypto.randomUUID()}.${ext}`;
+      const { data: up } = await svc.storage.from("inspiration-images").upload(name, bin, { contentType: mimeType, upsert: false });
+      if (up) {
+        const { data: { publicUrl } } = svc.storage.from("inspiration-images").getPublicUrl(name);
         imageUrl = publicUrl;
       }
-    } catch { /* fallback to base64 */ }
+    } catch (e) { console.error("storage upload failed:", e instanceof Error ? e.message : e); }
 
     // Check cache: hash the image and look up in reference_images
     const imageHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base64Data.slice(0, 1000)));
@@ -316,9 +295,9 @@ serve(async (req: Request) => {
       }
     }
 
-    // Step 1: Detect objects via AI (Gemini primary, Zhipu fallback)
+    // Step 1: Detect objects via Zhipu
     if (!cachedDetection) {
-      const raw = await detectWithFallback(buildDetectionPrompt(), base64Data, imageUrl);
+      const raw = await detectWithZhipu(buildDetectionPrompt(), imageUrl);
       try { cachedDetection = JSON.parse(raw); } catch { throw new Error("Failed to parse AI detection response"); }
 
       // Cache in reference_images if user is authenticated
