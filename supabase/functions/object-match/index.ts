@@ -286,9 +286,10 @@ serve(async (req: Request) => {
     const fileName = `object-match/${crypto.randomUUID()}.${ext}`;
     let imageUrl = `data:${mimeType};base64,${base64Data}`;
     try {
-      const { data: uploadData } = await supabase.storage.from("inspiration-images").upload(fileName, imgBytes, { contentType: mimeType, upsert: false });
+      const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: uploadData } = await svc.storage.from("inspiration-images").upload(fileName, imgBytes, { contentType: mimeType, upsert: false });
       if (uploadData) {
-        const { data: { publicUrl } } = supabase.storage.from("inspiration-images").getPublicUrl(fileName);
+        const { data: { publicUrl } } = svc.storage.from("inspiration-images").getPublicUrl(fileName);
         imageUrl = publicUrl;
       }
     } catch { /* fallback to base64 */ }

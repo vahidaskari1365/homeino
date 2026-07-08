@@ -54,14 +54,15 @@ function buildSearchQuery(analysis: {
   return parts.join(" ");
 }
 
-async function uploadToStorage(supabase: ReturnType<typeof createClient>, base64Data: string, mimeType: string, ext: string, prefix: string): Promise<string> {
+async function uploadToStorage(base64Data: string, mimeType: string, ext: string, prefix: string): Promise<string> {
   const binaryStr = atob(base64Data);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
   const fileName = `${prefix}/${crypto.randomUUID()}.${ext}`;
-  const { data } = await supabase.storage.from("inspiration-images").upload(fileName, bytes, { contentType: mimeType, upsert: false });
+  const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data } = await svc.storage.from("inspiration-images").upload(fileName, bytes, { contentType: mimeType, upsert: false });
   if (data) {
-    const { data: { publicUrl } } = supabase.storage.from("inspiration-images").getPublicUrl(fileName);
+    const { data: { publicUrl } } = svc.storage.from("inspiration-images").getPublicUrl(fileName);
     return publicUrl;
   }
   return `data:${mimeType};base64,${base64Data}`;
@@ -170,7 +171,7 @@ serve(async (req: Request) => {
     const mimeType = image_base64.includes(":") ? (image_base64.split(":")[1].split(";")[0] || "image/jpeg") : "image/jpeg";
     const ext = mimeType.split("/")[1] || "jpg";
 
-    const imageUrl = await uploadToStorage(supabase, base64Data, mimeType, ext, "visual-search");
+    const imageUrl = await uploadToStorage(base64Data, mimeType, ext, "visual-search");
     const raw = await analyzeWithFallback(buildVisualAnalysisPrompt(), base64Data, imageUrl);
 
     let analysis: Record<string, unknown>;
