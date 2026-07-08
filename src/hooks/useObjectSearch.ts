@@ -141,13 +141,8 @@ export function useObjectSearch() {
           return;
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (session) headers["Authorization"] = `Bearer ${session.access_token}`;
-
         const { data, error: invokeError } = await supabase.functions.invoke("object-match", {
           body: { image_base64: base64 },
-          headers,
         });
 
         if (invokeError) throw new Error(invokeError.message || "خطا در تشخیص اشیاء");
