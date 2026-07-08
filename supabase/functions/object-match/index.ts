@@ -273,6 +273,8 @@ serve(async (req: Request) => {
 
     const { image_base64 } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
+    const rawSize = Math.round((image_base64.length * 0.75) / (1024 * 1024));
+    if (rawSize > 4) throw new Error(`حجم عکس بیش از حد مجاز است (${rawSize}MB). لطفاً عکس کوچک‌تری انتخاب کنید (حداکثر ۴ مگابایت).`);
 
     const imgParts = image_base64.split(",");
     const base64Data = imgParts.length > 1 ? imgParts[1] : image_base64;

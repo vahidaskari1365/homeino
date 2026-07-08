@@ -100,6 +100,10 @@ export function useObjectSearch() {
       toast.error("لطفاً یک تصویر معتبر انتخاب کنید");
       return;
     }
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("حجم عکس بیش از حد مجاز است (حداکثر ۴ مگابایت)");
+      return;
+    }
 
     abortRef.current?.abort();
     abortRef.current = new AbortController();

@@ -188,6 +188,7 @@ const AIDesign = () => {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر انتخاب کنید");
+    if (file.size > 4 * 1024 * 1024) return toast.error("حجم عکس بیش از حد مجاز است (حداکثر ۴ مگابایت)");
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);

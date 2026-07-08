@@ -34,6 +34,10 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
       setError("لطفاً یک تصویر انتخاب کنید");
       return;
     }
+    if (file.size > 4 * 1024 * 1024) {
+      setError("حجم عکس بیش از حد مجاز است (حداکثر ۴ مگابایت)");
+      return;
+    }
     setError(null);
     setProducts([]);
     setAnalysis(null);
