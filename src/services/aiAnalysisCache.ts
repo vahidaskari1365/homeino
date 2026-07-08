@@ -39,7 +39,8 @@ export class AiAnalysisCache<T = unknown> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data, error } = await (supabase.from("ai_analysis_cache") as any)
+      const { data, error } = await supabase
+        .from("ai_analysis_cache")
         .select("result")
         .eq("user_id", user.id)
         .eq("file_hash", fileHash)
@@ -62,7 +63,7 @@ export class AiAnalysisCache<T = unknown> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await (supabase.from("ai_analysis_cache") as any).upsert(
+      await supabase.from("ai_analysis_cache").upsert(
         {
           user_id: user.id,
           file_hash: fileHash,
@@ -85,7 +86,7 @@ export class AiAnalysisCache<T = unknown> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await (supabase.from("ai_analysis_cache") as any)
+      await supabase.from("ai_analysis_cache")
         .delete()
         .eq("user_id", user.id)
         .eq("file_hash", fileHash)

@@ -175,7 +175,7 @@ export function useObjectSearch() {
           imageUrl: URL.createObjectURL(file),
         }));
 
-        trackEvent("product_suggested" as any, {
+        trackEvent("product_suggested", {
           entityType: "reference_image",
           entityId: "object-match",
           metadata: {
@@ -186,7 +186,7 @@ export function useObjectSearch() {
         });
 
         detected.forEach((obj) => {
-          trackEvent("object_detected" as any, {
+          trackEvent("object_detected", {
             metadata: {
               label: obj.label,
               confidence: obj.confidence,
@@ -213,7 +213,7 @@ export function useObjectSearch() {
         ? (current?.selectedProducts || []).filter((p) => p.product_id !== product.product_id)
         : [...(current?.selectedProducts || []), product];
       if (isReplace) {
-        trackEvent("object_replaced" as any, {
+        trackEvent("object_replaced", {
           entityType: "product",
           entityId: product.product_id,
           metadata: { object_label: objectLabel, product_name: product.product_name, replaced_count: current?.selectedProducts?.length },
@@ -232,12 +232,12 @@ export function useObjectSearch() {
       };
     });
 
-    trackEvent("object_selected" as any, {
+    trackEvent("object_selected", {
       entityType: "product",
       entityId: product.product_id,
       metadata: { object_label: objectLabel, product_name: product.product_name, action: "select" },
     });
-    trackEvent("similarity_click" as any, {
+    trackEvent("similarity_click", {
       metadata: { object_label: objectLabel, product_id: product.product_id, product_name: product.product_name, action: "select" },
     });
   }, []);
@@ -255,7 +255,7 @@ export function useObjectSearch() {
       },
     }));
 
-    trackEvent("object_skipped" as any, {
+    trackEvent("object_skipped", {
       metadata: { object_label: objectLabel },
     });
   }, []);
@@ -273,7 +273,7 @@ export function useObjectSearch() {
       },
     }));
 
-    trackEvent("object_cleared" as any, {
+    trackEvent("object_cleared", {
       metadata: { object_label: objectLabel },
     });
   }, []);
@@ -307,7 +307,7 @@ export function useObjectSearch() {
     params.set("products", ids.join(","));
     params.set("from", "inspiration");
 
-    trackEvent("design_started_from_objects" as any, {
+    trackEvent("design_started_from_objects", {
       metadata: {
         product_count: ids.length,
         total_price: getTotalPrice(),
@@ -328,7 +328,7 @@ export function useObjectSearch() {
 
       const selectedProducts = getSelectedProducts();
 
-      const { error } = await (supabase.from("design_sessions") as any).insert({
+      const { error } = await supabase.from("design_sessions").insert({
         user_id: session.user.id,
         title: title || "الهام جدید",
         reference_image: state.imageBase64,

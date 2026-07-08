@@ -112,7 +112,7 @@ export function useVisualSearch() {
 
       const imageUrl = urlData?.publicUrl || "";
 
-      const { data: refImage, error: refError } = await (supabase.from("reference_images") as any)
+      const { data: refImage, error: refError } = await supabase.from("reference_images")
         .insert({
           user_id: userId,
           image_url: imageUrl,
@@ -133,7 +133,7 @@ export function useVisualSearch() {
         status: "analyzing",
       }));
 
-      trackEvent("room_uploaded" as any, {
+      trackEvent("room_uploaded", {
         entityType: "reference_image",
         entityId: refImage.id,
         metadata: { source: "inspiration_search", file_size: file.size },
@@ -158,7 +158,7 @@ export function useVisualSearch() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
 
-      const { data: refImage, error: refErr } = await (supabase.from("reference_images") as any)
+      const { data: refImage, error: refErr } = await supabase.from("reference_images")
         .select("image_url")
         .eq("id", refImageId)
         .single();
@@ -184,7 +184,7 @@ export function useVisualSearch() {
         description: data?.description || "",
       };
 
-      await (supabase.from("reference_images") as any)
+      await supabase.from("reference_images")
         .update({
           ai_analysis: analysis,
           ai_processed: true,
@@ -198,7 +198,7 @@ export function useVisualSearch() {
 
       setState((prev) => ({ ...prev, analysis }));
 
-      trackEvent("product_suggested" as any, {
+      trackEvent("product_suggested", {
         entityType: "reference_image",
         entityId: refImageId,
         metadata: {
@@ -254,7 +254,7 @@ export function useVisualSearch() {
           rank: i + 1,
         }));
 
-        await (supabase.from("visual_matches") as any).insert(matchInserts);
+        await supabase.from("visual_matches").insert(matchInserts);
       }
 
       setState((prev) => ({ ...prev, matches, status: "done" }));
@@ -303,7 +303,7 @@ export function useVisualSearch() {
     }
 
     try {
-      const { data, error } = await (supabase.from("saved_inspirations") as any)
+      const { data, error } = await supabase.from("saved_inspirations")
         .insert({
           user_id: auth.user.id,
           reference_image_id: state.referenceImageId,
@@ -322,7 +322,7 @@ export function useVisualSearch() {
           product_id: pid,
           sort_order: i,
         }));
-        await (supabase.from("saved_inspiration_products") as any).insert(productInserts);
+        await supabase.from("saved_inspiration_products").insert(productInserts);
       }
 
       toast({ title: "ذخیره شد", description: "الهام با موفقیت ذخیره شد" });
@@ -348,7 +348,7 @@ export function useVisualSearch() {
     if (!auth?.user?.id) return null;
 
     try {
-      const { data: session, error } = await (supabase.from("design_sessions") as any)
+      const { data: session, error } = await supabase.from("design_sessions")
         .insert({
           user_id: auth.user.id,
           source,
@@ -361,7 +361,7 @@ export function useVisualSearch() {
 
       if (error) throw error;
 
-      trackEvent("ai_started" as any, {
+      trackEvent("ai_started", {
         metadata: { source, product_count: productIds.length, session_id: session.id },
       });
 

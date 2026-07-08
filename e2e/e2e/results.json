@@ -1,0 +1,262 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "F:\\home\\homeino-main\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "e2e/playwright.config.ts"
+    ],
+    "configFile": "F:\\home\\homeino-main\\e2e\\playwright.config.ts",
+    "rootDir": "F:/home/homeino-main/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "F:/home/homeino-main/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "F:/home/homeino-main/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "e2e/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "customer-scenario.spec.ts",
+      "file": "customer-scenario.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Full Customer Scenario",
+          "file": "customer-scenario.spec.ts",
+          "line": 48,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. Login with test user",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3680,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✓ Logged in via API\n"
+                        },
+                        {
+                          "text": "✓ Login test passed\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-08T07:48:12.381Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e505228685be70406f65-a95518e5fa4312f55e02",
+              "file": "customer-scenario.spec.ts",
+              "line": 49,
+              "column": 3
+            },
+            {
+              "title": "2. Full flow: Inspiration → Design → Cart",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 22881,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n\n    at F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts:63:12",
+                        "location": {
+                          "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                          "column": 12,
+                          "line": 63
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 61 |\u001b[39m     \u001b[90m// Wait for any of the known entry card texts\u001b[39m\n \u001b[90m 62 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m.\u001b[39mrace([\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 63 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=طراحی خانه من\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m    |\u001b[39m            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 64 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=جستجوی بصری الهام\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m 65 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=پیشنهادات هومینو\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m 66 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=هومینو استودیو\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                            "column": 12,
+                            "line": 63
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n\n\n  61 |     // Wait for any of the known entry card texts\n  62 |     await Promise.race([\n> 63 |       page.waitForSelector(\"text=طراحی خانه من\", { timeout: 20000 }),\n     |            ^\n  64 |       page.waitForSelector(\"text=جستجوی بصری الهام\", { timeout: 20000 }),\n  65 |       page.waitForSelector(\"text=پیشنهادات هومینو\", { timeout: 20000 }),\n  66 |       page.waitForSelector(\"text=هومینو استودیو\", { timeout: 20000 }),\n    at F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts:63:12"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "✓ Logged in via API\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-08T07:48:16.266Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "F:\\home\\homeino-main\\test-results\\customer-scenario-Full-Cus-dfb9b-Inspiration-→-Design-→-Cart-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "F:\\home\\homeino-main\\test-results\\customer-scenario-Full-Cus-dfb9b-Inspiration-→-Design-→-Cart-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                        "column": 12,
+                        "line": 63
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 23705,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n\n    at F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts:63:12",
+                        "location": {
+                          "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                          "column": 12,
+                          "line": 63
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 61 |\u001b[39m     \u001b[90m// Wait for any of the known entry card texts\u001b[39m\n \u001b[90m 62 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m.\u001b[39mrace([\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 63 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=طراحی خانه من\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m    |\u001b[39m            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 64 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=جستجوی بصری الهام\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m 65 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=پیشنهادات هومینو\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\n \u001b[90m 66 |\u001b[39m       page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m\"text=هومینو استودیو\"\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m,\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                            "column": 12,
+                            "line": 63
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=طراحی خانه من') to be visible\u001b[22m\n\n\n  61 |     // Wait for any of the known entry card texts\n  62 |     await Promise.race([\n> 63 |       page.waitForSelector(\"text=طراحی خانه من\", { timeout: 20000 }),\n     |            ^\n  64 |       page.waitForSelector(\"text=جستجوی بصری الهام\", { timeout: 20000 }),\n  65 |       page.waitForSelector(\"text=پیشنهادات هومینو\", { timeout: 20000 }),\n  66 |       page.waitForSelector(\"text=هومینو استودیو\", { timeout: 20000 }),\n    at F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts:63:12"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "✓ Logged in via API\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-07-08T07:48:39.790Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "F:\\home\\homeino-main\\test-results\\customer-scenario-Full-Cus-dfb9b-Inspiration-→-Design-→-Cart-chromium-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "F:\\home\\homeino-main\\test-results\\customer-scenario-Full-Cus-dfb9b-Inspiration-→-Design-→-Cart-chromium-retry1\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "F:\\home\\homeino-main\\e2e\\customer-scenario.spec.ts",
+                        "column": 12,
+                        "line": 63
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "e505228685be70406f65-b43a9040b2e498e7f900",
+              "file": "customer-scenario.spec.ts",
+              "line": 55,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-08T07:48:11.697Z",
+    "duration": 52150.083,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
