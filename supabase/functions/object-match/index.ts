@@ -231,7 +231,22 @@ serve(async (req: Request) => {
 
     const imgParts = image_base64.split(",");
     const base64Data = imgParts.length > 1 ? imgParts[1] : image_base64;
-    const mimeType = image_base64.includes(":") ? image_base64.split(":")[1].split(";")[0] : "image/jpeg";
+    const mimeType = image_base64.includes(":") ? (image_base64.split(":")[1].split(";")[0] || "image/jpeg") : "image/jpeg";
+    const ext = mimeType.split("/")[1] || "jpg";
+
+    // Upload image to Supabase Storage for Zhipu to access via URL
+    const binaryStr = atob(base64Data);
+    const imgBytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) imgBytes[i] = binaryStr.charCodeAt(i);
+    const fileName = `object-match/${crypto.randomUUID()}.${ext}`;
+    let imageUrl = `data:${mimeType};base64,${base64Data}`;
+    try {
+      const { data: uploadData } = await supabase.storage.from("inspiration-images").upload(fileName, imgBytes, { contentType: mimeType, upsert: false });
+      if (uploadData) {
+        const { data: { publicUrl } } = supabase.storage.from("inspiration-images").getPublicUrl(fileName);
+        imageUrl = publicUrl;
+      }
+    } catch { /* fallback to base64 */ }
 
     // Check cache: hash the image and look up in reference_images
     const imageHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base64Data.slice(0, 1000)));
@@ -269,7 +284,7 @@ serve(async (req: Request) => {
               role: "user",
               content: [
                 { type: "text", text: buildDetectionPrompt() },
-                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+                { type: "image_url", image_url: { url: imageUrl } },
               ],
             }],
           }),
