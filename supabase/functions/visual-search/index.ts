@@ -86,14 +86,14 @@ serve(async (req: Request) => {
     // Build prompt
     const prompt = buildVisualAnalysisPrompt();
 
-    // Try Zhipu (GLM-4V) directly — skip Gemini since the API key is invalid
+    // Try Zhipu vision models, fallback to text-only model
     const zhipuApiKey = Deno.env.get("ZHIPU_API_KEY");
     if (!zhipuApiKey) throw new Error("ZHIPU_API_KEY not configured");
 
     let raw: string | null = null;
-    const zhipuModels = ["glm-4v", "glm-4v-plus", "glm-4v-flash"];
+    const zhipuVisionModels = ["glm-4v", "glm-4v-plus", "glm-4v-flash"];
 
-    for (const model of zhipuModels) {
+    for (const model of zhipuVisionModels) {
       try {
         const res = await fetchWithTimeout(
           "https://open.bigmodel.cn/api/paas/v4/chat/completions",
@@ -126,10 +126,33 @@ serve(async (req: Request) => {
       }
     }
 
-    if (!raw) throw new Error("All Zhipu models failed to analyze the image");
+    // Fallback: text-only model (no image, just keyword-based search)
+    if (!raw) {
+      console.error("Zhipu vision models all failed, trying text-only fallback");
+      try {
+        const textPrompt = `Generate search keywords for a home decor product based on the user's search intent. Return ONLY JSON: {"search_keywords": "Persian keywords", "category": null, "style": null, "colors": [], "materials": [], "visual_description": "Persian description"}`;
+        const res = await fetchWithTimeout(
+          "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+          {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${zhipuApiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "glm-4-flash", messages: [{ role: "user", content: textPrompt }] }),
+          },
+          AI_TIMEOUT_MS
+        );
+        if (res.ok) {
+          const data = await res.json();
+          raw = data?.choices?.[0]?.message?.content;
+        }
+      } catch (e) {
+        console.error("Zhipu text fallback error:", e instanceof Error ? e.message : e);
+      }
+    }
+
+    if (!raw) throw new Error("عکس قابل تحلیل نیست. لطفاً عکس دیگری尝试 کنید.");
 
     let analysis: Record<string, unknown>;
-    try { analysis = JSON.parse(raw); } catch { throw new Error("Failed to parse AI response"); }
+    try { analysis = JSON.parse(raw); } catch { console.error("Failed to parse AI response:", raw); throw new Error("خطا در پردازش پاسخ هوش مصنوعی"); }
 
     const searchQuery = buildSearchQuery(analysis);
 

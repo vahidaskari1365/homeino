@@ -305,7 +305,7 @@ serve(async (req: Request) => {
         await supabase.from("reference_images").insert({
           id: cacheKey.slice(0, 36),
           user_id: user.id,
-          image_url: `data:image/jpeg;base64,${base64Data.slice(0, 50)}...`,
+          image_url: imageUrl,
           source: "paste",
           ai_analysis: cachedDetection as unknown as Record<string, unknown>,
           ai_processed: true,

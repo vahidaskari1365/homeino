@@ -252,6 +252,96 @@ function buildFallbackResponse(): GeminiResponse {
   };
 }
 
+/** Upload base64 image to Supabase Storage and return a public URL */
+async function uploadImageForZhipu(imageBase64: string): Promise<string | null> {
+  try {
+    const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const mimeType = "image/jpeg";
+    const bin = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+    const name = `gemini-decorator/${crypto.randomUUID()}.jpg`;
+    const { data: up } = await svc.storage.from("inspiration-images").upload(name, bin, { contentType: mimeType, upsert: false });
+    if (up) {
+      const { data: { publicUrl } } = svc.storage.from("inspiration-images").getPublicUrl(name);
+      return publicUrl;
+    }
+  } catch (e) { console.error("upload image for Zhipu failed:", e instanceof Error ? e.message : e); }
+  return null;
+}
+
+/** Calls Zhipu (multi-model) and returns the parsed+validated+sanitized response, or throws */
+async function callZhipuOnce(
+  imageBase64: string,
+  filteredProducts: ProductInput[],
+  budget: number | undefined,
+  validProducts: Map<string, ProductInput>
+): Promise<GeminiResponse> {
+  const apiKey = Deno.env.get("ZHIPU_API_KEY");
+  if (!apiKey) throw new Error("ZHIPU_API_KEY not configured");
+
+  const imageUrl = await uploadImageForZhipu(imageBase64);
+  if (!imageUrl) throw new Error("Failed to upload image for Zhipu");
+
+  const prompt = buildGeminiPrompt(filteredProducts, budget);
+  const models = ["glm-4v", "glm-4v-plus", "glm-4v-flash"];
+  let lastError: unknown = null;
+
+  for (const model of models) {
+    try {
+      const res = await fetchWithTimeout(
+        "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: imageUrl } },
+              ],
+            }],
+          }),
+        },
+        GEMINI_TIMEOUT_MS
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Zhipu ${model} failed:`, text);
+        lastError = new Error(`Zhipu ${model}: ${text}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const raw = data?.choices?.[0]?.message?.content;
+      if (!raw) { lastError = new Error(`Zhipu ${model}: empty response`); continue; }
+
+      const cleaned = raw.replace(/```json|```/gi, "").trim();
+      let parsedJson: unknown;
+      try { parsedJson = JSON.parse(cleaned); } catch (e) {
+        lastError = new Error(`Zhipu ${model}: JSON parse error: ${e instanceof Error ? e.message : "Unknown"}`);
+        continue;
+      }
+
+      const validation = RawGeminiResponseSchema.safeParse(parsedJson);
+      if (!validation.success) {
+        lastError = new Error(`Zhipu ${model}: validation: ${validation.error.message}`);
+        continue;
+      }
+
+      const placements = sanitizePlacements(validation.data.placements, validProducts);
+      const total_price = computeTotalPrice(placements, validProducts);
+      return { consultation: validation.data.notes, placements, total_price };
+    } catch (e) {
+      lastError = e;
+      console.error(`Zhipu ${model} error:`, e instanceof Error ? e.message : e);
+    }
+  }
+
+  throw lastError ?? new Error("All Zhipu models failed");
+}
+
 /** Calls Gemini once and returns the parsed+validated+sanitized response, or throws on failure */
 async function callGeminiOnce(
   imageBase64: string,
@@ -310,17 +400,13 @@ async function callGeminiOnce(
     throw new Error(`Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : "Unknown"}`);
   }
 
-  // --- VALIDATION LAYER ---
   const validation = RawGeminiResponseSchema.safeParse(parsedJson);
   if (!validation.success) {
     throw new Error(`Gemini response failed schema validation: ${validation.error.message}`);
   }
   const parsed = validation.data;
 
-  // --- SANITIZATION LAYER ---
   const placements = sanitizePlacements(parsed.placements, validProducts);
-
-  // --- DATABASE LAYER (price enrichment) ---
   const total_price = computeTotalPrice(placements, validProducts);
 
   return {
@@ -400,38 +486,48 @@ serve(async (req: Request) => {
     const filteredProducts = selectTopProducts(products, budget, MAX_PRODUCTS_PER_REQUEST);
     const validProducts = new Map(filteredProducts.map((p) => [p.id, p]));
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not configured on server");
-    }
-
-    // --- AI LAYER call, with retry + validation; never let a bad AI response crash the system ---
-    let geminiOutput: GeminiResponse | null = null;
+    // --- AI LAYER call, with retry + fallback; never let a bad AI response crash the system ---
+    let aiOutput: GeminiResponse | null = null;
     let lastError: unknown = null;
 
-    for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
+    // Try Gemini first (with retries)
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (geminiApiKey) {
+      for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
+        try {
+          aiOutput = await callGeminiOnce(image_base64, filteredProducts, budget, validProducts, geminiApiKey);
+          break;
+        } catch (err) {
+          lastError = err;
+          console.error(`gemini-decorator attempt ${attempt} failed:`, err instanceof Error ? err.message : err);
+        }
+      }
+    } else {
+      console.error("GEMINI_API_KEY not configured, skipping Gemini");
+    }
+
+    // Fallback: try Zhipu if Gemini failed or key not available
+    if (!aiOutput) {
       try {
-        geminiOutput = await callGeminiOnce(image_base64, filteredProducts, budget, validProducts, apiKey);
-        break;
+        console.error("gemini-decorator: trying Zhipu fallback");
+        aiOutput = await callZhipuOnce(image_base64, filteredProducts, budget, validProducts);
       } catch (err) {
         lastError = err;
-        console.error(`gemini-decorator attempt ${attempt} failed:`, err instanceof Error ? err.message : err);
+        console.error("Zhipu fallback also failed:", err instanceof Error ? err.message : err);
       }
     }
 
-    // If the AI produced structurally valid but empty placements, or failed
-    // outright, this is the required "No valid design generated" fallback —
-    // never a UI crash.
-    const usedFallback = geminiOutput === null;
-    const finalOutput = geminiOutput ?? buildFallbackResponse();
+    // Safe fallback: empty placements never crash the UI
+    const usedFallback = aiOutput === null;
+    const finalOutput = aiOutput ?? buildFallbackResponse();
 
-    // --- Log the AI interaction (non-fatal if it fails) — required by failure-handling rules ---
+    // --- Log the AI interaction (non-fatal if it fails) ---
     const { error: logError } = await supabase.from("ai_logs").insert({
       user_id: user.id,
       room_id: room_id || null,
       prompt: `products=${filteredProducts.length}, budget=${budget ?? "n/a"}`,
       response: finalOutput,
-      model: usedFallback ? "gemini-1.5-flash:fallback" : "gemini-1.5-flash",
+      model: usedFallback ? "gemini-1.5-flash+zhipu:fallback" : finalOutput.placements.length > 0 ? "dynamic" : "gemini-1.5-flash",
     });
 
     if (logError) {
@@ -439,7 +535,7 @@ serve(async (req: Request) => {
     }
 
     if (usedFallback) {
-      console.error("gemini-decorator: all attempts failed, returning fallback response:", lastError);
+      console.error("gemini-decorator: all providers failed, returning fallback response:", lastError);
     }
 
     // Always return 200 with a well-formed payload — "placements: []" is a
