@@ -190,6 +190,11 @@ export function useObjectSearch() {
       };
     });
 
+    trackEvent("object_selected", {
+      entityType: "product",
+      entityId: product.product_id,
+      metadata: { object_label: objectLabel, product_name: product.product_name, action: "select" },
+    });
     trackEvent("similarity_click", {
       metadata: { object_label: objectLabel, product_id: product.product_id, product_name: product.product_name, action: "select" },
     });
