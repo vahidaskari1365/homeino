@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-const GEMINI_TIMEOUT_MS = 20_000;
+const AI_TIMEOUT_MS = 25_000;
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
@@ -54,119 +54,135 @@ function buildSearchQuery(analysis: {
   return parts.join(" ");
 }
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+async function uploadToStorage(supabase: ReturnType<typeof createClient>, base64Data: string, mimeType: string, ext: string, prefix: string): Promise<string> {
+  const binaryStr = atob(base64Data);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const fileName = `${prefix}/${crypto.randomUUID()}.${ext}`;
+  const { data } = await supabase.storage.from("inspiration-images").upload(fileName, bytes, { contentType: mimeType, upsert: false });
+  if (data) {
+    const { data: { publicUrl } } = supabase.storage.from("inspiration-images").getPublicUrl(fileName);
+    return publicUrl;
   }
+  return `data:${mimeType};base64,${base64Data}`;
+}
 
+async function callGemini(prompt: string, base64Data: string): Promise<string> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  const res = await fetchWithTimeout(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: "image/jpeg", data: base64Data } },
+            { text: prompt },
+          ],
+        }],
+        generationConfig: { temperature: 0.3, topK: 16, topP: 0.9, maxOutputTokens: 1024, responseMimeType: "application/json" },
+      }),
+    },
+    AI_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini error: ${err}`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Empty Gemini response");
+  return text;
+}
+
+async function callZhipu(prompt: string, imageUrl: string): Promise<string> {
+  const apiKey = Deno.env.get("ZHIPU_API_KEY");
+  if (!apiKey) throw new Error("ZHIPU_API_KEY not configured");
+  const res = await fetchWithTimeout(
+    "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "glm-4v",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageUrl } },
+          ],
+        }],
+      }),
+    },
+    AI_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Zhipu error: ${err}`);
+  }
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Empty Zhipu response");
+  return text;
+}
+
+async function analyzeWithFallback(prompt: string, base64Data: string, imageUrl: string): Promise<string> {
+  const errors: string[] = [];
+  // Try Gemini first
+  try {
+    return await callGemini(prompt, base64Data);
+  } catch (e) {
+    errors.push(`Gemini: ${e instanceof Error ? e.message : e}`);
+  }
+  // Fallback to Zhipu
+  try {
+    return await callZhipu(prompt, imageUrl);
+  } catch (e) {
+    errors.push(`Zhipu: ${e instanceof Error ? e.message : e}`);
+  }
+  throw new Error(`All AI providers failed: ${errors.join(" | ")}`);
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      // Visual search is a lightweight feature — allow anonymous users too
-      // but still verify the JWT is valid if provided
-    }
-
-    const { image_base64, text_query } = await req.json();
-    if (!image_base64) {
-      throw new Error("image_base64 is required");
-    }
-
-    const apiKey = Deno.env.get("ZHIPU_API_KEY");
-    if (!apiKey) {
-      throw new Error("ZHIPU_API_KEY not configured on server");
-    }
+    const { image_base64 } = await req.json();
+    if (!image_base64) throw new Error("image_base64 is required");
 
     const imgParts = image_base64.split(",");
     const base64Data = imgParts.length > 1 ? imgParts[1] : image_base64;
     const mimeType = image_base64.includes(":") ? (image_base64.split(":")[1].split(";")[0] || "image/jpeg") : "image/jpeg";
     const ext = mimeType.split("/")[1] || "jpg";
 
-    // Upload image to Supabase Storage for Zhipu to access via URL
-    const imgBlob = new Uint8Array(atob(base64Data).split("").map(c => c.charCodeAt(0)));
-    const fileName = `visual-search/${crypto.randomUUID()}.${ext}`;
-    let imageUrl = `data:${mimeType};base64,${base64Data}`;
-    try {
-      const { data: uploadData } = await supabase.storage.from("inspiration-images").upload(fileName, imgBlob, { contentType: mimeType, upsert: false });
-      if (uploadData) {
-        const { data: { publicUrl } } = supabase.storage.from("inspiration-images").getPublicUrl(fileName);
-        imageUrl = publicUrl;
-      }
-    } catch { /* fallback to base64 */ }
+    const imageUrl = await uploadToStorage(supabase, base64Data, mimeType, ext, "visual-search");
+    const raw = await analyzeWithFallback(buildVisualAnalysisPrompt(), base64Data, imageUrl);
 
-    // Step 1: Send to Zhipu (GLM-4V) for analysis
-    const zhipuRes = await fetchWithTimeout(
-      "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "glm-4v",
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: buildVisualAnalysisPrompt() },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ],
-          }],
-        }),
-      },
-      GEMINI_TIMEOUT_MS
-    );
+    let analysis: Record<string, unknown>;
+    try { analysis = JSON.parse(raw); } catch { throw new Error("Failed to parse AI response"); }
 
-    if (!zhipuRes.ok) {
-      const errorText = await zhipuRes.text();
-      throw new Error(`Zhipu API error (${zhipuRes.status}): ${errorText}`);
-    }
+    const searchQuery = buildSearchQuery(analysis as Parameters<typeof buildSearchQuery>[0]);
 
-    const zhipuData = await zhipuRes.json();
-    const raw = zhipuData?.choices?.[0]?.message?.content;
-    if (!raw) throw new Error("Empty Zhipu response");
-
-    let analysis: {
-      search_keywords: string;
-      category: string | null;
-      style: string | null;
-      colors: string[];
-      materials: string[];
-      visual_description: string;
-    };
-
-    try {
-      analysis = JSON.parse(raw);
-    } catch {
-      throw new Error("Failed to parse Gemini analysis");
-    }
-
-    // Step 2: Search products using the AI-generated query
-    const searchQuery = buildSearchQuery(analysis);
-
-    // Try the search_all RPC first
-    const { data: rpcData, error: rpcError } = await supabase.rpc("search_all", { query: searchQuery });
-
+    const { data: rpcData } = await supabase.rpc("search_all", { query: searchQuery });
     let products: Record<string, unknown>[] = [];
-
-    if (!rpcError && rpcData) {
-      const res = rpcData as { products: Record<string, unknown>[] };
-      products = (res.products || []).slice(0, 20);
+    if (rpcData) {
+      products = ((rpcData as { products: Record<string, unknown>[] }).products || []).slice(0, 20);
     } else {
-      // Fallback: textSearch on products
       const { data: fallbackData } = await supabase
         .from("products")
         .select("id, name, description, price, image_url, category_id, profile_id, rating, attributes")
@@ -176,40 +192,31 @@ serve(async (req: Request) => {
       products = (fallbackData as Record<string, unknown>[]) || [];
     }
 
-    // Step 3: If category or style was identified, also boost/filter by those
-    let categoryFiltered: Record<string, unknown>[] = products;
+    let categoryFiltered = products;
     if (analysis.category && products.length > 0) {
-      const { data: catData } = await supabase
-        .from("producer_categories")
-        .select("id")
-        .eq("slug", analysis.category)
-        .maybeSingle();
+      const { data: catData } = await supabase.from("producer_categories").select("id").eq("slug", analysis.category as string).maybeSingle();
       if (catData) {
         const catId = (catData as { id: string }).id;
-        // Move category matches to the front
         const inCat = products.filter((p) => p.category_id === catId);
         const outCat = products.filter((p) => p.category_id !== catId);
         categoryFiltered = [...inCat, ...outCat];
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        products: categoryFiltered.slice(0, 20),
-        analysis: {
-          search_keywords: analysis.search_keywords,
-          category: analysis.category,
-          style: analysis.style,
-          colors: analysis.colors,
-          materials: analysis.materials,
-          visual_description: analysis.visual_description,
-        },
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({
+      products: categoryFiltered.slice(0, 20),
+      analysis: {
+        search_keywords: analysis.search_keywords,
+        category: analysis.category,
+        style: analysis.style,
+        colors: analysis.colors,
+        materials: analysis.materials,
+        visual_description: analysis.visual_description,
+      },
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     console.error("visual-search error:", message);
