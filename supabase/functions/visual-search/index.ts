@@ -85,50 +85,43 @@ serve(async (req: Request) => {
       throw new Error("image_base64 is required");
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = Deno.env.get("ZHIPU_API_KEY");
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not configured on server");
+      throw new Error("ZHIPU_API_KEY not configured on server");
     }
 
     const base64Data = image_base64.includes(",") ? image_base64.split(",")[1] : image_base64;
 
-    // Step 1: Send to Gemini Vision for analysis
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const geminiBody = {
-      contents: [{
-        role: "user",
-        parts: [
-          { inline_data: { mime_type: "image/jpeg", data: base64Data } },
-          { text: buildVisualAnalysisPrompt() },
-        ],
-      }],
-      generationConfig: {
-        temperature: 0.3,
-        topK: 16,
-        topP: 0.9,
-        maxOutputTokens: 1024,
-        responseMimeType: "application/json",
-      },
-    };
-
-    const geminiRes = await fetchWithTimeout(
-      geminiUrl,
+    // Step 1: Send to Zhipu (GLM-4V) for analysis
+    const zhipuRes = await fetchWithTimeout(
+      "https://open.bigmodel.cn/api/paas/v4/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiBody),
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "glm-4v",
+          messages: [{
+            role: "user",
+            content: [
+              { type: "text", text: buildVisualAnalysisPrompt() },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Data}` } },
+            ],
+          }],
+        }),
       },
       GEMINI_TIMEOUT_MS
     );
 
-    if (!geminiRes.ok) {
-      const errorText = await geminiRes.text();
-      throw new Error(`Gemini API error (${geminiRes.status}): ${errorText}`);
+    if (!zhipuRes.ok) {
+      const errorText = await zhipuRes.text();
+      throw new Error(`Zhipu API error (${zhipuRes.status}): ${errorText}`);
     }
 
-    const geminiData = await geminiRes.json();
-    const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const zhipuData = await zhipuRes.json();
+    const raw = zhipuData?.choices?.[0]?.message?.content;
     if (!raw) throw new Error("Empty Gemini response");
 
     let analysis: {

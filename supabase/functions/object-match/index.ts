@@ -226,8 +226,8 @@ serve(async (req: Request) => {
     const { image_base64 } = await req.json();
     if (!image_base64) throw new Error("image_base64 is required");
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+    const apiKey = Deno.env.get("ZHIPU_API_KEY");
+    if (!apiKey) throw new Error("ZHIPU_API_KEY not configured");
 
     const base64Data = image_base64.includes(",") ? image_base64.split(",")[1] : image_base64;
 
@@ -251,48 +251,43 @@ serve(async (req: Request) => {
       }
     }
 
-    // Step 1: Detect objects via Gemini
+    // Step 1: Detect objects via Zhipu (GLM-4V)
     if (!cachedDetection) {
-      const geminiUrl =
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-      const geminiRes = await fetchWithTimeout(
-        geminiUrl,
+      const zhipuRes = await fetchWithTimeout(
+        "https://open.bigmodel.cn/api/paas/v4/chat/completions",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            contents: [{
+            model: "glm-4v",
+            messages: [{
               role: "user",
-              parts: [
-                { inline_data: { mime_type: "image/jpeg", data: base64Data } },
-                { text: buildDetectionPrompt() },
+              content: [
+                { type: "text", text: buildDetectionPrompt() },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Data}` } },
               ],
             }],
-            generationConfig: {
-              temperature: 0.2,
-              topK: 16,
-              maxOutputTokens: 4096,
-              responseMimeType: "application/json",
-            },
           }),
         },
         GEMINI_TIMEOUT_MS
       );
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        throw new Error(`Gemini API error (${geminiRes.status}): ${errText}`);
+      if (!zhipuRes.ok) {
+        const errText = await zhipuRes.text();
+        throw new Error(`Zhipu API error (${zhipuRes.status}): ${errText}`);
       }
 
-      const geminiData = await geminiRes.json();
-      const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!raw) throw new Error("Empty Gemini response");
+      const zhipuData = await zhipuRes.json();
+      const raw = zhipuData?.choices?.[0]?.message?.content;
+      if (!raw) throw new Error("Empty Zhipu response");
 
       try {
         cachedDetection = JSON.parse(raw);
       } catch {
-        throw new Error("Failed to parse Gemini detection response");
+        throw new Error("Failed to parse Zhipu detection response");
       }
 
       // Cache in reference_images if user is authenticated
