@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState, useCallback } from "react";
 import { formatNumber as fmt } from "@/lib/formatPrice";
 import { Link, useParams } from "react-router-dom";

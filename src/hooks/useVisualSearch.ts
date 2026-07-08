@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================================
 // Homeino — Visual Search Hook
 // ============================================================
@@ -10,15 +9,7 @@ import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/tracking";
 import { toast } from "@/hooks/use-toast";
-
-// ─── In-memory analysis cache (session-only) ──────────────
-const analysisCache = new Map<string, AIAnalysisResult>();
-
-async function hashFile(file: File): Promise<string> {
-  const buf = await file.arrayBuffer();
-  const hash = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+import { AiAnalysisCache } from "@/services/aiAnalysisCache";
 
 // ─── Types ────────────────────────────────────────────────
 export interface DetectedObject {
@@ -67,6 +58,8 @@ const INITIAL: UploadState = {
   error: null,
 };
 
+const visualCache = new AiAnalysisCache<AIAnalysisResult>("visual_search");
+
 // ─── Hook ─────────────────────────────────────────────────
 export function useVisualSearch() {
   const [state, setState] = useState<UploadState>(INITIAL);
@@ -80,9 +73,8 @@ export function useVisualSearch() {
     setState((prev) => ({ ...prev, status: "uploading", error: null }));
 
     try {
-      // Compute hash for cache lookup before uploading
-      const hash = await hashFile(file);
-      const cached = analysisCache.get(hash);
+      const hash = await AiAnalysisCache.hashFile(file);
+      const cached = await visualCache.get(hash);
       if (cached) {
         fileHashRef.current = hash;
         setState((prev) => ({
@@ -91,7 +83,7 @@ export function useVisualSearch() {
           imageUrl: URL.createObjectURL(file),
           analysis: cached,
         }));
-        return null; // signal: cached hit, no DB record
+        return null;
       }
 
       const { data: auth } = await supabase.auth.getUser();
@@ -103,10 +95,9 @@ export function useVisualSearch() {
         return null;
       }
 
-      // Upload to storage
       const ext = file.name.split(".").pop() || "jpg";
       const fileName = `inspirations/${userId}/${crypto.randomUUID()}.${ext}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("reference_images")
         .upload(fileName, file, {
           cacheControl: "3600",
@@ -115,16 +106,13 @@ export function useVisualSearch() {
 
       if (uploadError) throw new Error(uploadError.message);
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("reference_images")
         .getPublicUrl(fileName);
 
       const imageUrl = urlData?.publicUrl || "";
 
-      // Create reference image record
-      const { data: refImage, error: refError } = await supabase
-        .from("reference_images")
+      const { data: refImage, error: refError } = await (supabase.from("reference_images") as any)
         .insert({
           user_id: userId,
           image_url: imageUrl,
@@ -145,7 +133,7 @@ export function useVisualSearch() {
         status: "analyzing",
       }));
 
-      trackEvent("room_uploaded", {
+      trackEvent("room_uploaded" as any, {
         entityType: "reference_image",
         entityId: refImage.id,
         metadata: { source: "inspiration_search", file_size: file.size },
@@ -161,8 +149,7 @@ export function useVisualSearch() {
   }, []);
 
   /**
-   * Analyze the reference image using the Gemini Edge Function to detect
-   * furniture, style, colors, and materials.
+   * Analyze the reference image using the Gemini Edge Function.
    */
   const analyzeImage = useCallback(async (refImageId: string) => {
     setState((prev) => ({ ...prev, status: "analyzing" }));
@@ -171,16 +158,13 @@ export function useVisualSearch() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
 
-      // Get the reference image URL
-      const { data: refImage, error: refErr } = await supabase
-        .from("reference_images")
+      const { data: refImage, error: refErr } = await (supabase.from("reference_images") as any)
         .select("image_url")
         .eq("id", refImageId)
         .single();
 
       if (refErr || !refImage) throw new Error("Reference image not found");
 
-      // Call Gemini Edge Function for visual analysis
       const { data, error } = await supabase.functions.invoke("gemini-decorator", {
         body: {
           action: "analyze_inspiration",
@@ -200,24 +184,21 @@ export function useVisualSearch() {
         description: data?.description || "",
       };
 
-      // Save analysis to reference_images record
-      await supabase
-        .from("reference_images")
+      await (supabase.from("reference_images") as any)
         .update({
-          ai_analysis: analysis as unknown as Record<string, unknown>,
+          ai_analysis: analysis,
           ai_processed: true,
           ai_processed_at: new Date().toISOString(),
         })
         .eq("id", refImageId);
 
-      // Cache the analysis result for this session
       if (fileHashRef.current) {
-        analysisCache.set(fileHashRef.current, analysis);
+        await visualCache.set(fileHashRef.current, analysis);
       }
 
       setState((prev) => ({ ...prev, analysis }));
 
-      trackEvent("product_suggested", {
+      trackEvent("product_suggested" as any, {
         entityType: "reference_image",
         entityId: refImageId,
         metadata: {
@@ -237,7 +218,7 @@ export function useVisualSearch() {
   }, []);
 
   /**
-   * Search for visually similar products in Homeino's catalog.
+   * Search for visually similar products.
    */
   const searchProducts = useCallback(async (
     refImageId: string,
@@ -249,7 +230,6 @@ export function useVisualSearch() {
       const { data: auth } = await supabase.auth.getUser();
       const userId = auth?.user?.id;
 
-      // Call the database function for similarity search
       const { data, error } = await supabase.rpc("search_similar_products", {
         p_reference_image_id: refImageId,
         p_detected_objects: JSON.parse(JSON.stringify(analysis.objects)),
@@ -263,7 +243,6 @@ export function useVisualSearch() {
 
       const matches = (data as VisualMatchProduct[]) || [];
 
-      // Save visual matches to database
       if (matches.length > 0) {
         const matchInserts = matches.map((m, i) => ({
           reference_image_id: refImageId,
@@ -275,7 +254,7 @@ export function useVisualSearch() {
           rank: i + 1,
         }));
 
-        await supabase.from("visual_matches").insert(matchInserts as unknown as never);
+        await (supabase.from("visual_matches") as any).insert(matchInserts);
       }
 
       setState((prev) => ({ ...prev, matches, status: "done" }));
@@ -293,9 +272,8 @@ export function useVisualSearch() {
    */
   const uploadAndSearch = useCallback(async (file: File) => {
     const refId = await uploadImage(file);
-    // refId is null either on error OR on cache hit
     if (refId === null) {
-      if (state.analysis) return; // cache hit already set state
+      if (state.analysis) return;
       return;
     }
 
@@ -303,7 +281,7 @@ export function useVisualSearch() {
     if (!analysis) return;
 
     await searchProducts(refId, analysis);
-  }, [uploadImage, analyzeImage, searchProducts]);
+  }, [uploadImage, analyzeImage, searchProducts, state.analysis]);
 
   /**
    * Save current inspiration with selected products.
@@ -325,8 +303,7 @@ export function useVisualSearch() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("saved_inspirations")
+      const { data, error } = await (supabase.from("saved_inspirations") as any)
         .insert({
           user_id: auth.user.id,
           reference_image_id: state.referenceImageId,
@@ -338,7 +315,6 @@ export function useVisualSearch() {
 
       if (error) throw error;
 
-      // Save selected products
       const productsToSave = selectedProductIds || state.matches.map((m) => m.product_id);
       if (productsToSave.length > 0) {
         const productInserts = productsToSave.map((pid, i) => ({
@@ -346,7 +322,7 @@ export function useVisualSearch() {
           product_id: pid,
           sort_order: i,
         }));
-        await supabase.from("saved_inspiration_products").insert(productInserts as unknown as never);
+        await (supabase.from("saved_inspiration_products") as any).insert(productInserts);
       }
 
       toast({ title: "ذخیره شد", description: "الهام با موفقیت ذخیره شد" });
@@ -362,7 +338,7 @@ export function useVisualSearch() {
   }, [state.referenceImageId, state.matches]);
 
   /**
-   * Create a design session and navigate to AI Design page with pre-selected products.
+   * Create a design session and navigate to AI Design page.
    */
   const startDesignSession = useCallback(async (
     productIds: string[],
@@ -372,9 +348,7 @@ export function useVisualSearch() {
     if (!auth?.user?.id) return null;
 
     try {
-      // Create design session
-      const { data: session, error } = await supabase
-        .from("design_sessions")
+      const { data: session, error } = await (supabase.from("design_sessions") as any)
         .insert({
           user_id: auth.user.id,
           source,
@@ -387,11 +361,10 @@ export function useVisualSearch() {
 
       if (error) throw error;
 
-      trackEvent("ai_started", {
+      trackEvent("ai_started" as any, {
         metadata: { source, product_count: productIds.length, session_id: session.id },
       });
 
-      // Return the URL to navigate to
       const params = new URLSearchParams();
       params.set("products", productIds.join(","));
       if (session.id) params.set("session", session.id);
@@ -400,7 +373,6 @@ export function useVisualSearch() {
       return `/ai-design?${params.toString()}`;
     } catch (err) {
       console.error("Failed to create design session:", err);
-      // Fallback: navigate without session
       const params = new URLSearchParams();
       params.set("products", productIds.join(","));
       return `/ai-design?${params.toString()}`;

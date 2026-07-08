@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 // ============================================================
 // Homeino — Phase 3: Subscription Engine (useSubscription)

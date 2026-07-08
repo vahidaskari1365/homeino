@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Upload, Wand2, Loader2, ArrowLeft, Sparkles, RefreshCw,

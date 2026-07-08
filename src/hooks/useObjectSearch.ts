@@ -1,9 +1,9 @@
-// @ts-nocheck
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/tracking";
 import { toast } from "sonner";
+import { AiAnalysisCache } from "@/services/aiAnalysisCache";
 
 export interface DetectedObject {
   label: string;
@@ -60,6 +60,16 @@ const INITIAL: ObjectSearchState = {
   error: null,
 };
 
+interface ObjectMatchResult {
+  objects: DetectedObject[];
+  overall_style?: string;
+  room_type?: string;
+  total_products?: number;
+  error?: string;
+}
+
+const objectMatchCache = new AiAnalysisCache<ObjectMatchResult>("object_match");
+
 function createInitialSelection(objects: DetectedObject[]): Record<string, ObjectSelection> {
   const sel: Record<string, ObjectSelection> = {};
   objects.forEach((obj) => {
@@ -77,6 +87,7 @@ export function useObjectSearch() {
   const [state, setState] = useState<ObjectSearchState>(INITIAL);
   const navigate = useNavigate();
   const abortRef = useRef<AbortController | null>(null);
+  const fileHashRef = useRef<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -111,6 +122,25 @@ export function useObjectSearch() {
       setState((prev) => ({ ...prev, imageBase64: base64, status: "detecting" }));
 
       try {
+        // Check cache before calling the edge function
+        const hash = await AiAnalysisCache.hashFile(file);
+        fileHashRef.current = hash;
+        const cached = await objectMatchCache.get(hash);
+        if (cached) {
+          const detected = cached.objects as DetectedObject[];
+          const selections = createInitialSelection(detected);
+          setState((prev) => ({
+            ...prev,
+            status: "done",
+            objects: detected,
+            overallStyle: cached.overall_style || null,
+            roomType: cached.room_type || null,
+            selections,
+            imageUrl: URL.createObjectURL(file),
+          }));
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (session) headers["Authorization"] = `Bearer ${session.access_token}`;
@@ -128,31 +158,35 @@ export function useObjectSearch() {
           return;
         }
 
-        const detected = data.objects as DetectedObject[];
+        const result = data as ObjectMatchResult;
+        const detected = result.objects as DetectedObject[];
         const selections = createInitialSelection(detected);
+
+        // Store in cache
+        await objectMatchCache.set(hash, result);
 
         setState((prev) => ({
           ...prev,
           status: "done",
           objects: detected,
-          overallStyle: data.overall_style || null,
-          roomType: data.room_type || null,
+          overallStyle: result.overall_style || null,
+          roomType: result.room_type || null,
           selections,
           imageUrl: URL.createObjectURL(file),
         }));
 
-        trackEvent("product_suggested", {
+        trackEvent("product_suggested" as any, {
           entityType: "reference_image",
           entityId: "object-match",
           metadata: {
             object_count: detected.length,
-            total_products: data.total_products,
-            overall_style: data.overall_style,
+            total_products: result.total_products,
+            overall_style: result.overall_style,
           },
         });
 
         detected.forEach((obj) => {
-          trackEvent("object_detected", {
+          trackEvent("object_detected" as any, {
             metadata: {
               label: obj.label,
               confidence: obj.confidence,
@@ -179,7 +213,7 @@ export function useObjectSearch() {
         ? (current?.selectedProducts || []).filter((p) => p.product_id !== product.product_id)
         : [...(current?.selectedProducts || []), product];
       if (isReplace) {
-        trackEvent("object_replaced", {
+        trackEvent("object_replaced" as any, {
           entityType: "product",
           entityId: product.product_id,
           metadata: { object_label: objectLabel, product_name: product.product_name, replaced_count: current?.selectedProducts?.length },
@@ -198,12 +232,12 @@ export function useObjectSearch() {
       };
     });
 
-    trackEvent("object_selected", {
+    trackEvent("object_selected" as any, {
       entityType: "product",
       entityId: product.product_id,
       metadata: { object_label: objectLabel, product_name: product.product_name, action: "select" },
     });
-    trackEvent("similarity_click", {
+    trackEvent("similarity_click" as any, {
       metadata: { object_label: objectLabel, product_id: product.product_id, product_name: product.product_name, action: "select" },
     });
   }, []);
@@ -221,7 +255,7 @@ export function useObjectSearch() {
       },
     }));
 
-    trackEvent("object_skipped", {
+    trackEvent("object_skipped" as any, {
       metadata: { object_label: objectLabel },
     });
   }, []);
@@ -239,7 +273,7 @@ export function useObjectSearch() {
       },
     }));
 
-    trackEvent("object_cleared", {
+    trackEvent("object_cleared" as any, {
       metadata: { object_label: objectLabel },
     });
   }, []);
@@ -273,7 +307,7 @@ export function useObjectSearch() {
     params.set("products", ids.join(","));
     params.set("from", "inspiration");
 
-    trackEvent("design_started_from_objects", {
+    trackEvent("design_started_from_objects" as any, {
       metadata: {
         product_count: ids.length,
         total_price: getTotalPrice(),
@@ -294,13 +328,13 @@ export function useObjectSearch() {
 
       const selectedProducts = getSelectedProducts();
 
-      const { error } = await supabase.from("design_sessions").insert({
+      const { error } = await (supabase.from("design_sessions") as any).insert({
         user_id: session.user.id,
         title: title || "الهام جدید",
         reference_image: state.imageBase64,
         status: "draft",
         metadata: {
-          objects: state.objects.map((o) => ({ label: o.label, confidence: o.confidence })),
+          objects: state.objects.map((o: DetectedObject) => ({ label: o.label, confidence: o.confidence })),
           selections: Object.entries(state.selections).map(([, s]) => ({
             object_label: s.objectLabel,
             product_ids: s.selectedProducts.map((p) => p.product_id),
@@ -314,7 +348,7 @@ export function useObjectSearch() {
       if (error) throw error;
 
       toast.success("الهام با موفقیت ذخیره شد");
-    } catch (e) {
+    } catch {
       toast.error("خطا در ذخیره الهام");
     }
   }, [state, getSelectedProducts]);

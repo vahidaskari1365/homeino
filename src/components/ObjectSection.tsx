@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Check, X, Star, RotateCcw, Sofa } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

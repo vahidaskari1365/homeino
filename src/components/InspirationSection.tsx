@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { ArrowLeft, Bookmark, Heart } from "lucide-react";
 import { useInspirations } from "@/hooks/useInspirations";

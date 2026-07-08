@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, type ComponentType } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

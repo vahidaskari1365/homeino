@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { formatPrice as fmtPrice } from "@/lib/formatPrice";
 import { Link, useSearchParams } from "react-router-dom";

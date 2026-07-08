@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useTrustScore } from "@/hooks/useTrustScore";
 import { trustService } from "@/services/trustService";
 import { Card } from "@/components/ui/card";

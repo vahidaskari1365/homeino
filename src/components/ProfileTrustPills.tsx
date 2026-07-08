@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from "react";
 import { StoreTrustPills } from "./StoreTrustPills";
 import { supabase } from "@/integrations/supabase/client";

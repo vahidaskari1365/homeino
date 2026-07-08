@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useTrustScore } from "@/hooks/useTrustScore";
 import { trustService } from "@/services/trustService";
 import { ShieldCheck, Crown, Sparkles, Star, Loader2 } from "lucide-react";
