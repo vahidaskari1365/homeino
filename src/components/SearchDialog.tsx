@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Package, Store, Palette, Tag, Image as ImageIcon } from "lucide-react";
+import { Search, Loader2, Package, Store, Palette, Tag, BookOpen, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VisualSearch from "./VisualSearch";
 import ViewInMyRoomButton from "./ViewInMyRoomButton";
+import { CONTENT_TYPE_LABELS } from "@/types/content-hub";
 
 interface SearchDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ type ProductHit = { id: string; name: string; price: number | null; image_url: s
 type ShopHit = { id: string; brand_name: string; city: string | null };
 type DesignerHit = { id: string; display_name: string };
 type SecondHit = { id: string; title: string; price: number | null; city: string | null };
+type ContentHit = { id: string; title: string; title_fa: string | null; image_url: string; content_type: string; summary: string | null };
 
 const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
   const [q, setQ] = useState("");
@@ -25,35 +27,42 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
   const [shops, setShops] = useState<ShopHit[]>([]);
   const [designers, setDesigners] = useState<DesignerHit[]>([]);
   const [second, setSecond] = useState<SecondHit[]>([]);
+  const [contents, setContents] = useState<ContentHit[]>([]);
 
   const run = useCallback(async (term: string) => {
     const t = term.trim();
     if (t.length < 2) {
-      setProducts([]); setShops([]); setDesigners([]); setSecond([]);
+      setProducts([]); setShops([]); setDesigners([]); setSecond([]); setContents([]);
       return;
     }
     setLoading(true);
-    
+
     const { data: rpcData, error: rpcError } = await supabase.rpc("search_all", { query: t });
-    
+
     if (!rpcError && rpcData) {
       const res = rpcData as { products: ProductHit[]; profiles: ShopHit[]; second_hand: SecondHit[] };
       setProducts(res.products || []);
       setShops(res.profiles || []);
       setSecond(res.second_hand || []);
-      const { data: dData } = await supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", `%${t}%`).limit(6);
-      setDesigners((dData as DesignerHit[]) || []);
+      const [dData, cData] = await Promise.all([
+        supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", `%${t}%`).limit(6),
+        supabase.from("inspirations").select("id,title,title_fa,image_url,content_type,summary").eq("ai_processed", true).or(`title_fa.ilike.%${t}%,title.ilike.%${t}%,summary.ilike.%${t}%`).order("popularity", { ascending: false }).limit(6),
+      ]);
+      setDesigners((dData.data as DesignerHit[]) || []);
+      setContents((cData.data as ContentHit[]) || []);
     } else {
-      const [p, s, d, sh] = await Promise.all([
+      const [p, s, d, sh, c] = await Promise.all([
         supabase.from("products").select("id,name,price,image_url,profile_id").textSearch("name", t, { config: 'simple', type: 'websearch' }).limit(8),
         supabase.from("public_profiles").select("id,brand_name,city").textSearch("brand_name", t, { config: 'simple', type: 'websearch' }).limit(6),
         supabase.from("designers").select("id,display_name").eq("is_active", true).ilike("display_name", `%${t}%`).limit(6),
         supabase.from("public_second_hand_listings").select("id,title,price,city").textSearch("title", t, { config: 'simple', type: 'websearch' }).limit(6),
+        supabase.from("inspirations").select("id,title,title_fa,image_url,content_type,summary").eq("ai_processed", true).or(`title_fa.ilike.%${t}%,title.ilike.%${t}%,summary.ilike.%${t}%`).order("popularity", { ascending: false }).limit(6),
       ]);
       setProducts((p.data as ProductHit[]) || []);
       setShops((s.data as ShopHit[]) || []);
       setDesigners((d.data as DesignerHit[]) || []);
       setSecond((sh.data as SecondHit[]) || []);
+      setContents((c.data as ContentHit[]) || []);
     }
     setLoading(false);
   }, []);
@@ -64,11 +73,11 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
   }, [q, run]);
 
   useEffect(() => {
-    if (!open) { setQ(""); setProducts([]); setShops([]); setDesigners([]); setSecond([]); }
+    if (!open) { setQ(""); setProducts([]); setShops([]); setDesigners([]); setSecond([]); setContents([]); }
   }, [open]);
 
   const close = () => onOpenChange(false);
-  const total = products.length + shops.length + designers.length + second.length;
+  const total = products.length + shops.length + designers.length + second.length + contents.length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,7 +101,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="نام محصول، فروشگاه، طراح یا آگهی..."
+              placeholder="نام محصول، فروشگاه، طراح، آگهی یا محتوا..."
               className="text-base"
             />
             <div className="max-h-[55vh] overflow-y-auto space-y-5">
@@ -104,6 +113,25 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
               )}
               {!loading && q.trim().length < 2 && (
                 <p className="text-center text-muted-foreground py-8 text-sm">حداقل ۲ کاراکتر وارد کنید.</p>
+              )}
+
+              {contents.length > 0 && (
+                <section>
+                  <h4 className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1"><BookOpen size={14} /> محتوا</h4>
+                  <div className="space-y-1">
+                    {contents.map((c) => (
+                      <Link key={c.id} to={`/inspirations/${c.id}`} onClick={close} className="flex items-center gap-3 p-2 rounded hover:bg-muted transition group">
+                        <div className="w-10 h-10 rounded bg-muted overflow-hidden flex-shrink-0">
+                          <img src={c.image_url} alt={c.title_fa || c.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{c.title_fa || c.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{CONTENT_TYPE_LABELS[c.content_type] || c.content_type}{c.summary ? ` — ${c.summary.slice(0, 40)}...` : ""}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
               )}
 
               {products.length > 0 && (

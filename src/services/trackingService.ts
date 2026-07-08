@@ -23,7 +23,12 @@ export type AnalyticsEventType =
   | "similarity_click"
   | "purchase_conversion"
   | "add_to_cart" | "remove_from_cart"
-  | "checkout_started" | "order_placed";
+  | "checkout_started" | "order_placed"
+  | "content_viewed" | "content_saved" | "content_shared"
+  | "content_video_played" | "content_scrolled"
+  | "product_clicked_from_content" | "store_clicked_from_content"
+  | "service_clicked_from_content"
+  | "design_started_from_content";
 
 export interface TrackEventOptions {
   entityType?: string;
