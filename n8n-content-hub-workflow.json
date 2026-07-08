@@ -1,0 +1,324 @@
+{
+  "name": "Homeino Content Hub - Auto Publisher",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://italydreamdesign.com/en/feed/",
+        "options": {}
+      },
+      "id": "rss1",
+      "name": "Italy Dream Design",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 100]
+    },
+    {
+      "parameters": {
+        "url": "https://materialiedesign.it/feed/",
+        "options": {}
+      },
+      "id": "rss2",
+      "name": "Materialiedesign",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 250]
+    },
+    {
+      "parameters": {
+        "url": "https://www.internimagazine.com/feed/",
+        "options": {}
+      },
+      "id": "rss3",
+      "name": "Interni Magazine",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://designsignal.ai/feed/",
+        "options": {}
+      },
+      "id": "rss4",
+      "name": "Design Signal",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 550]
+    },
+    {
+      "parameters": {
+        "url": "https://www.dezeen.com/feed/",
+        "options": {}
+      },
+      "id": "rss5",
+      "name": "Dezeen",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 700]
+    },
+    {
+      "parameters": {
+        "url": "https://www.furnishingdesign.it/feed/",
+        "options": {}
+      },
+      "id": "rss6",
+      "name": "Furnishing Design",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 850]
+    },
+    {
+      "parameters": {
+        "url": "https://www.maison-objet.com/en/rss",
+        "options": {}
+      },
+      "id": "rss7",
+      "name": "Maison&Objet",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 1000]
+    },
+    {
+      "parameters": {
+        "url": "https://www.cotemaison.fr/rss",
+        "options": {}
+      },
+      "id": "rss8",
+      "name": "Côté Maison",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 1150]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all RSS feeds\nconst items = $('Italy Dream Design').all()\n  .concat($('Materialiedesign').all())\n  .concat($('Interni Magazine').all())\n  .concat($('Design Signal').all())\n  .concat($('Dezeen').all())\n  .concat($('Furnishing Design').all())\n  .concat($('Maison&Objet').all())\n  .concat($('Côté Maison').all())\n\n// Remove duplicates by link and filter out old items (last 7 days)\nconst seen = new Set()\nconst sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000\n\nreturn items.filter(item => {\n  const link = item.json.link || item.json.url || ''\n  if (!link || seen.has(link)) return false\n  seen.add(link)\n  \n  // Check if within last 7 days\n  const pubDate = new Date(item.json.pubDate || item.json.createdAt || 0).getTime()\n  return pubDate > sevenDaysAgo\n}).map(item => ({\n  title: item.json.title || '',\n  description: item.json.description || item.json.content || '',\n  image_url: (item.json.enclosure || {}).url || \n             (item.json['media:content'] || {}).url || \n             item.json.image || \n             (item.json.content || '').match(/<img[^>]*src=\"([^\"]*)\"/)?.[1] || '',\n  source_url: item.json.link || item.json.url || '',\n  source_name: 'rss',\n  gallery: []\n}))"
+      },
+      "id": "merge",
+      "name": "Merge & Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['source_url'] }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": false,
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json['title'] }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json['description'] }}"
+            },
+            {
+              "name": "image_url",
+              "value": "={{ $json['image_url'] }}"
+            },
+            {
+              "name": "source_url",
+              "value": "={{ $json['source_url'] }}"
+            },
+            {
+              "name": "source_name",
+              "value": "={{ $json['source_name'] }}"
+            },
+            {
+              "name": "gallery",
+              "value": "={{ $json['gallery'] }}"
+            }
+          ]
+        }
+      },
+      "id": "fetchFullContent",
+      "name": "Fetch Full Article HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract clean text from HTML\nconst html = $json.body || ''\n\n// Remove scripts, styles, nav, footer, header\nconst cleaned = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<nav[^>]*>[\\s\\S]*?<\\/nav>/gi, '')\n  .replace(/<footer[^>]*>[\\s\\S]*?<\\/footer>/gi, '')\n  .replace(/<header[^>]*>[\\s\\S]*?<\\/header>/gi, '')\n\n// Extract text from <article> or <main> or body\nconst article = cleaned.match(/<article[^>]*>([\\s\\S]*?)<\\/article>/i) ||\n                cleaned.match(/<main[^>]*>([\\s\\S]*?)<\\/main>/i) ||\n                [null, cleaned]\n\n// Get all images in article\nconst images = (article[1] || cleaned).match(/<img[^>]*src=\"([^\"]*)\"/g) || []\nconst gallery = images\n  .map(s => s.match(/src=\"([^\"]*)\"/)?.[1])\n  .filter(Boolean)\n  .filter(url => url.startsWith('http'))\n  .slice(0, 10)\n\n// Strip HTML to get clean text\nconst text = (article[1] || cleaned)\n  .replace(/<[^>]*>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .substring(0, 3000)\n\nreturn [{\n  ...$json,\n  description: text || $json.description,\n  gallery\n}]"
+      },
+      "id": "extractContent",
+      "name": "Extract Content & Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://PROJECT_REF.supabase.co/functions/v1/content-hub-ingest",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {
+          "timeout": 120000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+            }
+          ]
+        }
+      },
+      "id": "sendToSupabase",
+      "name": "Send to Supabase Edge Function",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log results\nconst results = $json.results || [$json]\nreturn results.map(r => ({\n  status: r.status || r.error ? 'failed' : 'success',\n  id: r.id || null,\n  title: r.title || 'unknown',\n  error: r.error || null\n}))"
+      },
+      "id": "logResults",
+      "name": "Log Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 500]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Italy Dream Design",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Materialiedesign",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Interni Magazine",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Design Signal",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dezeen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Furnishing Design",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Maison&Objet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Côté Maison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Italy Dream Design": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Materialiedesign": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Interni Magazine": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Design Signal": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Dezeen": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Furnishing Design": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Maison&Objet": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Côté Maison": {
+      "main": [
+        [{ "node": "Merge & Deduplicate", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge & Deduplicate": {
+      "main": [
+        [{ "node": "Fetch Full Article HTML", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Full Article HTML": {
+      "main": [
+        [{ "node": "Extract Content & Images", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Content & Images": {
+      "main": [
+        [{ "node": "Send to Supabase Edge Function", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send to Supabase Edge Function": {
+      "main": [
+        [{ "node": "Log Results", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

@@ -45,13 +45,8 @@ const VisualSearch = ({ onClose }: { onClose: () => void }) => {
       setImageBase64(base64);
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (session) headers["Authorization"] = `Bearer ${session.access_token}`;
-
         const { data, error: invokeError } = await supabase.functions.invoke("visual-search", {
           body: { image_base64: base64 },
-          headers,
         });
 
         if (invokeError) throw new Error(invokeError.message || "خطا در جستجوی تصویری");
