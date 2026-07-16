@@ -49,6 +49,7 @@ PIXEL-PERFECT RENDER ENGINE (src/lib/overlayGeometry.ts + src/components/Product
 - ✅ **Product filtering before AI** — max 50 products sent to Gemini
 - ✅ **Price is DB-only** — AI price output is ignored; total is always `SUM(products.price)` from Supabase
 - ✅ **Pixel-perfect overlay rendering** — normalized 0-1 AI coordinates are mapped to real pixel space using the image's rendered/natural size (no viewport-unit or raw-percentage positioning)
+- ✅ **Strict CORS origin validation** — all Edge Functions validate request Origin against allowed domains (production Supabase URL + localhost); wildcard `*` is never used in production
 - ✅ **AI → UI never coupled directly** — every AI response passes through Validation → Sanitization → Normalization → DB Enrichment (`src/lib/aiPipeline.ts`) before it ever reaches a render component
 - ✅ **Reliability** — retry (max 2 attempts), 30s timeout, per-user rate limiting, fallback state on invalid/empty output, full audit trail in `ai_logs`
 
@@ -59,6 +60,7 @@ Homeino uses exactly **one** user-facing AI system. No duplicate or alternate AI
 | Layer | Provider | Purpose | User-facing |
 |---|---|---|---|
 | AI CORE | **Gemini 1.5 Flash** (`gemini-decorator`) | Product placement + design reasoning (AIDesign pipeline) | ✅ Yes |
+| AI FALLBACK | **Zhipu GLM-4V** (`gemini-decorator`) | Fallback when Gemini is unavailable or fails — same validation/sanitization pipeline | ✅ Yes (transparent to user) |
 | DATABASE | **Supabase** | Sole source of truth for product name/price/image | — |
 | RENDER ENGINE | Overlay (`overlayGeometry.ts` + `ProductOverlay.tsx`) | Pixel-perfect placement rendering | ✅ Yes |
 | OPTIONAL BACKGROUND AI | Zhipu GLM-4V (`inspiration-ai-processor`) | Non-user-facing cron job that auto-tags/translates crawled inspiration gallery images (title, style, tags, palette). Never touches product placement, pricing, or the render pipeline. | ❌ No (cron/admin only) |
@@ -80,9 +82,14 @@ homeino/
 │   ├── migrations/                    # Full DB schema + RLS + ai_logs audit table
 │   └── functions/
 │       ├── gemini-decorator/          # THE core AI pipeline: Validation + Sanitization + DB pricing
-│       │   ├── deno.json
-│       │   ├── import_map.json
-│       │   └── index.ts
+│       │   ├── index.ts               # Entry point — auth, rate limiting, orchestration
+│       │   └── _shared/
+│       │       ├── cors.ts            # Strict CORS origin validation
+│       │       ├── types.ts           # Shared interfaces (ProductInput, PlacementOutput, etc.)
+│       │       ├── validation.ts      # Zod schemas, sanitization, helpers
+│       │       ├── productSelection.ts # Budget-aware product selection
+│       │       ├── aiProviders.ts     # Gemini + Zhipu provider logic
+│       │       └── prompt.ts          # Prompt builder
 │       ├── inspiration-ai-processor/  # Optional background AI — gallery tagging only, not user-facing
 │       ├── inspiration-crawler/
 │       └── inspiration-cron/

@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const getCorsHeaders = (req: Request): Record<string, string> => {
+  const origin = req.headers.get("Origin") || "";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const allowed = ["http://localhost:5173", "http://localhost:8080", "http://localhost:3000"];
+  if (supabaseUrl && !allowed.includes(supabaseUrl)) allowed.push(supabaseUrl);
+  const isAllowed = allowed.some((a) => origin === a) || /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(origin);
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin : allowed[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400",
+  };
 }
 
 const AI_TIMEOUT = 20_000
@@ -94,6 +102,7 @@ async function downloadAndUpload(url: string, supabase: ReturnType<typeof create
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
   try {
