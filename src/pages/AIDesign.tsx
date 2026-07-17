@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
-  Upload, Wand2, Search, Sparkles, Loader2, ArrowLeft, RefreshCw,
+  Upload, Wand2, Search, Sparkles, RefreshCw,
   ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers,
   CheckCircle2, Banknote, Info, Maximize2, Minimize2, Download, Share2,
   Sofa, Blinds, Grid3x3, Lamp, BedDouble, Flower2, Image as ImageIcon, TreePine, Gem,
-  Box, Compass, ShieldCheck,
+  Compass, ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { runAIDesignPipeline } from "@/lib/aiPipeline";
 import type { PipelineResult } from "@/lib/aiPipeline";
@@ -76,13 +76,9 @@ type Product = {
 };
 
 const AIDesign = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Tab mode: 3 core 3D design modules
-  // "design" = چیدمان و رندر سه‌بعدی هوشمند با عکس
-  // "inspiration" = اسکن و تشخیص بصری اشیاء
-  // "suggest" = دستیار هوشمند پیشنهاد دکوراسیون
+  // Tab mode: 3 core green-themed design modules
   const [activeTab, setActiveTab] = useState<"design" | "inspiration" | "suggest">(
     searchParams.get("mode") === "inspiration"
       ? "inspiration"
@@ -113,7 +109,7 @@ const AIDesign = () => {
   const resultRef     = useRef<HTMLDivElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
 
-  const { freeDesignsRemaining, tokenBalance, consumeDesignCredit } = useTokens();
+  const { consumeDesignCredit } = useTokens();
 
   // Handle pre-selected products from URL
   useEffect(() => {
@@ -231,7 +227,7 @@ const AIDesign = () => {
     startStageProgression();
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("برای استفاده از استودیو سه‌بعدی ابتدا وارد حساب کاربری شوید"); return; }
+      if (!session) { toast.error("برای استفاده از استودیو هومینو ابتدا وارد حساب کاربری شوید"); return; }
       const allowed = await consumeDesignCredit();
       if (!allowed) return;
       const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
@@ -262,7 +258,7 @@ const AIDesign = () => {
         const sessionId = searchParams.get("session");
         if (sessionId) supabase.from("design_sessions").update({ status: "abandoned" }).eq("id", sessionId).then();
       } else {
-        toast.success("رندر سه‌بعدی و چیدمان هوشمند با موفقیت آماده شد");
+        toast.success("چیدمان هوشمند با موفقیت آماده شد");
         trackAIDesignResult("finished", { placementsCount: result.placements.length, style, budget: budgetNum });
         const sessionId = searchParams.get("session");
         if (sessionId) supabase.from("design_sessions").update({ status: "completed" }).eq("id", sessionId).then();
@@ -313,118 +309,118 @@ const AIDesign = () => {
     <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
       <Navbar />
 
-      {/* 3D Immersive Ambient Lighting Backdrop */}
+      {/* Ambient Emerald Glow Backdrop */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="ai-hero-orb w-96 h-96 bg-emerald-500/10 top-20 right-10" />
-        <div className="ai-hero-orb w-80 h-80 bg-gold/15 bottom-20 left-10" />
+        <div className="ai-hero-orb w-96 h-96 bg-emerald-500/15 top-20 right-10 blur-3xl" />
+        <div className="ai-hero-orb w-80 h-80 bg-emerald-600/10 bottom-20 left-10 blur-3xl" />
       </div>
 
       <main className="container mx-auto px-4 pt-28 pb-16 relative z-10 stage-3d-container">
 
-        {/* ── 3D HERO HEADER ────────────────────────────────────── */}
+        {/* ── HERO HEADER ────────────────────────────────────── */}
         <header className="text-center max-w-3xl mx-auto mb-8 space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 shadow-luxury border border-accent/30 bg-card/80 backdrop-blur-md">
-            <Box size={16} className="text-accent animate-pulse" />
-            <span className="text-accent text-xs font-extrabold tracking-wide">هومینو استودیو — استودیوی طراحی ۳ بعدی با AI</span>
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+            <Sparkles size={16} className="animate-pulse" />
+            <span className="text-xs font-black tracking-wide">هومینو استودیو — پلتفرم هوشمند طراحی و چیدمان دکوراسیون</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight">
-            خانه خودت را با <span className="text-gold">هومینو استودیو</span> به‌صورت ۳ بعدی طراحی کن
+            خانه خودت را با <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">هومینو استودیو</span> طراحی کن
           </h1>
 
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-            محیط کاملاً تعاملی سه‌بعدی برای چیدمان تصویر اتاق، اسکن هوشمند اشیاء و دریافت پیشنهادات تخصصی دکوراسیون
+            یک عکس آپلود کن، مدل‌های موردنظرت را از دیتابیس هوشمند انتخاب کن یا بگذار هومینو به صورت خودکار مبلمان، میز و لوستر را در تصویر خانه شما چیدمان کند.
           </p>
         </header>
 
-        {/* ── 3D NAVIGATION TABS (3 Core Design Modes) ───────────── */}
+        {/* ── GREEN GLOWING 3D NAVIGATION TABS (3 Core Modules) ───────────── */}
         <section className="max-w-4xl mx-auto mb-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-2 rounded-2xl bg-card/90 backdrop-blur-lg border border-border shadow-luxury">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-2 rounded-2xl bg-card/90 backdrop-blur-md border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
 
-            {/* TAB 1: Smart 3D Room Staging */}
+            {/* TAB 1: Smart Staging */}
             <button
               onClick={() => setActiveTab("design")}
-              className={`nav-tab-3d text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all ${
+              className={`text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all duration-300 ${
                 activeTab === "design"
-                  ? "is-active bg-gradient-to-br from-accent/20 via-card to-accent/5 border-accent text-accent"
-                  : "bg-card/60 text-muted-foreground border-border hover:border-accent/40 hover:text-foreground"
+                  ? "bg-gradient-to-br from-emerald-600/30 via-card to-emerald-500/10 border-2 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] translate-y-[-2px]"
+                  : "bg-card/60 text-muted-foreground border border-border hover:border-emerald-500/50 hover:text-foreground"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === "design" ? "bg-accent text-accent-foreground" : "bg-muted"}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeTab === "design" ? "bg-emerald-500 text-slate-950 font-bold shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-muted"}`}>
                   <Wand2 size={20} />
                 </div>
-                <Badge variant={activeTab === "design" ? "default" : "outline"} className="text-[10px]">
-                  مرحله اصلی
+                <Badge variant={activeTab === "design" ? "default" : "outline"} className={`text-[10px] ${activeTab === "design" ? "bg-emerald-500 text-slate-950 font-extrabold" : "border-emerald-500/30 text-emerald-400"}`}>
+                  چیدمان با عکس
                 </Badge>
               </div>
               <div>
-                <h3 className="font-extrabold text-sm mb-1 text-foreground">۱. چیدمان و رندر ۳ بعدی با عکس</h3>
-                <p className="text-[11px] opacity-80 line-clamp-2">آپلود عکس اتاق، انتخاب مبلمان و چیدمان دقیق با هوش مصنوعی</p>
+                <h3 className="font-extrabold text-sm mb-1 text-foreground">۱. طراحی و چیدمان با عکس</h3>
+                <p className="text-[11px] opacity-80 line-clamp-2">آپلود عکس اتاق، انتخاب محصولات و چیدمان خودکار در جای دقیق</p>
               </div>
             </button>
 
-            {/* TAB 2: Visual AI Object Search */}
+            {/* TAB 2: Visual AI Scanner & Placement */}
             <button
               onClick={() => setActiveTab("inspiration")}
-              className={`nav-tab-3d text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all ${
+              className={`text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all duration-300 ${
                 activeTab === "inspiration"
-                  ? "is-active bg-gradient-to-br from-gold/20 via-card to-gold/5 border-gold text-gold"
-                  : "bg-card/60 text-muted-foreground border-border hover:border-gold/40 hover:text-foreground"
+                  ? "bg-gradient-to-br from-emerald-600/30 via-card to-emerald-500/10 border-2 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] translate-y-[-2px]"
+                  : "bg-card/60 text-muted-foreground border border-border hover:border-emerald-500/50 hover:text-foreground"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === "inspiration" ? "bg-gold text-charcoal font-bold" : "bg-muted"}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeTab === "inspiration" ? "bg-emerald-500 text-slate-950 font-bold shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-muted"}`}>
                   <Search size={20} />
                 </div>
-                <Badge variant={activeTab === "inspiration" ? "default" : "outline"} className="text-[10px]">
-                  اسکن عکس
+                <Badge variant={activeTab === "inspiration" ? "default" : "outline"} className={`text-[10px] ${activeTab === "inspiration" ? "bg-emerald-500 text-slate-950 font-extrabold" : "border-emerald-500/30 text-emerald-400"}`}>
+                  اسکن و جایگذاری
                 </Badge>
               </div>
               <div>
                 <h3 className="font-extrabold text-sm mb-1 text-foreground">۲. اسکن و تشخیص بصری اشیاء</h3>
-                <p className="text-[11px] opacity-80 line-clamp-2">تشخیص هوشمند تمام اشیاء تصویر الهام و یافتن مشابه آن در بازار</p>
+                <p className="text-[11px] opacity-80 line-clamp-2">اسکن تصویر مدل، یافتن محصول از دیتابیس هومینو و جایگذاری در عکس اتاق شما</p>
               </div>
             </button>
 
             {/* TAB 3: AI Suggestion Assistant */}
             <button
               onClick={() => setActiveTab("suggest")}
-              className={`nav-tab-3d text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all ${
+              className={`text-right p-4 rounded-xl flex flex-col justify-between gap-3 transition-all duration-300 ${
                 activeTab === "suggest"
-                  ? "is-active bg-gradient-to-br from-emerald-500/20 via-card to-emerald-500/5 border-emerald-500 text-emerald-500"
-                  : "bg-card/60 text-muted-foreground border-border hover:border-emerald-500/40 hover:text-foreground"
+                  ? "bg-gradient-to-br from-emerald-600/30 via-card to-emerald-500/10 border-2 border-emerald-500 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] translate-y-[-2px]"
+                  : "bg-card/60 text-muted-foreground border border-border hover:border-emerald-500/50 hover:text-foreground"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTab === "suggest" ? "bg-emerald-500 text-white font-bold" : "bg-muted"}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeTab === "suggest" ? "bg-emerald-500 text-slate-950 font-bold shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-muted"}`}>
                   <Sparkles size={20} />
                 </div>
-                <Badge variant={activeTab === "suggest" ? "default" : "outline"} className="text-[10px]">
-                  دستیار هوشمند
+                <Badge variant={activeTab === "suggest" ? "default" : "outline"} className={`text-[10px] ${activeTab === "suggest" ? "bg-emerald-500 text-slate-950 font-extrabold" : "border-emerald-500/30 text-emerald-400"}`}>
+                  دستیار پیشنهاد
                 </Badge>
               </div>
               <div>
                 <h3 className="font-extrabold text-sm mb-1 text-foreground">۳. دستیار پیشنهاد دکوراسیون</h3>
-                <p className="text-[11px] opacity-80 line-clamp-2">دریافت ست‌های پیشنهادی هوشمند بر اساس نوع فضا و بودجه شما</p>
+                <p className="text-[11px] opacity-80 line-clamp-2">دریافت پیشنهادات هوشمند ست مبلمان بر اساس نوع فضا و بودجه</p>
               </div>
             </button>
 
           </div>
         </section>
 
-        {/* ── 3D ACTIVE MODULE STAGE ───────────────────────────── */}
+        {/* ── ACTIVE MODULE CONTENT ───────────────────────────── */}
 
         {/* ── TAB 3: SUGGESTION ASSISTANT MODULE ── */}
         {activeTab === "suggest" && (
-          <div className="card-3d-glow rounded-3xl p-6 md:p-8 max-w-3xl mx-auto my-6 space-y-6">
+          <div className="rounded-3xl p-6 md:p-8 max-w-3xl mx-auto my-6 space-y-6 bg-card/90 backdrop-blur-md border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
             <div className="text-center max-w-lg mx-auto space-y-2">
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3.5 py-1 rounded-full border border-emerald-500/30">
                 دستیار پیشنهاد دکوراسیون
               </span>
               <h2 className="text-2xl font-black text-foreground">پیشنهاد هوشمند ست دکوراسیون</h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                به چند سؤال کوتاه پاسخ دهید تا محصولات متناسب با فضا و بودجه شما انتخاب گردند
+                به چند سؤال پاسخ دهید تا محصولات متناسب با فضا و بودجه شما از کاتالوگ دیتابیس هومینو انتخاب شوند
               </p>
             </div>
 
@@ -440,17 +436,17 @@ const AIDesign = () => {
                   metadata: { room_type: params.roomType, style: params.style, budget: params.budget },
                 });
                 setActiveTab("design");
-                toast.success("تنظیمات و پیشنهادات هوشمند در تب چیدمان اعمال شدند");
+                toast.success("پیشنهادات هوشمند بر اساس فضا و بودجه شما اعمال گردید");
               }}
             />
           </div>
         )}
 
-        {/* ── TAB 2: VISUAL OBJECT SCANNER MODULE ── */}
+        {/* ── TAB 2: VISUAL SCAN & PLACEMENT MODULE ── */}
         {activeTab === "inspiration" && (
-          <div className="card-3d-glow rounded-3xl p-6 md:p-8 max-w-5xl mx-auto my-6">
+          <div className="rounded-3xl p-6 md:p-8 max-w-5xl mx-auto my-6 bg-card/90 backdrop-blur-md border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
             <InspirationFlow
-              onProceedToDesign={(productsMatch: ProductMatch[]) => {
+              onProceedToDesign={(productsMatch: ProductMatch[], _totalPrice: number, roomPhotoBase64?: string | null) => {
                 const sel: Record<string, Product> = {};
                 productsMatch.forEach((p) => {
                   sel[p.product_id] = {
@@ -463,29 +459,36 @@ const AIDesign = () => {
                   };
                 });
                 setSelected(sel);
+                if (roomPhotoBase64) {
+                  setImageBase64(roomPhotoBase64);
+                }
                 setActiveTab("design");
-                toast.success(`${productsMatch.length} محصول انتخاب شده به محیط چیدمان منتقل شدند`);
+                toast.success(
+                  roomPhotoBase64
+                    ? `${productsMatch.length} محصول پیدا شده و عکس خانه شما برای جایگذاری بارگذاری گردیدند`
+                    : `${productsMatch.length} محصول پیدا شده به محیط چیدمان منتقل گردیدند`
+                );
               }}
               onBack={() => setActiveTab("design")}
             />
           </div>
         )}
 
-        {/* ── TAB 1: SMART 3D ROOM STAGING MODULE ── */}
+        {/* ── TAB 1: SMART ROOM STAGING MODULE ── */}
         {activeTab === "design" && (
           <div className="space-y-6">
 
             {/* Selected products indicator banner */}
             {selectedList.length > 0 && (
-              <div className="bg-accent/10 border border-accent/30 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3 max-w-4xl mx-auto shadow-sm">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3 max-w-4xl mx-auto shadow-sm">
                 <div className="flex items-center gap-3">
-                  <Sofa size={20} className="text-accent shrink-0" />
+                  <Sofa size={20} className="text-emerald-400 shrink-0" />
                   <div className="text-xs">
-                    <span className="font-bold text-accent">{selectedList.length} محصول</span>
-                    <span className="text-muted-foreground"> برای جایگذاری ۳ بعدی در تصویر آماده است.</span>
+                    <span className="font-bold text-emerald-400">{selectedList.length} محصول</span>
+                    <span className="text-muted-foreground"> از دیتابیس برای جایگذاری آماده است.</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gold">{fmt(total)}</span>
                   <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">
                     پاک‌سازی
@@ -496,21 +499,21 @@ const AIDesign = () => {
 
             <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
 
-              {/* MAIN DESIGN PANEL */}
+              {/* MAIN STAGING PANEL */}
               <div className="space-y-6 min-w-0">
 
                 {/* 1. Upload Box */}
                 {!imageBase64 && !loading && (
-                  <div className="card-3d-glow rounded-3xl p-8 text-center max-w-2xl mx-auto cursor-pointer border-2 border-dashed border-border hover:border-accent transition-all"
+                  <div className="rounded-3xl p-8 text-center max-w-2xl mx-auto cursor-pointer border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-card/90 transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)]"
                     onClick={() => inputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-4">
-                      <Upload size={26} className="text-accent animate-bounce" />
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 text-emerald-400">
+                      <Upload size={26} className="animate-bounce" />
                     </div>
-                    <h3 className="text-lg font-black text-foreground mb-1">تصویر فضای خانه را آپلود کنید</h3>
-                    <p className="text-xs text-muted-foreground mb-4">کلیک کنید یا تصویر را در این کادر رها کنید (JPG, PNG - حداکثر ۵ مگابایت)</p>
+                    <h3 className="text-lg font-black text-foreground mb-1">تصویر فضای خانه خود را آپلود کنید</h3>
+                    <p className="text-xs text-muted-foreground mb-4">کلیک کنید یا تصویر را بکشید (JPG, PNG - حداکثر ۵ مگابایت)</p>
                     <input ref={inputRef} type="file" accept="image/*" className="hidden"
                       onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
                   </div>
@@ -519,7 +522,7 @@ const AIDesign = () => {
                 {/* Image preview */}
                 {imageBase64 && !loading && (
                   <div className="max-w-2xl mx-auto">
-                    <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-luxury group">
+                    <div className="relative rounded-3xl overflow-hidden bg-card border border-emerald-500/40 shadow-2xl group">
                       <img src={imageBase64} alt="فضای خانه" className="w-full aspect-video object-cover" />
                       <button onClick={() => { setImageBase64(null); setGeminiResult(null); }}
                         className="absolute top-3 left-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center border border-border hover:bg-background transition-colors">
@@ -530,17 +533,17 @@ const AIDesign = () => {
                 )}
 
                 {/* Style Pills */}
-                <div className="card-3d-glow rounded-2xl p-4 max-w-3xl mx-auto">
+                <div className="rounded-2xl p-4 max-w-3xl mx-auto bg-card/90 border border-border">
                   <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
-                    <Compass size={14} className="text-accent" /> انتخاب سبک دکوراسیون
+                    <Compass size={14} className="text-emerald-400" /> انتخاب سبک دکوراسیون
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {STYLES.map((s) => (
                       <button key={s.id} onClick={() => setStyle(s.id)}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                           style === s.id
-                            ? "bg-accent text-accent-foreground border-accent shadow-md scale-105"
-                            : "bg-card text-muted-foreground border-border hover:border-accent/40"
+                            ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-md scale-105"
+                            : "bg-card text-muted-foreground border-border hover:border-emerald-500/40"
                         }`}>
                         {s.label}
                       </button>
@@ -550,13 +553,13 @@ const AIDesign = () => {
 
                 {/* Product Catalog Grid */}
                 {!loading && (
-                  <div className="card-3d-glow rounded-3xl p-5 space-y-4">
+                  <div className="rounded-3xl p-5 space-y-4 bg-card/90 border border-border">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <ShoppingBag size={15} className="text-gold" /> کاتالوگ محصولات بازار
+                        <ShoppingBag size={15} className="text-emerald-400" /> کاتالوگ محصولات دیتابیس هومینو
                       </p>
                       <span className="text-xs text-muted-foreground">
-                        برای چیدمان، روی محصولات کلیک کنید
+                        برای چیدمان، روی وسایل کلیک کنید
                       </span>
                     </div>
 
@@ -569,8 +572,8 @@ const AIDesign = () => {
                           <button key={c.slug} onClick={() => setActiveCat(c.slug)}
                             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
                               isActive
-                                ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                                : "bg-card text-muted-foreground border-border hover:border-accent/40"
+                                ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm"
+                                : "bg-card text-muted-foreground border-border hover:border-emerald-500/40"
                             }`}>
                             <Icon size={14} />
                             {c.label}
@@ -589,18 +592,18 @@ const AIDesign = () => {
                           return (
                             <button key={p.id} onClick={() => toggleProduct(p)}
                               className={`relative text-right rounded-2xl border overflow-hidden transition-all bg-card ${
-                                isSel ? "border-accent ring-2 ring-accent/40 shadow-md scale-[1.02]" : "border-border hover:border-accent/40"
+                                isSel ? "border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.02]" : "border-border hover:border-emerald-500/40"
                               }`}>
                               <div className="aspect-square bg-muted overflow-hidden">
                                 {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
                               </div>
                               <div className="p-2.5">
                                 <p className="text-xs font-bold line-clamp-1">{p.name}</p>
-                                <p className="text-xs text-accent font-black mt-1">{fmt(p.price)}</p>
+                                <p className="text-xs text-emerald-400 font-black mt-1">{fmt(p.price)}</p>
                               </div>
                               {isSel && (
                                 <div className="absolute top-2 left-2">
-                                  <span className="w-5 h-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-md">
+                                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
                                     <CheckCircle2 size={12} />
                                   </span>
                                 </div>
@@ -613,7 +616,7 @@ const AIDesign = () => {
                   </div>
                 )}
 
-                {/* Budget & Custom Request Prompt */}
+                {/* Budget & Prompt Input */}
                 {!loading && (
                   <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                     <div className="bg-card border border-border rounded-2xl p-4">
@@ -622,7 +625,7 @@ const AIDesign = () => {
                         <input type="text" inputMode="numeric" value={budget}
                           onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="مثلاً: ۵۰۰۰۰۰۰" dir="ltr"
-                          className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors" />
+                          className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500 transition-colors" />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">تومان</span>
                       </div>
                     </div>
@@ -630,19 +633,19 @@ const AIDesign = () => {
                       <p className="text-xs font-bold text-muted-foreground mb-1.5">توضیحات اختصاصی (اختیاری)</p>
                       <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)}
                         placeholder="مثلاً: مبل جلو پنجره باشد..."
-                        className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors" />
+                        className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500 transition-colors" />
                     </div>
                   </div>
                 )}
 
-                {/* Generate 3D Action Button */}
+                {/* Generate Button */}
                 {!loading && !geminiResult && (
                   <div className="text-center pt-2">
                     <button onClick={generate}
                       disabled={!imageBase64 || selectedList.length === 0}
-                      className="btn-3d text-base font-black py-4 px-8 rounded-2xl flex items-center justify-center gap-2 w-full max-w-lg mx-auto shadow-luxury">
+                      className="btn-3d text-base font-black py-4 px-8 rounded-2xl flex items-center justify-center gap-2 w-full max-w-lg mx-auto shadow-luxury bg-emerald-600 hover:bg-emerald-500 text-white">
                       <Wand2 size={18} />
-                      رندر و چیدمان سه‌بعدی با هومینو استودیو
+                      چیدمان هوشمند با هومینو استودیو
                     </button>
                   </div>
                 )}
@@ -659,9 +662,9 @@ const AIDesign = () => {
                   <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm flex items-start gap-3 max-w-md mx-auto">
                     <Info size={16} className="shrink-0 mt-0.5 text-destructive" />
                     <div className="flex-1 space-y-2">
-                      <p className="text-destructive font-bold">خطا در رندر چیدمان</p>
+                      <p className="text-destructive font-bold">خطا در چیدمان</p>
                       <p className="text-muted-foreground text-xs">{aiError}</p>
-                      <button onClick={generate} className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline">
+                      <button onClick={generate} className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:underline">
                         <RefreshCw size={12} /> تلاش مجدد
                       </button>
                     </div>
@@ -672,7 +675,7 @@ const AIDesign = () => {
                 {geminiResult && (
                   <div ref={resultRef} className={`space-y-4 transition-all ${fullscreen ? "fixed inset-4 z-50 bg-background overflow-y-auto p-6 rounded-2xl shadow-2xl border border-border" : ""}`}>
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-xl text-foreground">نتیجه رندر سه‌بعدی هومینو استودیو</h3>
+                      <h3 className="font-extrabold text-xl text-foreground">نتیجه چیدمان هومینو استودیو</h3>
                       <div className="flex items-center gap-2">
                         <button onClick={() => setFullscreen(!fullscreen)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
                           {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -681,7 +684,7 @@ const AIDesign = () => {
                           const img = resultRef.current?.querySelector("img");
                           if (img) {
                             const link = document.createElement("a");
-                            link.download = "homeino-3d-design.png";
+                            link.download = "homeino-design.png";
                             link.href = img.src;
                             link.click();
                             toast.success("تصویر ذخیره شد");
@@ -692,8 +695,8 @@ const AIDesign = () => {
                         <button onClick={async () => {
                           try {
                             await navigator.share({
-                              title: "طراحی ۳ بعدی هومینو استودیو",
-                              text: "چیدمان ۳ بعدی اتاق من با هومینو استودیو",
+                              title: "طراحی هومینو استودیو",
+                              text: "چیدمان اتاق من با هومینو استودیو",
                               url: window.location.href,
                             });
                           } catch {
@@ -712,22 +715,22 @@ const AIDesign = () => {
                           <button
                             onClick={() => setShowBefore(false)}
                             className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                              !showBefore ? "bg-accent text-accent-foreground border-accent" : "bg-card text-muted-foreground border-border"
+                              !showBefore ? "bg-emerald-500 text-slate-950 border-emerald-500" : "bg-card text-muted-foreground border-border"
                             }`}
                           >
-                            نتیجه رندر ۳ بعدی
+                            نتیجه چیدمان
                           </button>
                           <button
                             onClick={() => setShowBefore(true)}
                             className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                              showBefore ? "bg-accent text-accent-foreground border-accent" : "bg-card text-muted-foreground border-border"
+                              showBefore ? "bg-emerald-500 text-slate-950 border-emerald-500" : "bg-card text-muted-foreground border-border"
                             }`}
                           >
                             تصویر اولیه
                           </button>
                         </div>
 
-                        <div className="rounded-3xl overflow-hidden border border-border shadow-luxury bg-card">
+                        <div className="rounded-3xl overflow-hidden border border-emerald-500/30 shadow-2xl bg-card">
                           {showBefore ? (
                             <img src={imageBase64} alt="فضای اصلی" className="w-full" />
                           ) : (
@@ -742,8 +745,8 @@ const AIDesign = () => {
                     )}
 
                     <button onClick={generate} disabled={loading}
-                      className="w-full bg-card border border-border hover:border-accent text-foreground py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all shadow-sm">
-                      <RefreshCw size={16} /> چیدمان مجدد ۳ بعدی
+                      className="w-full bg-card border border-border hover:border-emerald-500 text-foreground py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold transition-all shadow-sm">
+                      <RefreshCw size={16} /> چیدمان مجدد
                     </button>
 
                     {/* Analytics / Consultations tabs */}
@@ -751,23 +754,23 @@ const AIDesign = () => {
                       <div className="flex gap-2 bg-card border border-border rounded-2xl p-1.5">
                         <button onClick={() => setAnalyticsTab("consultation")}
                           className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
-                            analyticsTab === "consultation" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground"
+                            analyticsTab === "consultation" ? "bg-emerald-500 text-slate-950 shadow-sm" : "text-muted-foreground"
                           }`}>
                           <Lightbulb size={14} /> مشاوره هومینو استودیو
                         </button>
                         <button onClick={() => setAnalyticsTab("placements")}
                           className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
-                            analyticsTab === "placements" ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground"
+                            analyticsTab === "placements" ? "bg-emerald-500 text-slate-950 shadow-sm" : "text-muted-foreground"
                           }`}>
                           <Layers size={14} /> وسایل جایگذاری شده ({geminiResult.placements.length})
                         </button>
                       </div>
 
                       {analyticsTab === "consultation" && (
-                        <div className="card-3d-glow rounded-2xl p-5 space-y-3">
+                        <div className="rounded-2xl p-5 space-y-3 bg-card border border-border">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Palette size={16} className="text-accent shrink-0" />
-                            <span className="text-xs font-bold text-accent">سبک انتخاب شده:</span>
+                            <Palette size={16} className="text-emerald-400 shrink-0" />
+                            <span className="text-xs font-bold text-emerald-400">سبک انتخاب شده:</span>
                             <Badge variant="secondary" className="text-xs font-bold">{STYLES.find((s) => s.id === style)?.label || style}</Badge>
                           </div>
                           <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{geminiResult.consultation}</p>
@@ -790,10 +793,10 @@ const AIDesign = () => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold line-clamp-1">{product.name}</p>
-                                  <p className="text-xs text-accent font-black mt-1">{fmt(product.price)}</p>
+                                  <p className="text-xs text-emerald-400 font-black mt-1">{fmt(product.price)}</p>
                                 </div>
                                 <button onClick={() => addToCart(product)}
-                                  className="p-2 rounded-xl bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground transition-colors shrink-0" title="افزودن به سبد خرید">
+                                  className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors shrink-0" title="افزودن به سبد خرید">
                                   <ShoppingCart size={15} />
                                 </button>
                               </div>
@@ -811,10 +814,10 @@ const AIDesign = () => {
               {/* SIDEBAR SUMMARY */}
               {!geminiResult && (
                 <div className="space-y-4">
-                  <div className="card-3d-glow rounded-3xl p-5">
+                  <div className="rounded-3xl p-5 bg-card/90 border border-border">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-extrabold text-sm flex items-center gap-2">
-                        <ShoppingCart size={18} className="text-accent" /> سبد وسایل طرح ({selectedList.length})
+                        <ShoppingCart size={18} className="text-emerald-400" /> سبد وسایل طرح ({selectedList.length})
                       </h3>
                       {selectedList.length > 0 && (
                         <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">
@@ -836,12 +839,12 @@ const AIDesign = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="line-clamp-1 font-bold text-xs">{p.name}</p>
-                                <p className="text-accent text-xs font-bold mt-0.5">{fmt((p.price || 0) * qty)}</p>
+                                <p className="text-emerald-400 text-xs font-bold mt-0.5">{fmt((p.price || 0) * qty)}</p>
                               </div>
                               <div className="flex items-center gap-1">
-                                <button onClick={() => setQuantity(p.id, qty + 1)} className="w-5 h-5 rounded bg-card flex items-center justify-center font-bold text-[10px] hover:bg-accent hover:text-accent-foreground">+</button>
+                                <button onClick={() => setQuantity(p.id, qty + 1)} className="w-5 h-5 rounded bg-card flex items-center justify-center font-bold text-[10px] hover:bg-emerald-500 hover:text-slate-950">+</button>
                                 <span className="text-[10px] font-black w-4 text-center">{qty}</span>
-                                <button onClick={() => qty > 1 ? setQuantity(p.id, qty - 1) : toggleProduct(p)} className="w-5 h-5 rounded bg-card flex items-center justify-center font-bold text-[10px] hover:bg-accent hover:text-accent-foreground">-</button>
+                                <button onClick={() => qty > 1 ? setQuantity(p.id, qty - 1) : toggleProduct(p)} className="w-5 h-5 rounded bg-card flex items-center justify-center font-bold text-[10px] hover:bg-emerald-500 hover:text-slate-950">-</button>
                               </div>
                               <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive shrink-0">
                                 <X size={14} />
@@ -862,7 +865,7 @@ const AIDesign = () => {
 
                   {/* Trust indicator */}
                   <div className="p-4 rounded-2xl bg-card/60 border border-border text-center space-y-1.5">
-                    <ShieldCheck size={20} className="mx-auto text-emerald-brand" />
+                    <ShieldCheck size={20} className="mx-auto text-emerald-400" />
                     <p className="text-xs font-bold text-foreground">تضمین قیمت دیتابیس هومینو</p>
                     <p className="text-[11px] text-muted-foreground">تمامی قیمت‌ها مستقیم از دیتابیس کاتالوگ استخراج می‌گردند</p>
                   </div>
