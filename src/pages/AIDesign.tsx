@@ -103,6 +103,7 @@ const AIDesign = () => {
   const [analyticsTab, setAnalyticsTab]   = useState<"consultation" | "placements">("consultation");
   const [fullscreen, setFullscreen]       = useState(false);
   const [showBefore, setShowBefore]       = useState(false);
+  const [catalogQuery, setCatalogQuery]   = useState("");
 
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
@@ -218,6 +219,42 @@ const AIDesign = () => {
     [selectedList]
   );
 
+  const currentProducts = useMemo(() => products[activeCat] || [], [products, activeCat]);
+
+  const filteredCurrentProducts = useMemo(() => {
+    if (!catalogQuery.trim()) return currentProducts;
+    return currentProducts.filter((p) => p.name.toLowerCase().includes(catalogQuery.trim().toLowerCase()));
+  }, [currentProducts, catalogQuery]);
+
+  const allFilteredSelected = useMemo(() => {
+    if (filteredCurrentProducts.length === 0) return false;
+    return filteredCurrentProducts.every((p) => !!selected[p.id]);
+  }, [filteredCurrentProducts, selected]);
+
+  const handleSelectAllCategory = () => {
+    const next = { ...selected };
+    const nextQ = { ...quantities };
+    filteredCurrentProducts.forEach((p) => {
+      next[p.id] = p;
+      if (!nextQ[p.id]) nextQ[p.id] = 1;
+    });
+    setSelected(next);
+    setQuantities(nextQ);
+    toast.success(`تمامی ${filteredCurrentProducts.length} محصول این دسته انتخاب شدند`);
+  };
+
+  const handleDeselectCategory = () => {
+    const next = { ...selected };
+    const nextQ = { ...quantities };
+    filteredCurrentProducts.forEach((p) => {
+      delete next[p.id];
+      delete nextQ[p.id];
+    });
+    setSelected(next);
+    setQuantities(nextQ);
+    toast.info(`انتخاب‌های این دسته لغو گردیدند`);
+  };
+
   const generate = async () => {
     if (!imageBase64)            return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
     if (selectedList.length === 0) return toast.error("حداقل یک محصول از کاتالوگ انتخاب کنید");
@@ -295,8 +332,6 @@ const AIDesign = () => {
     }
     if (count > 0) { toast.success(`${count} محصول به سبد خرید اضافه شد`); setOpenCart(true); }
   };
-
-  const currentProducts = products[activeCat] || [];
 
   const progressSteps: ProgressStep[] = STAGES.map((s) => ({
     key: s,
@@ -551,63 +586,124 @@ const AIDesign = () => {
                   </div>
                 </div>
 
-                {/* Product Catalog Grid */}
+                {/* Product Catalog Grid — Multi-Select Enabled */}
                 {!loading && (
-                  <div className="rounded-3xl p-5 space-y-4 bg-card/90 border border-border">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <ShoppingBag size={15} className="text-emerald-400" /> کاتالوگ محصولات دیتابیس هومینو
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        برای چیدمان، روی وسایل کلیک کنید
-                      </span>
-                    </div>
+                  <div className="rounded-3xl p-5 space-y-4 bg-card/90 border border-border shadow-md">
+                    
+                    {/* Header Controls */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag size={18} className="text-emerald-400 shrink-0" />
+                        <h3 className="text-sm font-black text-foreground">
+                          کاتالوگ محصولات دیتابیس هومینو <span className="text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30 mr-1.5">(چندانتخابی / Multi-Select)</span>
+                        </h3>
+                      </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border">
-                      {CATEGORIES.map((c) => {
-                        const sel = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
-                        const isActive = activeCat === c.slug;
-                        const Icon = c.Icon;
-                        return (
-                          <button key={c.slug} onClick={() => setActiveCat(c.slug)}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
-                              isActive
-                                ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm"
-                                : "bg-card text-muted-foreground border-border hover:border-emerald-500/40"
-                            }`}>
-                            <Icon size={14} />
-                            {c.label}
-                            {sel > 0 && <span className="bg-gold text-charcoal text-[10px] px-1.5 py-0.2 rounded-full font-black">{sel}</span>}
+                      {/* Batch Controls */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {allFilteredSelected ? (
+                          <button
+                            onClick={handleDeselectCategory}
+                            className="text-xs bg-muted/80 hover:bg-muted text-muted-foreground px-3 py-1.5 rounded-xl border border-border font-bold transition-all"
+                          >
+                            لغو انتخاب همه این دسته
                           </button>
-                        );
-                      })}
+                        ) : (
+                          <button
+                            onClick={handleSelectAllCategory}
+                            className="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-bold transition-all"
+                          >
+                            انتخاب همه محصولات این دسته ({filteredCurrentProducts.length})
+                          </button>
+                        )}
+
+                        {selectedList.length > 0 && (
+                          <button
+                            onClick={() => setSelected({})}
+                            className="text-xs text-destructive hover:underline font-bold px-2 py-1"
+                          >
+                            پاک‌سازی کل ({selectedList.length})
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {currentProducts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-8">محصولی در این دسته یافت نشد.</p>
+                    {/* Category Tabs & Quick Search */}
+                    <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-border">
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+                        {CATEGORIES.map((c) => {
+                          const sel = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
+                          const isActive = activeCat === c.slug;
+                          const Icon = c.Icon;
+                          return (
+                            <button key={c.slug} onClick={() => setActiveCat(c.slug)}
+                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
+                                isActive
+                                  ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm"
+                                  : "bg-card text-muted-foreground border-border hover:border-emerald-500/40"
+                              }`}>
+                              <Icon size={14} />
+                              {c.label}
+                              {sel > 0 && <span className="bg-gold text-charcoal text-[10px] px-1.5 py-0.2 rounded-full font-black">{sel}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Catalog Search */}
+                      <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                        <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={catalogQuery}
+                          onChange={(e) => setCatalogQuery(e.target.value)}
+                          placeholder="جستجوی نام محصول..."
+                          className="w-full pr-8 pl-3 py-1.5 bg-muted/40 border border-border rounded-xl text-xs outline-none focus:border-emerald-500 transition-colors"
+                        />
+                        {catalogQuery && (
+                          <button onClick={() => setCatalogQuery("")} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs">
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Products Grid */}
+                    {filteredCurrentProducts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-8">
+                        {catalogQuery ? "محصولی با این عبارت یافت نشد." : "محصولی در این دسته یافت نشد."}
+                      </p>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[360px] overflow-y-auto p-1">
-                        {currentProducts.map((p) => {
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[380px] overflow-y-auto p-1">
+                        {filteredCurrentProducts.map((p) => {
                           const isSel = !!selected[p.id];
                           return (
                             <button key={p.id} onClick={() => toggleProduct(p)}
-                              className={`relative text-right rounded-2xl border overflow-hidden transition-all bg-card ${
-                                isSel ? "border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.02]" : "border-border hover:border-emerald-500/40"
+                              className={`relative text-right rounded-2xl border overflow-hidden transition-all duration-200 bg-card group ${
+                                isSel
+                                  ? "border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg bg-emerald-500/5 scale-[1.02]"
+                                  : "border-border hover:border-emerald-500/40 hover:shadow-md"
                               }`}>
-                              <div className="aspect-square bg-muted overflow-hidden">
-                                {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                              <div className="aspect-square bg-muted overflow-hidden relative">
+                                {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
+                                
+                                {/* Multi-select Checkbox Badge */}
+                                <div className="absolute top-2 left-2 z-10">
+                                  {isSel ? (
+                                    <span className="w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center shadow-lg font-black animate-in zoom-in-50">
+                                      <CheckCircle2 size={15} />
+                                    </span>
+                                  ) : (
+                                    <span className="w-6 h-6 rounded-lg bg-black/40 backdrop-blur text-white/70 flex items-center justify-center border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      +
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="p-2.5">
-                                <p className="text-xs font-bold line-clamp-1">{p.name}</p>
+                                <p className="text-xs font-bold line-clamp-1 text-foreground">{p.name}</p>
                                 <p className="text-xs text-emerald-400 font-black mt-1">{fmt(p.price)}</p>
                               </div>
-                              {isSel && (
-                                <div className="absolute top-2 left-2">
-                                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
-                                    <CheckCircle2 size={12} />
-                                  </span>
-                                </div>
-                              )}
                             </button>
                           );
                         })}
