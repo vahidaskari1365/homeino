@@ -132,10 +132,43 @@ const ProductDetail = () => {
     : [];
   const rating = Number(product?.rating || 0);
 
+  const productSchema = product ? {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image_url ? [product.image_url] : [],
+    "description": product.description || product.name,
+    "sku": product.id,
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "IRR",
+      "price": product.price ? product.price * 10 : 0,
+      "priceValidUntil": "2027-12-31",
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": seller?.brand_name || "هومینو"
+      }
+    },
+    ...(rating > 0 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": rating.toFixed(1),
+        "reviewCount": "1"
+      }
+    } : {})
+  } : undefined;
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {product && (
-        <SEO title={product.name} description={product.description || `${product.name} در هومینو`} />
+        <SEO
+          title={product.name}
+          description={product.description || `${product.name} در هومینو - مرجع خرید دکوراسیون و لوازم خانه`}
+          ogImage={product.image_url || undefined}
+          jsonLd={productSchema}
+        />
       )}
       <Navbar />
       <main className="container mx-auto px-6 pt-28 pb-16">

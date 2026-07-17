@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
 import { ProfileTrustPills } from "@/components/ProfileTrustPills";
 import { formatPersianDate } from "@/lib/date";
+import { formatPrice as fmt } from "@/lib/formatPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InquiryDialog from "@/components/InquiryDialog";
@@ -130,7 +131,21 @@ const ShopDetail = () => {
       {profile && (
         <SEO 
           title={profile.brand_name} 
-          description={profile.description || `محصولات و خدمات ${profile.brand_name} در خانه‌زیبا`}
+          description={profile.description || `محصولات و خدمات ${profile.brand_name} در هومینو`}
+          jsonLd={{
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": profile.brand_name,
+            "description": profile.description || profile.brand_name,
+            "address": profile.address ? {
+              "@type": "PostalAddress",
+              "streetAddress": profile.address,
+              "addressLocality": profile.city || "تهران",
+              "addressCountry": "IR"
+            } : undefined,
+            "telephone": profile.phone || undefined,
+            "url": profile.website || undefined
+          }}
         />
       )}
       <Navbar />
@@ -282,7 +297,7 @@ const ShopDetail = () => {
                         <div className="flex items-center justify-between pt-2 border-t border-border/40">
                           {p.price ? (
                             <span className="text-gold font-extrabold text-base">
-                              {new Intl.NumberFormat("en-US").format(p.price)} تومان
+                              {fmt(p.price)}
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>
