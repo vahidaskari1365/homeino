@@ -73,6 +73,7 @@ import {
 import { auditService, type AuditLog } from "@/services/auditService";
 import { getActorLabel, getActionLabel } from "@/hooks/useAuditLogs";
 import { formatPersianDate } from "@/lib/date";
+import { formatPrice as fmt } from "@/lib/formatPrice";
 import Navbar from "@/components/Navbar";
 
 type ShopProfile = {
@@ -194,9 +195,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="shops" className="w-full" dir="rtl">
-          <TabsList className="grid grid-cols-5 lg:grid-cols-9 mb-6 h-auto">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-10 mb-6 h-auto">
             <TabsTrigger value="shops" className="flex flex-col gap-1 py-2">
               <Store className="h-4 w-4" /> <span className="text-xs">فروشگاه‌ها</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex flex-col gap-1 py-2">
+              <ShoppingCart className="h-4 w-4" /> <span className="text-xs">سفارش‌ها</span>
             </TabsTrigger>
             <TabsTrigger value="listings" className="flex flex-col gap-1 py-2">
               <ShoppingBag className="h-4 w-4" /> <span className="text-xs">دست دوم</span>
@@ -228,6 +232,7 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="shops"><ShopsTab /></TabsContent>
+          <TabsContent value="orders"><AdminOrdersTab /></TabsContent>
           <TabsContent value="listings"><ListingsTab /></TabsContent>
           <TabsContent value="users"><UsersTab isAdmin={isAdmin} /></TabsContent>
           <TabsContent value="products"><ProductsTab /></TabsContent>
@@ -340,6 +345,149 @@ const AnalyticsTab = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+type AdminOrderItem = {
+  id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+};
+
+type AdminOrder = {
+  id: string;
+  recipient_name: string;
+  phone: string;
+  city: string;
+  address: string;
+  note?: string | null;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  public_profiles?: {
+    id: string;
+    brand_name: string;
+    phone?: string | null;
+    city?: string | null;
+  } | null;
+  order_items?: AdminOrderItem[];
+};
+
+// ==================== ORDERS TAB ====================
+const AdminOrdersTab = () => {
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        public_profiles (
+          id,
+          brand_name,
+          phone,
+          city
+        ),
+        order_items (
+          id,
+          product_name,
+          quantity,
+          unit_price
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    setOrders((data as unknown as AdminOrder[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const updateStatus = async (orderId: string, status: string) => {
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (!error) {
+      toast.success("وضعیت سفارش به‌روزرسانی شد");
+      load();
+    } else {
+      toast.error("خطا در به‌روزرسانی وضعیت سفارش");
+    }
+  };
+
+  if (loading) return <Loader2 className="h-6 w-6 animate-spin mx-auto mt-12" />;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>مدیریت کلی سفارش‌های فروشگاه‌ها ({orders.length})</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {orders.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">سفارشی ثبت نشده است</p>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((o) => (
+              <Card key={o.id} className="p-4 bg-muted/30 border-border space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground">{o.recipient_name}</span>
+                      <span className="text-xs text-muted-foreground">({o.phone})</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      شهر: {o.city} — آدرس: {o.address}
+                    </p>
+                    {o.note && <p className="text-[11px] text-amber-600 font-semibold mt-1">توضیحات: {o.note}</p>}
+                  </div>
+
+                  <div className="text-left">
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-bold mb-1 block">
+                      فروشگاه: {o.public_profiles?.brand_name || "نامشخص"}
+                    </Badge>
+                    <p className="text-xs font-black text-gold">مبلغ کل: {fmt(o.total_amount)}</p>
+                  </div>
+                </div>
+
+                {/* Items List */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold text-muted-foreground">اقلام سفارش:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(o.order_items || []).map((item: AdminOrderItem) => (
+                      <div key={item.id} className="flex items-center justify-between text-xs bg-card p-2 rounded-lg border border-border">
+                        <span className="font-bold line-clamp-1">{item.product_name}</span>
+                        <span className="text-muted-foreground font-semibold">{item.quantity} عدد × {fmt(item.unit_price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Bar */}
+                <div className="flex items-center justify-between pt-2 border-t border-border flex-wrap gap-2 text-xs">
+                  <span className="text-muted-foreground">تاریخ: {formatPersianDate(o.created_at)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">وضعیت:</span>
+                    <Select value={o.status || "pending"} onValueChange={(v) => updateStatus(o.id, v)}>
+                      <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">در انتظار</SelectItem>
+                        <SelectItem value="confirmed">تأیید شده / ارسال</SelectItem>
+                        <SelectItem value="shipped">ارسال شده</SelectItem>
+                        <SelectItem value="delivered">تحویل شده</SelectItem>
+                        <SelectItem value="cancelled">لغو شده</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
