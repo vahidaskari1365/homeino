@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Upload, Wand2, Loader2, ArrowRight, Sparkles, X, ShoppingBag, RefreshCw, Heart,
-  ArrowUpDown, Filter,
+  ArrowUpDown, Home, Image as ImageIcon, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +14,21 @@ import DesignSummary from "@/components/DesignSummary";
 import { useObjectSearch, type ProductMatch } from "@/hooks/useObjectSearch";
 
 interface InspirationFlowProps {
-  onProceedToDesign: (products: ProductMatch[], totalPrice: number) => void;
+  onProceedToDesign: (products: ProductMatch[], totalPrice: number, roomPhotoBase64?: string | null) => void;
   onBack: () => void;
 }
 
 const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) => {
   const objectSearch = useObjectSearch();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const refInputRef = useRef<HTMLInputElement>(null);
+  const roomInputRef = useRef<HTMLInputElement>(null);
+
+  const [roomImageBase64, setRoomImageBase64] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [sortBy, setSortBy] = useState<string>("similarity");
-  const [priceFilter, setPriceFilter] = useState<string>("all");
 
-  const handleFile = useCallback(async (file: File) => {
+  // Handle reference inspiration image upload
+  const handleRefFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("لطفاً یک تصویر معتبر انتخاب کنید");
       return;
@@ -34,28 +37,35 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
     await objectSearch.detectAndMatch(file);
   }, [objectSearch]);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  // Handle user's room image upload
+  const handleRoomFile = useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("لطفاً یک تصویر معتبر انتخاب کنید");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم عکس بیش از حد مجاز است (حداکثر ۵ مگابایت)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRoomImageBase64(reader.result as string);
+      toast.success("عکس خانه شما با موفقیت بارگذاری شد");
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleDropRef = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
+    if (file) handleRefFile(file);
+  }, [handleRefFile]);
 
-  const handlePaste = useCallback((e: ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) handleFile(file);
-        break;
-      }
-    }
-  }, [handleFile]);
-
-  useEffect(() => {
-    document.addEventListener("paste", handlePaste);
-    return () => document.removeEventListener("paste", handlePaste);
-  }, [handlePaste]);
+  const handleDropRoom = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleRoomFile(file);
+  }, [handleRoomFile]);
 
   const selectedCount = objectSearch.getSelectedCount();
   const totalPrice = objectSearch.getTotalPrice();
@@ -68,81 +78,130 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
       toast.error("حداقل یک محصول انتخاب کنید");
       return;
     }
-    onProceedToDesign(products, price);
+    onProceedToDesign(products, price, roomImageBase64);
   };
 
   return (
     <div className="space-y-6">
       {/* ── Header ─────────────────────────────── */}
       <div className="text-center mb-4">
-        <button onClick={onBack} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-3 text-sm">
-          <ArrowRight size={16} /> بازگشت
+        <button onClick={onBack} className="inline-flex items-center gap-2 text-muted-foreground hover:text-emerald-400 mb-3 text-xs font-bold">
+          <ArrowRight size={14} /> بازگشت به منو
         </button>
-        <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-2"
-          style={{
-            background: "linear-gradient(180deg, hsl(var(--accent)/0.15), hsl(var(--accent)/0.05))",
-            border: "1px solid hsl(var(--accent)/0.3)",
-          }}>
-          <Sparkles size={14} className="text-accent" />
-          <span className="text-accent text-xs font-semibold">جستجوی بصری هوشمند هومینو</span>
+        <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <Sparkles size={14} />
+          <span className="text-xs font-bold">اسکن هوشمند اشیاء و جایگذاری در عکس خانه شما</span>
         </div>
-        <p className="text-muted-foreground text-xs max-w-xl mx-auto break-words">
-          یک تصویر از پینترست، اینستاگرام یا گالری آپلود کن — هومینو استودیو تک‌تک اشیاء را تشخیص می‌دهد
+        <p className="text-muted-foreground text-xs max-w-xl mx-auto leading-relaxed">
+          تصویر مدل یا الهام‌بخش خود را بارگذاری کنید. هومینو اشیاء (مبل، میز، لوستر...) را تشخیص داده و معادل آن را در دیتابیس پیدا می‌کند تا مستقیم روی عکس خانه شما جایگذاری نماید.
         </p>
       </div>
 
-      {/* ── Upload Area ────────────────────────── */}
+      {/* ── Side-by-Side Dual Upload Area ────────────────────────── */}
       {objectSearch.status === "idle" && (
-        <Card
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
-          className="max-w-lg mx-auto cursor-pointer border-2 border-dashed border-border hover:border-accent/50 transition-all"
-        >
-          <CardContent className="p-10 text-center">
-            <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-              <Upload size={22} className="text-accent" />
-            </div>
-            <p className="font-semibold text-sm mb-1">تصویر الهام خود را آپلود کنید</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              کلیک کنید یا بکشید · Ctrl+V برای چسباندن
-            </p>
-            <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-muted-foreground">
-              <Badge variant="outline" className="text-[10px]">پینترست</Badge>
-              <Badge variant="outline" className="text-[10px]">اینستاگرام</Badge>
-              <Badge variant="outline" className="text-[10px]">گوگل</Badge>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+
+          {/* 1. Reference / Inspiration Image Dropzone */}
+          <Card
+            onClick={() => refInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDropRef}
+            className="cursor-pointer border-2 border-dashed border-emerald-500/30 hover:border-emerald-400 bg-card/80 transition-all hover:shadow-lg"
+          >
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
+                <ImageIcon size={22} />
+              </div>
+              <div>
+                <p className="font-extrabold text-sm text-foreground mb-1">۱. تصویر الهام / مدل موردنظر</p>
+                <p className="text-[11px] text-muted-foreground">پینترست، اینستاگرام، کاتالوگ یا مدل دلخواه</p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-1 text-[10px] text-muted-foreground pt-1">
+                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">اسکن اشیاء</Badge>
+                <Badge variant="outline" className="text-[10px]">یافتن مدل در دیتابیس</Badge>
+              </div>
+              <input
+                ref={refInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleRefFile(e.target.files[0])}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 2. User Room Image Dropzone */}
+          <Card
+            onClick={() => roomInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDropRoom}
+            className={`cursor-pointer border-2 border-dashed transition-all hover:shadow-lg ${
+              roomImageBase64
+                ? "border-emerald-500 bg-emerald-500/5"
+                : "border-border hover:border-emerald-500/40 bg-card/80"
+            }`}
+          >
+            <CardContent className="p-6 text-center space-y-3 relative overflow-hidden">
+              {roomImageBase64 ? (
+                <div className="space-y-2">
+                  <div className="relative aspect-video rounded-xl overflow-hidden border border-emerald-500/40 shadow-md">
+                    <img src={roomImageBase64} alt="خانه شما" className="w-full h-full object-cover" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setRoomImageBase64(null); }}
+                      className="absolute top-2 left-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center text-xs hover:bg-background"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <p className="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1">
+                    <CheckCircle2 size={13} /> عکس خانه شما بارگذاری شد
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto text-muted-foreground">
+                    <Home size={22} />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-sm text-foreground mb-1">۲. عکس خانه شما (اختیاری)</p>
+                    <p className="text-[11px] text-muted-foreground">برای جایگذاری مستقیم محصولات روی اتاق شما</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">چیدمان نهایی</Badge>
+                </>
+              )}
+              <input
+                ref={roomInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleRoomFile(e.target.files[0])}
+              />
+            </CardContent>
+          </Card>
+
+        </div>
       )}
 
       {/* ── Progress States ────────────────────── */}
       {(objectSearch.status === "uploading" || objectSearch.status === "detecting" || objectSearch.status === "matching") && (
         <div className="max-w-md mx-auto space-y-4">
-          <Card>
+          <Card className="border-emerald-500/30">
             <CardContent className="p-6 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
-                <Loader2 size={24} className="animate-spin text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto">
+                <Loader2 size={26} className="animate-spin text-emerald-400" />
               </div>
               <div>
-                <p className="font-bold text-sm">
-                  {objectSearch.status === "uploading" && "در حال آپلود تصویر..."}
-                  {objectSearch.status === "detecting" && "هومینو استودیو در حال شناسایی اشیاء..."}
-                  {objectSearch.status === "matching" && "در حال جستجوی محصولات مشابه برای هر شیء..."}
+                <p className="font-extrabold text-sm text-foreground">
+                  {objectSearch.status === "uploading" && "در حال آپلود تصویر مدل..."}
+                  {objectSearch.status === "detecting" && "هومینو استودیو در حال شناسایی مبل، میز، لوستر..."}
+                  {objectSearch.status === "matching" && "در حال تطبیق با کاتالوگ دیتابیس هومینو..."}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">لطفاً صبر کنید</p>
+                <p className="text-xs text-muted-foreground mt-1">لطفاً چند لحظه صبر کنید</p>
               </div>
               <Progress
                 value={
-                  objectSearch.status === "uploading" ? 20 :
-                  objectSearch.status === "detecting" ? 50 : 80
+                  objectSearch.status === "uploading" ? 25 :
+                  objectSearch.status === "detecting" ? 60 : 90
                 }
                 className="h-2"
               />
@@ -169,113 +228,111 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
         </div>
       )}
 
-      {/* ── Results: Object-Level View ─────────── */}
+      {/* ── Results: Side-by-Side Reference & Room Photo + Matched Objects ─── */}
       {objectSearch.status === "done" && (
-        <div className="space-y-5">
-          {/* Image + Analysis */}
-          <div className="grid md:grid-cols-2 gap-5">
+        <div className="space-y-6">
+          
+          {/* Side-by-Side Images & Analysis */}
+          <div className="grid md:grid-cols-2 gap-4">
+            
+            {/* Left: Reference Model Image */}
             {objectSearch.imageBase64 && (
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-bold text-muted-foreground">تصویر مرجع</p>
-                    <Button variant="ghost" size="sm" onClick={objectSearch.reset} className="h-6 text-xs gap-1">
-                      <X size={10} /> حذف
+              <Card className="border-emerald-500/30 bg-card">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                      <ImageIcon size={14} /> تصویر مرجع / مدل اولیه
+                    </p>
+                    <Button variant="ghost" size="sm" onClick={objectSearch.reset} className="h-6 text-xs text-muted-foreground hover:text-foreground">
+                      <X size={12} /> تغییر
                     </Button>
                   </div>
-                  <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                    <img src={objectSearch.imageBase64} alt="مرجع" className="w-full h-full object-cover" />
+                  <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border">
+                    <img src={objectSearch.imageBase64} alt="مدل" className="w-full h-full object-cover" />
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    اشیاء شناسایی شده: <span className="font-bold text-foreground">{objectSearch.objects.length} شیء</span>
+                  </p>
                 </CardContent>
               </Card>
             )}
 
-            <Card>
-              <CardContent className="p-3 space-y-2">
-                <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                  <Sparkles size={12} className="text-accent" /> تحلیل هومینو استودیو
-                </p>
-                {objectSearch.overallStyle && (
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">سبک کلی فضا</p>
-                    <Badge variant="outline" className="bg-accent/10 text-accent text-[10px]">
-                      {objectSearch.overallStyle === "modern" ? "مدرن" :
-                       objectSearch.overallStyle === "classic" ? "کلاسیک" :
-                       objectSearch.overallStyle === "minimalist" ? "مینیمال" :
-                       objectSearch.overallStyle === "industrial" ? "صنعتی" :
-                       objectSearch.overallStyle === "scandinavian" ? "اسکاندیناوی" :
-                       objectSearch.overallStyle === "luxury" ? "لوکس" :
-                       objectSearch.overallStyle === "bohemian" ? "بوهمی" :
-                       objectSearch.overallStyle}
-                    </Badge>
-                  </div>
-                )}
-                {objectSearch.roomType && (
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">نوع فضا</p>
-                    <span className="text-xs font-medium">
-                      {objectSearch.roomType === "living" ? "نشیمن" :
-                       objectSearch.roomType === "bedroom" ? "اتاق خواب" :
-                       objectSearch.roomType === "kitchen" ? "آشپزخانه" :
-                       objectSearch.roomType === "dining" ? "ناهارخوری" :
-                       objectSearch.roomType === "office" ? "اتاق کار" :
-                       objectSearch.roomType}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <p className="text-[9px] text-muted-foreground">اشیاء تشخیص داده شده</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {objectSearch.objects.map((obj, i) => (
-                      <Badge key={i} variant="secondary" className="text-[9px]">
-                        {obj.label}
-                        <span className="mr-1 opacity-60">{Math.round(obj.confidence * 100)}%</span>
-                      </Badge>
-                    ))}
-                  </div>
+            {/* Right: User Room Image Uploader / Preview */}
+            <Card className={`bg-card transition-all ${roomImageBase64 ? "border-emerald-500/40" : "border-border"}`}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
+                    <Home size={14} className="text-emerald-400" /> عکس خانه شما
+                  </p>
+                  {roomImageBase64 && (
+                    <button
+                      onClick={() => setRoomImageBase64(null)}
+                      className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+                    >
+                      <X size={12} /> حذف عکس
+                    </button>
+                  )}
                 </div>
-                <p className="text-[9px] text-muted-foreground">
-                  {objectSearch.objects.length} شیء · {allProducts.length} محصول مشابه
-                </p>
+
+                {roomImageBase64 ? (
+                  <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-emerald-500/40 shadow-sm relative">
+                    <img src={roomImageBase64} alt="اتاق شما" className="w-full h-full object-cover" />
+                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur text-emerald-400 text-[10px] px-2 py-0.5 rounded-md font-bold">
+                      آماده چیدمان جایگزین
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => roomInputRef.current?.click()}
+                    className="aspect-video rounded-xl border-2 border-dashed border-border hover:border-emerald-500/50 bg-muted/30 flex flex-col items-center justify-center p-4 cursor-pointer text-center space-y-2"
+                  >
+                    <Home size={28} className="text-muted-foreground" />
+                    <p className="text-xs font-bold text-foreground">عکس اتاق یا خانه خود را آپلود کنید</p>
+                    <p className="text-[10px] text-muted-foreground">تا مدل‌های پیدا شده جایگزین مبل/میز قبلی شما شوند</p>
+                    <input
+                      ref={roomInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleRoomFile(e.target.files[0])}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
+
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              برای هر شیء، محصولات هومینو را انتخاب کنید (چندتا مجاز)
+          {/* Controls bar */}
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
+            <p className="text-xs font-bold text-foreground">
+              مدل‌های پیدا شده در دیتابیس هومینو (برای جایگذاری انتخاب کنید):
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => objectSearch.saveInspiration?.("الهام جدید")}
-              className="gap-1.5 h-7 text-xs"
-            >
-              <Heart size={10} /> ذخیره الهام
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[140px] h-8 text-xs border-border">
+                  <ArrowUpDown size={12} className="ml-1 text-emerald-400" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="similarity" className="text-xs">بیشترین شباهت</SelectItem>
+                  <SelectItem value="price_asc" className="text-xs">قیمت: کم به زیاد</SelectItem>
+                  <SelectItem value="price_desc" className="text-xs">قیمت: زیاد به کم</SelectItem>
+                  <SelectItem value="name" className="text-xs">نام محصول</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => objectSearch.saveInspiration?.("الهام جدید")}
+                className="gap-1.5 h-8 text-xs border-border"
+              >
+                <Heart size={12} /> ذخیره الهام
+              </Button>
+            </div>
           </div>
 
-          {/* Sort & Filter controls */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] h-8 text-xs">
-                <ArrowUpDown size={10} className="ml-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="similarity" className="text-xs">بیشترین شباهت</SelectItem>
-                <SelectItem value="price_asc" className="text-xs">قیمت: کم به زیاد</SelectItem>
-                <SelectItem value="price_desc" className="text-xs">قیمت: زیاد به کم</SelectItem>
-                <SelectItem value="name" className="text-xs">نام محصول</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-xs text-muted-foreground">
-              {allProducts.length} محصول مشابه
-            </span>
-          </div>
-
-          {/* Object sections */}
+          {/* Object sections grid */}
           <div className="space-y-3">
             {objectSearch.objects.map((obj, i) => {
               const sel = objectSearch.selections[obj.label];
@@ -295,54 +352,49 @@ const InspirationFlow = ({ onProceedToDesign, onBack }: InspirationFlowProps) =>
             })}
           </div>
 
-          {/* Floating action bar */}
-          {objectSearch.status === "done" && (
-            <div className="sticky bottom-6 z-40">
-              <Card className="shadow-xl border-accent/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">انتخاب شده</p>
-                        <p className="text-lg font-black text-accent">{selectedCount}</p>
-                      </div>
-                      <div className="h-10 w-px bg-border" />
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">جمع قیمت</p>
-                        <p className="text-sm font-black text-accent">
-                          {totalPrice == null ? "—" : new Intl.NumberFormat("en-US").format(totalPrice) + " تومان"}
-                        </p>
-                      </div>
-                      <div className="h-10 w-px bg-border" />
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">تشخیص داده شده</p>
-                        <p className="text-sm font-black text-foreground">{objectSearch.objects.length}</p>
-                      </div>
+          {/* Sticky Action Bar */}
+          <div className="sticky bottom-6 z-40">
+            <Card className="shadow-2xl border-emerald-500/40 bg-card/95 backdrop-blur-md">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-[11px] text-muted-foreground">انتخاب شده</p>
+                      <p className="text-lg font-black text-emerald-400">{selectedCount}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowSummary(true)}
-                        className="gap-1.5"
-                        disabled={selectedCount === 0}
-                      >
-                        <ShoppingBag size={14} /> مشاهده مجموعه
-                      </Button>
-                      <Button
-                        onClick={handleGoToDesign}
-                        disabled={selectedCount === 0}
-                        className="gap-2"
-                      >
-                        <Wand2 size={16} />
-                        طراحی با هومینو استودیو
-                      </Button>
+                    <div className="h-8 w-px bg-border" />
+                    <div className="text-center">
+                      <p className="text-[11px] text-muted-foreground">جمع فاکتور</p>
+                      <p className="text-sm font-black text-gold">
+                        {totalPrice == null ? "—" : new Intl.NumberFormat("fa-IR").format(totalPrice) + " تومان"}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSummary(true)}
+                      className="gap-1.5 border-border"
+                      disabled={selectedCount === 0}
+                    >
+                      <ShoppingBag size={14} /> مشاهده لیست
+                    </Button>
+                    <Button
+                      onClick={handleGoToDesign}
+                      disabled={selectedCount === 0}
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-5 rounded-xl shadow-lg"
+                    >
+                      <Wand2 size={16} />
+                      {roomImageBase64 ? "جایگذاری هوشمند در تصویر خانه من" : "انتقال به محیط چیدمان"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
         </div>
       )}
 

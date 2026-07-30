@@ -1,5 +1,5 @@
 export const formatPrice = (n: number | null | undefined): string =>
-  n == null ? "—" : new Intl.NumberFormat("en-US").format(n) + " تومان";
+  n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 
 export const formatNumber = (n: number | null | undefined): string =>
-  n == null ? "۰" : new Intl.NumberFormat("en-US").format(n);
+  n == null ? "۰" : new Intl.NumberFormat("fa-IR").format(n);

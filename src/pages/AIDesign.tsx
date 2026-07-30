@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
-  Upload, Wand2, Loader2, ArrowLeft, Sparkles, RefreshCw,
+  Upload, Wand2, Search, Sparkles, RefreshCw,
   ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers,
   CheckCircle2, Banknote, Info, Maximize2, Minimize2, Download, Share2,
-  Sofa, Blinds, Grid3x3, Lamp, BedDouble, Flower2, Image as ImageIcon, TreePine, Gem,
+  Sofa, Blinds, Grid3x3, Lamp, BedDouble, Flower2, Image as ImageIcon,
+  Gem, Compass, ShieldCheck, ChevronDown, ChevronUp, Tv, BookOpen, Heart, CreditCard, Store,
   type LucideIcon,
 } from "lucide-react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { runAIDesignPipeline } from "@/lib/aiPipeline";
 import type { PipelineResult } from "@/lib/aiPipeline";
@@ -14,11 +15,11 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/hooks/useWishlist";
 import { Badge } from "@/components/ui/badge";
 import ProductOverlay from "@/components/ProductOverlay";
 import { useTokens } from "@/hooks/useTokens";
 import { trackEvent, trackAIDesignResult } from "@/lib/tracking";
-import AIEntryCards from "@/components/AIEntryCards";
 import AIDesignProgress from "@/components/AIDesignProgress";
 import type { ProgressStep } from "@/components/AIDesignProgress";
 import SelectedProductsFloatingPanel from "@/components/SelectedProductsFloatingPanel";
@@ -27,41 +28,117 @@ import InspirationFlow from "@/components/InspirationFlow";
 import type { ProductMatch } from "@/hooks/useObjectSearch";
 import { formatPrice as fmt } from "@/lib/formatPrice";
 
+// Style preview images imported from assets
+import styleModern from "@/assets/hero-cinematic-living.jpg";
+import styleClassic from "@/assets/inspiration-classic.jpg";
+import styleMinimalist from "@/assets/hero-living.jpg";
+import styleLuxury from "@/assets/hero-cinematic-bedroom.jpg";
+import styleScandi from "@/assets/board/b-bedroom.jpg";
+import styleIndustrial from "@/assets/board/b-office.jpg";
+import styleBoho from "@/assets/board/b-decor.jpg";
+import styleJapandi from "@/assets/hero-cinematic-kitchen.jpg";
+
 type DesignStage = "UPLOADING" | "ANALYZING_SPACE" | "SELECTING_PRODUCTS" | "LAYING_OUT" | "RENDERING";
 
 const STAGE_CONFIG: Record<DesignStage, { label: string }> = {
-  UPLOADING:         { label: "آپلود تصویر" },
-  ANALYZING_SPACE:   { label: "تحلیل ابعاد، نور و سبک فضا" },
-  SELECTING_PRODUCTS:{ label: "بررسی و انتخاب محصولات" },
-  LAYING_OUT:        { label: "چیدمان هوشمند محصولات در فضا" },
-  RENDERING:         { label: "رندرگیری نهایی و بهینه‌سازی" },
+  UPLOADING:          { label: "آپلود تصویر" },
+  ANALYZING_SPACE:    { label: "تحلیل ابعاد، نور و سبک فضا" },
+  SELECTING_PRODUCTS: { label: "بررسی و انتخاب محصولات" },
+  LAYING_OUT:         { label: "چیدمان هوشمند محصولات در فضا" },
+  RENDERING:          { label: "رندرگیری نهایی و بهینه‌سازی" },
 };
 
 const STAGES: DesignStage[] = [
   "UPLOADING","ANALYZING_SPACE","SELECTING_PRODUCTS","LAYING_OUT","RENDERING",
 ];
 
+// Style list with high quality visual preview cards
 const STYLES = [
-  { id: "modern",       label: "مدرن"         },
-  { id: "classic",      label: "کلاسیک"       },
-  { id: "minimalist",   label: "مینیمال"      },
-  { id: "industrial",   label: "صنعتی"        },
-  { id: "scandinavian", label: "اسکاندیناوی"  },
-  { id: "luxury",       label: "لوکس"         },
-  { id: "bohemian",     label: "بوهمی"        },
-  { id: "japanese",     label: "ژاپنی"        },
+  { id: "modern",       label: "مدرن",        image: styleModern,     desc: "خطوط صاف و ساده" },
+  { id: "classic",      label: "کلاسیک",      image: styleClassic,    desc: "نقش‌های باشکوه" },
+  { id: "minimalist",   label: "مینیمال",     image: styleMinimalist, desc: "خلوتی و آرامش" },
+  { id: "luxury",       label: "لوکس",        image: styleLuxury,     desc: "جزئیات طلایی و مرمر" },
+  { id: "scandinavian", label: "اسکاندیناوی", image: styleScandi,     desc: "چوب روشن و نور" },
+  { id: "industrial",   label: "صنعتی",       image: styleIndustrial, desc: "فلز سیاه و آجر" },
+  { id: "bohemian",     label: "بوهمی",       image: styleBoho,       desc: "بافت‌های سنتی" },
+  { id: "japanese",     label: "ژاپنی",       image: styleJapandi,    desc: "تعادل و سادگی" },
 ];
 
-const CATEGORIES: { slug: string; label: string; Icon: LucideIcon }[] = [
-  { slug: "furniture",   label: "مبلمان",     Icon: Sofa },
-  { slug: "curtain",     label: "پرده",       Icon: Blinds },
-  { slug: "carpet",      label: "فرش",        Icon: Grid3x3 },
-  { slug: "lighting",    label: "لوستر",      Icon: Lamp },
-  { slug: "bedding",     label: "تخت و خواب", Icon: BedDouble },
-  { slug: "plants",      label: "گل و گیاه",  Icon: Flower2 },
-  { slug: "art",         label: "تابلو",      Icon: ImageIcon },
-  { slug: "wood-decor",  label: "دکور چوبی",  Icon: TreePine },
-  { slug: "accessories", label: "اکسسوری",    Icon: Gem },
+// Interactive categories with detailed sub-type variations
+export interface CategoryDef {
+  slug: string;
+  label: string;
+  Icon: LucideIcon;
+  subTypes: string[];
+}
+
+const CATEGORIES: CategoryDef[] = [
+  {
+    slug: "furniture",
+    label: "مبلمان",
+    Icon: Sofa,
+    subTypes: ["مبل ال", "مبل تدی / پارچه‌ای", "مبل چسترفیلد", "مبل کلاسیک", "صندلی راحتی تک‌نفره", "پاف و اتومان"],
+  },
+  {
+    slug: "dining",
+    label: "میز ناهارخوری",
+    Icon: ShoppingBag,
+    subTypes: ["۴ نفره", "۶ نفره", "۸ نفره", "۲ نفره", "گرد", "مستطیل", "بیضی"],
+  },
+  {
+    slug: "curtain",
+    label: "پرده",
+    Icon: Blinds,
+    subTypes: ["پرده پانچی مدرن", "پرده شید و زبرا", "پرده مخمل کلاسیک", "تور و حریر"],
+  },
+  {
+    slug: "carpet",
+    label: "فرش و کف‌پوش",
+    Icon: Grid3x3,
+    subTypes: ["فرش ماشینی مدرن", "فرش دستبافت ایرانی", "فرش وینتیج", "گلیم و جاجیم"],
+  },
+  {
+    slug: "lighting",
+    label: "روشنایی و آباژور",
+    Icon: Lamp,
+    subTypes: ["آباژور ایستاده", "آباژور رومیزی", "لوستر سقفی", "چراغ دیوارکوب"],
+  },
+  {
+    slug: "tv-console",
+    label: "میز TV و کنسول",
+    Icon: Tv,
+    subTypes: ["میز تلویزیون مدرن", "میز کنسول چوبی", "میز جلومبلی"],
+  },
+  {
+    slug: "bookcase-shoe",
+    label: "کتابخانه و جاکفشی",
+    Icon: BookOpen,
+    subTypes: ["جاکفشی مدرن", "کتابخانه طبقاتی", "شلف دیواری"],
+  },
+  {
+    slug: "bedding",
+    label: "تخت و سرویس خواب",
+    Icon: BedDouble,
+    subTypes: ["تخت لمسه‌دوزی", "پاتختی مدرن", "سرویس خواب چوبی"],
+  },
+  {
+    slug: "plants",
+    label: "گل و گیاه",
+    Icon: Flower2,
+    subTypes: ["گیاهان آپارتمانی بزرگ (سانسوریا/فیکوس)", "گلدان ایستاده", "گیاهان تزئینی"],
+  },
+  {
+    slug: "art",
+    label: "تابلو نقاشی و آینه",
+    Icon: ImageIcon,
+    subTypes: ["تابلو بوم انتزاعی", "ست چندتایی", "آینه دکوراتیو"],
+  },
+  {
+    slug: "accessories",
+    label: "اکسسوری و دکوراتیو",
+    Icon: Gem,
+    subTypes: ["شمع و شمعدان", "مجسمه دکوراتیو", "گلدان کریستال"],
+  },
 ];
 
 type Product = {
@@ -78,9 +155,17 @@ type Product = {
 const AIDesign = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<"home" | "design" | "suggest" | "inspiration">(
-    searchParams.get("products") ? "design" : searchParams.get("mode") === "inspiration" ? "inspiration" : "home"
+
+  // Active Tab Mode
+  const [activeTab, setActiveTab] = useState<"design" | "inspiration" | "suggest">(
+    searchParams.get("mode") === "inspiration"
+      ? "inspiration"
+      : searchParams.get("mode") === "suggest"
+      ? "suggest"
+      : "design"
   );
+
+  // Core State
   const [imageBase64, setImageBase64]     = useState<string | null>(null);
   const [style, setStyle]                 = useState("modern");
   const [prompt, setPrompt]               = useState("");
@@ -89,7 +174,18 @@ const AIDesign = () => {
   const [currentStage, setCurrentStage]   = useState<DesignStage>("UPLOADING");
   const [geminiResult, setGeminiResult]   = useState<PipelineResult<Product> | null>(null);
   const [aiError, setAiError]             = useState<string | null>(null);
-  const [activeCat, setActiveCat]         = useState(CATEGORIES[0].slug);
+
+  // Multi-Select Categories & Accordion Drawer
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({
+    furniture: true,
+  });
+  const [expandedCat, setExpandedCat]   = useState<string | null>("furniture");
+  const [selectedSubTypes, setSelectedSubTypes] = useState<Record<string, string[]>>({});
+
+  // Seller store profiles map: profile_id -> brand_name
+  const [sellerMap, setSellerMap]         = useState<Record<string, string>>({});
+
+  // Products database catalog
   const [catMap, setCatMap]               = useState<Record<string, string>>({});
   const [products, setProducts]           = useState<Record<string, Product[]>>({});
   const [selected, setSelected]           = useState<Record<string, Product>>({});
@@ -97,28 +193,29 @@ const AIDesign = () => {
   const [analyticsTab, setAnalyticsTab]   = useState<"consultation" | "placements">("consultation");
   const [fullscreen, setFullscreen]       = useState(false);
   const [showBefore, setShowBefore]       = useState(false);
+  const [catalogQuery, setCatalogQuery]   = useState("");
 
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
   const resultRef     = useRef<HTMLDivElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
+  const { add: addToWishlist } = useWishlist();
 
-  const goHome = useCallback(() => {
-    setMode("home");
-    setImageBase64(null);
-    setSelected({});
-    setQuantities({});
-    setGeminiResult(null);
-    setAiError(null);
-    setLoading(false);
-    setStyle("modern");
-    setBudget("");
-    setPrompt("");
-    navigate("/ai-design", { replace: true });
-  }, [navigate]);
+  const { consumeDesignCredit } = useTokens();
 
-  const { freeDesignsRemaining, tokenBalance, hasCredit, consumeDesignCredit } = useTokens();
+  // Load seller brand names from public_profiles
+  useEffect(() => {
+    (async () => {
+      const { data: sellers } = await supabase.from("public_profiles").select("id, brand_name");
+      const sMap: Record<string, string> = {};
+      (sellers || []).forEach((s) => {
+        if (s.brand_name) sMap[s.id] = s.brand_name;
+      });
+      setSellerMap(sMap);
+    })();
+  }, []);
 
+  // Handle pre-selected products from URL
   useEffect(() => {
     const productIds = searchParams.get("products");
     if (!productIds) return;
@@ -133,6 +230,7 @@ const AIDesign = () => {
         const preSelected: Record<string, Product> = {};
         preloaded.forEach((p) => { preSelected[p.id] = p as Product; });
         setSelected(preSelected);
+        setActiveTab("design");
         const sessionId = searchParams.get("session");
         if (sessionId) {
           supabase.from("design_sessions").update({ status: "designing" }).eq("id", sessionId).then();
@@ -141,6 +239,7 @@ const AIDesign = () => {
     })();
   }, [searchParams]);
 
+  // Preload catalog categories & products
   useEffect(() => {
     (async () => {
       const { data: cats } = await supabase.from("producer_categories").select("id, slug");
@@ -187,14 +286,34 @@ const AIDesign = () => {
   }, []);
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر انتخاب کنید");
-    if (file.size > 4 * 1024 * 1024) return toast.error("حجم عکس بیش از حد مجاز است (حداکثر ۴ مگابایت)");
+    if (!file.type.startsWith("image/")) return toast.error("لطفاً یک تصویر معتبر انتخاب کنید");
+    if (file.size > 5 * 1024 * 1024) return toast.error("حجم عکس بیش از حد مجاز است (حداکثر ۵ مگابایت)");
     const reader = new FileReader();
     reader.onload = () => {
       setImageBase64(reader.result as string);
       setGeminiResult(null);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Toggle Category selection (Multi-Select)
+  const toggleCategorySelection = (catSlug: string) => {
+    setSelectedCategories((prev) => {
+      const nextState = !prev[catSlug];
+      const next = { ...prev, [catSlug]: nextState };
+      if (nextState) setExpandedCat(catSlug);
+      return next;
+    });
+  };
+
+  // Toggle SubType filter for a category
+  const toggleSubType = (catSlug: string, subType: string) => {
+    setSelectedSubTypes((prev) => {
+      const list = prev[catSlug] || [];
+      const exists = list.includes(subType);
+      const updated = exists ? list.filter((s) => s !== subType) : [...list, subType];
+      return { ...prev, [catSlug]: updated };
+    });
   };
 
   const toggleProduct = (p: Product) => {
@@ -211,10 +330,6 @@ const AIDesign = () => {
     });
   };
 
-  const setQuantity = (id: string, qty: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, qty) }));
-  };
-
   const selectedList = useMemo(() => Object.values(selected), [selected]);
   const total        = selectedList.reduce((s, p) => s + (Number(p.price) || 0) * (quantities[p.id] || 1), 0);
 
@@ -223,16 +338,33 @@ const AIDesign = () => {
     [selectedList]
   );
 
+  // Filter products for active expanded category
+  const currentCategoryDef = useMemo(() => CATEGORIES.find((c) => c.slug === expandedCat), [expandedCat]);
+  const currentRawProducts = useMemo(() => (expandedCat ? products[expandedCat] || [] : []), [products, expandedCat]);
+  const activeSubFilters   = useMemo(() => (expandedCat ? selectedSubTypes[expandedCat] || [] : []), [selectedSubTypes, expandedCat]);
+
+  const filteredCurrentProducts = useMemo(() => {
+    let list = currentRawProducts;
+    if (activeSubFilters.length > 0) {
+      list = list.filter((p) => activeSubFilters.some((sub) => p.name.includes(sub) || p.name.toLowerCase().includes(sub.toLowerCase())));
+    }
+    if (catalogQuery.trim()) {
+      list = list.filter((p) => p.name.toLowerCase().includes(catalogQuery.trim().toLowerCase()));
+    }
+    return list;
+  }, [currentRawProducts, activeSubFilters, catalogQuery]);
+
+  // AI Pipeline Execution
   const generate = async () => {
-    if (!imageBase64)            return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
-    if (selectedList.length === 0) return toast.error("حداقل یک محصول از بازار انتخاب کنید");
+    if (!imageBase64) return toast.error("ابتدا یک عکس از فضای خانه آپلود کنید");
+    if (selectedList.length === 0) return toast.error("حداقل یک محصول از کاتالوگ انتخاب کنید");
     setLoading(true);
     setGeminiResult(null);
     setAiError(null);
     startStageProgression();
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("برای استفاده از هومینو استودیو ابتدا وارد حساب کاربری شوید"); return; }
+      if (!session) { toast.error("برای استفاده از استودیو هومینو ابتدا وارد حساب کاربری شوید"); return; }
       const allowed = await consumeDesignCredit();
       if (!allowed) return;
       const budgetNum = budget ? parseInt(budget.replace(/\D/g, ""), 10) : undefined;
@@ -258,26 +390,37 @@ const AIDesign = () => {
       setCurrentStage("RENDERING");
       await new Promise((r) => setTimeout(r, 400));
       if (result.status !== "ok") {
-        toast.error("هومینو استودیو نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید یا محصولات دیگری انتخاب کنید.");
+        toast.error("هومینو استودیو نتوانست چیدمان دقیقی پیشنهاد دهد. لطفاً دوباره تلاش کنید.");
         trackAIDesignResult("failed", { errorMessage: result.status, style, budget: budgetNum });
-        const sessionId = searchParams.get("session");
-        if (sessionId) supabase.from("design_sessions").update({ status: "abandoned" }).eq("id", sessionId).then();
       } else {
-        toast.success("چیدمان هوشمند آماده شد");
+        toast.success("چیدمان هوشمند با موفقیت آماده شد");
         trackAIDesignResult("finished", { placementsCount: result.placements.length, style, budget: budgetNum });
-        const sessionId = searchParams.get("session");
-        if (sessionId) supabase.from("design_sessions").update({ status: "completed" }).eq("id", sessionId).then();
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "خطا در تولید طراحی";
-      console.error(e);
       setAiError(message);
       toast.error(message);
-      trackAIDesignResult("failed", { errorMessage: message, style, budget: budgetNum });
     } finally {
       setLoading(false);
       stopStageProgression();
     }
+  };
+
+  // Auto-Suggested Curation
+  const handleAutoSuggestDesign = () => {
+    const allAvailable = Object.values(products).flat();
+    if (allAvailable.length === 0) {
+      toast.error("در حال بارگذاری کاتالوگ دیتابیس... دوباره بزنید");
+      return;
+    }
+    const autoPick: Record<string, Product> = {};
+    const count = Math.min(6, allAvailable.length);
+    for (let i = 0; i < count; i++) {
+      const p = allAvailable[i];
+      autoPick[p.id] = p;
+    }
+    setSelected(autoPick);
+    toast.success("ست پیشنهادی هوشمند انتخاب شد! عکس اتاق را آپلود کنید و روی دکمه شروع بزنید.");
   };
 
   const addToCart = (p: Product) => {
@@ -288,20 +431,50 @@ const AIDesign = () => {
     if (res.ok) toast.success("به سبد خرید اضافه شد");
   };
 
-  const buyAllProducts = () => {
-    if (selectedList.length === 0) return;
-    let count = 0;
-    for (const p of selectedList) {
-      const res = addItem({
-        product_id: p.id, profile_id: p.profile_id || "",
-        name: p.name, price: p.price || 0, image_url: p.image_url, stock: p.stock || 10,
-      });
-      if (res.ok) count++;
+  // Save full design to Wishlist
+  const handleSaveToWishlist = async () => {
+    if (selectedList.length === 0) {
+      toast.error("هیچ محصولی انتخاب نشده است");
+      return;
     }
-    if (count > 0) { toast.success(`${count} محصول به سبد خرید اضافه شد`); setOpenCart(true); }
+    let savedCount = 0;
+    for (const p of selectedList) {
+      const success = await addToWishlist({
+        item_type: "product",
+        item_id: p.id,
+        title: p.name,
+        price: p.price,
+        image_url: p.image_url,
+        metadata: { profile_id: p.profile_id, brand_name: sellerMap[p.profile_id || ""] || "هومینو" },
+      });
+      if (success) savedCount++;
+    }
+    if (savedCount > 0) {
+      toast.success(`${savedCount} کالا با موفقیت به لیست علاقه‌مندی‌های شما اضافه شد`);
+    }
   };
 
-  const currentProducts = products[activeCat] || [];
+  // Register Order & Proceed to Checkout Gateway Flow
+  const handleCheckoutAndPay = () => {
+    if (selectedList.length === 0) {
+      toast.error("هیچ محصولی انتخاب نشده است");
+      return;
+    }
+    // Add items to cart
+    for (const p of selectedList) {
+      addItem({
+        product_id: p.id,
+        profile_id: p.profile_id || "",
+        name: p.name,
+        price: p.price || 0,
+        image_url: p.image_url,
+        stock: p.stock || 10,
+      });
+    }
+    setOpenCart(false);
+    toast.success("محصولات به سبد خرید منتقل گردیدند. در حال انتقال به درگاه پرداخت...");
+    navigate("/checkout");
+  };
 
   const progressSteps: ProgressStep[] = STAGES.map((s) => ({
     key: s,
@@ -310,530 +483,553 @@ const AIDesign = () => {
     active: s === currentStage && !(s === "RENDERING" && geminiResult?.status === "ok"),
   }));
 
-  // ── Render ────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0d211b] text-slate-100 relative overflow-hidden font-body" dir="rtl">
       <Navbar />
-      <main className="container mx-auto px-3 sm:px-4 pt-28 sm:pt-32 pb-8">
 
-        {/* Back link — only when not in home mode */}
-        {mode !== "home" && (
-          <button onClick={() => {
-            if (mode === "design") goHome();
-            else setMode("home");
-          }} className="inline-flex items-center gap-2 mb-6 text-sm font-semibold text-accent-foreground bg-accent hover:bg-accent/90 px-4 py-2.5 rounded-xl shadow-md transition-all">
-            <ArrowLeft size={16} /> بازگشت
-          </button>
-        )}
+      {/* Emerald Background Wash */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-1/4 w-[700px] h-[700px] bg-[#155449]/40 rounded-full blur-[160px]" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-[#0b2923]/60 rounded-full blur-[150px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(#10b98115_1px,transparent_1px)] [background-size:24px_24px]" />
+      </div>
 
-        {/* ── HOME MODE: Three entry cards ──────────── */}
-        {mode === "home" && !searchParams.get("products") && (
-          <div className="space-y-8">
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5"
-                style={{
-                  background: "linear-gradient(180deg, hsl(var(--accent)/0.15), hsl(var(--accent)/0.05))",
-                  border: "1px solid hsl(var(--accent)/0.3)",
-                }}>
-                <Sparkles size={14} className="text-accent" />
-                <span className="text-accent text-xs font-semibold">طراح داخلی هوشمند هومینو</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight break-words"
-                style={{
-                  backgroundImage: "linear-gradient(180deg, hsl(158 54% 22%) 0%, hsl(158 48% 34%) 55%, hsl(28 28% 14%) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                }}>
-                خانه خودت را با هومینو استودیو طراحی کن
-              </h1>
-              <p className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed px-2 max-w-prose break-words">
-                یک عکس آپلود کن، محصولات دلخواه انتخاب کن — هومینو استودیو چیدمان را با نور، سبک و ابعاد اتاق هماهنگ می‌کند
-              </p>
-            </div>
+      <main className="container mx-auto px-4 pt-28 pb-16 relative z-10 max-w-7xl">
 
-            <AIEntryCards
-              onStartDesign={() => setMode("design")}
-              onStartInspiration={() => setMode("inspiration")}
-              onStartSuggest={() => setMode("suggest")}
-            />
+        {/* ── HEADER BADGE & TITLE ───────────────────────────────── */}
+        <header className="text-center max-w-3xl mx-auto mb-6 space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1 border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+            <Sparkles size={14} className="animate-pulse" />
+            <span className="text-xs font-black tracking-wide">هومینو استودیو — استودیوی هوشمند دکوراسیون</span>
           </div>
-        )}
 
-        {/* ── SUGGEST MODE: AI Suggestion Assistant ── */}
-        {mode === "suggest" && !searchParams.get("products") && (
-          <div className="max-w-lg mx-auto space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-2">پیشنهاد هوشمند هومینو</h2>
-              <p className="text-base text-muted-foreground">به سؤالات زیر پاسخ دهید تا بهترین محصولات را پیشنهاد کنیم</p>
-            </div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
+            خانه خودت را با <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]">هومینو استودیو</span> طراحی کن
+          </h1>
+        </header>
+
+        {/* ── TABS NAVIGATION (3 Core Modules) ───────────── */}
+        <section className="max-w-4xl mx-auto mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 p-1.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-emerald-500/30 shadow-[0_0_25px_rgba(16,185,129,0.15)]">
+
+            {/* TAB 1: Smart Staging */}
+            <button
+              onClick={() => setActiveTab("design")}
+              className={`text-right p-3 rounded-xl flex items-center gap-2.5 transition-all duration-300 ${
+                activeTab === "design"
+                  ? "bg-emerald-600 text-white border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] font-black scale-[1.01]"
+                  : "bg-slate-950/60 text-slate-400 border border-slate-800 hover:border-emerald-500/50 hover:text-white"
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "design" ? "bg-white text-emerald-950 font-black" : "bg-slate-800 text-slate-300"}`}>
+                <Wand2 size={16} />
+              </div>
+              <div>
+                <h3 className="text-xs font-extrabold text-white">۱. طراحی و چیدمان با عکس</h3>
+                <p className="text-[9px] opacity-80 line-clamp-1">انتخاب وسایل + چیدمان در اتاق شما</p>
+              </div>
+            </button>
+
+            {/* TAB 2: Visual AI Scanner */}
+            <button
+              onClick={() => setActiveTab("inspiration")}
+              className={`text-right p-3 rounded-xl flex items-center gap-2.5 transition-all duration-300 ${
+                activeTab === "inspiration"
+                  ? "bg-emerald-600 text-white border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] font-black scale-[1.01]"
+                  : "bg-slate-950/60 text-slate-400 border border-slate-800 hover:border-emerald-500/50 hover:text-white"
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "inspiration" ? "bg-white text-emerald-950 font-black" : "bg-slate-800 text-slate-300"}`}>
+                <Search size={16} />
+              </div>
+              <div>
+                <h3 className="text-xs font-extrabold text-white">۲. اسکن بصری و جایگزینی</h3>
+                <p className="text-[9px] opacity-80 line-clamp-1">اسکن عکس مدل + جایگذاری روی عکس خانه</p>
+              </div>
+            </button>
+
+            {/* TAB 3: AI Suggestion Assistant */}
+            <button
+              onClick={() => setActiveTab("suggest")}
+              className={`text-right p-3 rounded-xl flex items-center gap-2.5 transition-all duration-300 ${
+                activeTab === "suggest"
+                  ? "bg-emerald-600 text-white border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] font-black scale-[1.01]"
+                  : "bg-slate-950/60 text-slate-400 border border-slate-800 hover:border-emerald-500/50 hover:text-white"
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "suggest" ? "bg-white text-emerald-950 font-black" : "bg-slate-800 text-slate-300"}`}>
+                <Sparkles size={16} />
+              </div>
+              <div>
+                <h3 className="text-xs font-extrabold text-white">۳. دستیار پیشنهاد دکور</h3>
+                <p className="text-[9px] opacity-80 line-clamp-1">پیشنهاد هوشمند ست دکور براساس بودجه</p>
+              </div>
+            </button>
+
+          </div>
+        </section>
+
+        {/* ── TAB 3: SUGGESTION ASSISTANT ── */}
+        {activeTab === "suggest" && (
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-emerald-500/30 backdrop-blur-2xl shadow-2xl max-w-4xl mx-auto space-y-6">
             <AISuggestionAssistant
-              onBack={goHome}
+              onBack={() => setActiveTab("design")}
               onComplete={(params) => {
                 setStyle(params.style);
                 const budgetMap: Record<string, string> = {
                   low: "10000000", mid: "50000000", high: "100000000", premium: "500000000",
                 };
                 setBudget(budgetMap[params.budget] || "");
-                trackEvent("ai_suggestion_requested", {
-                  metadata: { room_type: params.roomType, style: params.style, budget: params.budget },
-                });
-                setMode("design");
-                toast.success("بر اساس انتخاب شما، محصولات زیر پیشنهاد می‌شود");
+                setActiveTab("design");
+                toast.success("پیشنهاد هوشمند روی تب چیدمان اعمال گردید");
               }}
             />
           </div>
         )}
 
-        {/* ── INSPIRATION MODE: Object Detection ── */}
-        {mode === "inspiration" && !searchParams.get("products") && (
-          <InspirationFlow
-            onProceedToDesign={(products: ProductMatch[], totalPrice: number) => {
-              const sel: Record<string, Product> = {};
-              products.forEach((p) => {
-                sel[p.product_id] = {
-                  id: p.product_id,
-                  name: p.product_name,
-                  price: p.price,
-                  image_url: p.image_url,
-                  category_id: p.category,
-                  profile_id: p.store_id || undefined,
-                };
-              });
-              setSelected(sel);
-              setMode("design");
-            }}
-            onBack={() => setMode("home")}
-          />
+        {/* ── TAB 2: VISUAL SCANNER ── */}
+        {activeTab === "inspiration" && (
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-emerald-500/30 backdrop-blur-2xl shadow-2xl max-w-5xl mx-auto">
+            <InspirationFlow
+              onProceedToDesign={(productsMatch: ProductMatch[], _totalPrice: number, roomPhotoBase64?: string | null) => {
+                const sel: Record<string, Product> = {};
+                productsMatch.forEach((p) => {
+                  sel[p.product_id] = {
+                    id: p.product_id,
+                    name: p.product_name,
+                    price: p.price,
+                    image_url: p.image_url,
+                    category_id: p.category,
+                    profile_id: p.store_id || undefined,
+                  };
+                });
+                setSelected(sel);
+                if (roomPhotoBase64) setImageBase64(roomPhotoBase64);
+                setActiveTab("design");
+                toast.success("محصولات شناسایی‌شده به محیط چیدمان منتقل شدند");
+              }}
+              onBack={() => setActiveTab("design")}
+            />
+          </div>
         )}
 
-        {/* ── DESIGN MODE: Full design flow ────────── */}
-        {(mode === "design" || searchParams.get("products")) && (
-          <>
-            {/* ViewInMyRoom banner */}
-            {selectedList.length > 0 && searchParams.get("products") && (
-              <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 flex items-center gap-3 mb-6 max-w-2xl mx-auto">
-                <Sofa size={20} className="text-accent shrink-0" />
-                <div className="flex-1 text-sm">
-                  <span className="font-bold text-accent">{selectedList[0]?.name}</span>
-                  <span className="text-muted-foreground"> پیش‌انتخاب شد. عکس اتاق را آپلود کن — هومینو استودیو جای آن را مشخص می‌کند.</span>
-                </div>
-                <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground shrink-0">
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+        {/* ── TAB 1: MAIN SPLIT WORKSTATION (RIGHT PANEL CONTROLS VS LEFT STAGE & PRODUCTS BREAKDOWN) ── */}
+        {activeTab === "design" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <div className={`grid gap-6 ${geminiResult?.status === "ok" ? "lg:grid-cols-[1fr_320px]" : "grid-cols-1"}`}>
+            {/* ── RIGHT COLUMN: COMPACT CONTROLS DOCK (سمت راست - کنترل‌های فشرده) ── */}
+            <div className="lg:col-span-5 space-y-4">
 
-              {/* ── MAIN CONTENT ────────────────── */}
-              <div className="space-y-5 min-w-0">
-
-                {/* Upload — compact */}
-                {!imageBase64 && !loading && (
-                  <div className="max-w-[500px]">
-                    <div
-                      onClick={() => inputRef.current?.click()}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
-                      className="relative cursor-pointer rounded-2xl border-2 border-dashed border-border hover:border-accent/50 bg-card transition-all p-8 text-center"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                        <Upload size={20} className="text-accent" />
-                      </div>
-                      <p className="text-sm font-semibold mb-1">عکس فضای خانه را آپلود کنید</p>
-                      <p className="text-xs text-muted-foreground">کلیک کنید یا بکشید · JPG / PNG · حداکثر ۱۰ مگابایت</p>
-                      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Image preview — compact */}
-                {imageBase64 && !loading && (
-                  <div className="max-w-[500px]">
-                    <div className="relative rounded-2xl overflow-hidden bg-card border border-border group">
-                      <img src={imageBase64} alt="فضا" className="w-full aspect-video object-cover" />
-                      <button onClick={() => { setImageBase64(null); setGeminiResult(null); }}
-                        className="absolute top-2 left-2 w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center border border-border hover:bg-background">
-                        <X size={12} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Style selector */}
-                <div className="flex flex-wrap gap-1.5">
-                  {STYLES.map((s) => (
-                    <button key={s.id} onClick={() => setStyle(s.id)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all ${
-                        style === s.id ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border hover:border-accent/30"
-                      }`}>
-                      {s.label}
+              {/* 1. Room Photo Dropzone */}
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 shadow-xl backdrop-blur-2xl space-y-2">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <h2 className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-emerald-500 text-slate-950 font-extrabold flex items-center justify-center text-[10px]">۱</span>
+                    تصویر اتاق شما
+                  </h2>
+                  {imageBase64 && (
+                    <button onClick={() => setImageBase64(null)} className="text-[10px] text-red-400 hover:underline flex items-center gap-1">
+                      <X size={11} /> حذف عکس
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                {/* Category + Product grid — scrollable */}
-                {!loading && (
-                  <div className="bg-card border border-border rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      {CATEGORIES.map((c) => {
-                        const count = (products[c.slug] || []).length;
-                        const sel = selectedList.filter((p) => p.category_id === catMap[c.slug]).length;
-                        const isActive = activeCat === c.slug;
-                        const Icon = c.Icon;
+                {!imageBase64 ? (
+                  <div
+                    onClick={() => inputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
+                    className="rounded-xl p-5 text-center cursor-pointer border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-slate-950/60 transition-all group"
+                  >
+                    <Upload size={22} className="mx-auto mb-2 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <p className="font-bold text-xs text-white mb-1">بارگذاری عکس فضای شما</p>
+                    <p className="text-[10px] text-slate-400">کلیک کنید یا عکس را بکشید (JPG, PNG)</p>
+                    <input ref={inputRef} type="file" accept="image/*" className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+                  </div>
+                ) : (
+                  <div className="relative rounded-xl overflow-hidden border border-emerald-500/40 aspect-video bg-black">
+                    <img src={imageBase64} alt="اتاق شما" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Style Selector with Photo Thumbnails (Compact 2x4 Grid) */}
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 shadow-xl backdrop-blur-2xl space-y-2">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <h2 className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-emerald-500 text-slate-950 font-extrabold flex items-center justify-center text-[10px]">۲</span>
+                    سبک دکوراسیون
+                  </h2>
+                  <span className="text-[10px] text-emerald-400 font-bold">{STYLES.find((s) => s.id === style)?.label}</span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                  {STYLES.map((s) => {
+                    const isSelected = style === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setStyle(s.id)}
+                        className={`relative rounded-xl overflow-hidden border transition-all text-center group ${
+                          isSelected
+                            ? "border-emerald-400 ring-2 ring-emerald-500/60 shadow-md scale-105"
+                            : "border-slate-800 opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        <div className="aspect-square w-full relative bg-slate-950">
+                          <img src={s.image} alt={s.label} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40" />
+                          <span className="absolute bottom-1 right-0 left-0 text-[9px] font-black text-white truncate px-1">
+                            {s.label}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Multi-Selectable Categories & Collapsible Sub-Type Catalog */}
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 shadow-xl backdrop-blur-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <h2 className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded bg-emerald-500 text-slate-950 font-extrabold flex items-center justify-center text-[10px]">۳</span>
+                    انتخاب کالاها (Multi-Select)
+                  </h2>
+                  <span className="text-[10px] font-bold text-emerald-400">{selectedList.length} کالا</span>
+                </div>
+
+                {/* Category buttons */}
+                <div className="flex flex-wrap gap-1.5">
+                  {CATEGORIES.map((cat) => {
+                    const isCatSelected = !!selectedCategories[cat.slug];
+                    const Icon = cat.Icon;
+                    return (
+                      <button
+                        key={cat.slug}
+                        onClick={() => toggleCategorySelection(cat.slug)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                          isCatSelected
+                            ? "bg-emerald-600 text-white border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-slate-950/70 text-slate-400 border-slate-800 hover:border-emerald-500/40 hover:text-white"
+                        }`}
+                      >
+                        <Icon size={12} />
+                        <span>{cat.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Expanded Sub-Types Drawer */}
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/20 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] border-b border-slate-800 pb-1.5">
+                    <span className="font-bold text-emerald-400">انواع {currentCategoryDef?.label}:</span>
+                    <div className="relative min-w-[120px]">
+                      <input
+                        type="text"
+                        value={catalogQuery}
+                        onChange={(e) => setCatalogQuery(e.target.value)}
+                        placeholder="جستجو..."
+                        className="w-full px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-md text-[10px] text-white outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sub-type tags */}
+                  {currentCategoryDef && currentCategoryDef.subTypes.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {currentCategoryDef.subTypes.map((sub) => {
+                        const isSubActive = (selectedSubTypes[currentCategoryDef.slug] || []).includes(sub);
                         return (
-                          <button key={c.slug} onClick={() => setActiveCat(c.slug)}
-                            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                              isActive ? "bg-accent/10 text-accent border-accent/30" : "bg-muted/30 text-muted-foreground border-border hover:border-accent/30"
-                            }`}>
-                            <Icon size={13} />
-                            {c.label}
-                            {sel > 0 && <span className="bg-accent text-accent-foreground text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{sel}</span>}
+                          <button
+                            key={sub}
+                            onClick={() => toggleSubType(currentCategoryDef.slug, sub)}
+                            className={`px-2 py-0.5 rounded-md text-[9px] font-bold border transition-all ${
+                              isSubActive
+                                ? "bg-emerald-500 text-slate-950 border-emerald-400"
+                                : "bg-slate-900 text-slate-300 border-slate-800 hover:border-emerald-500/40"
+                            }`}
+                          >
+                            {sub}
                           </button>
                         );
                       })}
                     </div>
+                  )}
 
-                    {currentProducts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-6">هنوز محصولی در این دسته ثبت نشده.</p>
+                  {/* Database Product Items Grid */}
+                  <div className="grid grid-cols-3 gap-1.5 max-h-[220px] overflow-y-auto pr-1 pt-1">
+                    {filteredCurrentProducts.length === 0 ? (
+                      <p className="text-[10px] text-slate-500 col-span-full text-center py-4">کالایی موجود نیست.</p>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[320px] overflow-y-auto">
-                        {currentProducts.map((p) => {
-                          const isSel = !!selected[p.id];
-                          return (
-                            <button key={p.id} onClick={() => toggleProduct(p)}
-                              className={`relative text-right rounded-xl border overflow-hidden transition-all bg-card ${
-                                isSel ? "border-accent ring-1 ring-accent/40" : "border-border hover:border-accent/40"
-                              }`}>
-                              <div className="aspect-square bg-muted overflow-hidden">
-                                {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
-                              </div>
-                              <div className="p-2">
-                                <p className="text-xs font-medium line-clamp-1">{p.name}</p>
-                                <p className="text-xs text-accent mt-0.5">{fmt(p.price)}</p>
-                              </div>
-                              {isSel && (
-                                <div className="absolute top-1 left-1 flex items-center gap-0.5">
-                                  <span className="w-4 h-4 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
-                                    <CheckCircle2 size={10} />
-                                  </span>
-                                </div>
+                      filteredCurrentProducts.map((p) => {
+                        const isProductSelected = !!selected[p.id];
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => toggleProduct(p)}
+                            className={`relative text-right rounded-xl border overflow-hidden transition-all bg-slate-900 ${
+                              isProductSelected
+                                ? "border-emerald-400 ring-1 ring-emerald-500/50 bg-emerald-500/10"
+                                : "border-slate-800 hover:border-emerald-500/30"
+                            }`}
+                          >
+                            <div className="aspect-square bg-black overflow-hidden relative">
+                              {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                              {isProductSelected && (
+                                <span className="absolute top-1 left-1 w-4 h-4 rounded bg-emerald-500 text-slate-950 flex items-center justify-center text-[8px] font-black">
+                                  ✓
+                                </span>
                               )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            </div>
+                            <div className="p-1">
+                              <p className="text-[9px] font-bold line-clamp-1 text-slate-200">{p.name}</p>
+                              <p className="text-[9px] text-emerald-400 font-black">{fmt(p.price)}</p>
+                            </div>
+                          </button>
+                        );
+                      })
                     )}
                   </div>
-                )}
+                </div>
+              </div>
 
-                {/* Budget + Prompt */}
-                {!loading && (
-                  <div className="grid sm:grid-cols-2 gap-3 max-w-lg">
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">بودجه (اختیاری)</p>
-                      <div className="relative">
-                        <input type="text" inputMode="numeric" value={budget}
-                          onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
-                          placeholder="مثلاً: ۵۰۰۰۰۰۰" dir="ltr"
-                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors" />
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">تومان</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">توضیحات (اختیاری)</p>
-                      <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="مثلاً: مبل سمت پنجره..."
-                        className="w-full bg-card border border-border rounded-xl p-2 text-sm h-[38px] outline-none focus:border-accent transition-colors resize-none" />
-                    </div>
-                  </div>
-                )}
+              {/* 4 & 5. Budget Range & Custom Prompt */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-2xl bg-slate-900/90 border border-emerald-500/30 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-300">سقف بودجه (تومان)</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="آزاد"
+                    dir="ltr"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
 
-                {/* Generate button (not in loading) */}
-                {!loading && !geminiResult && (
-                  <button onClick={generate}
-                    disabled={!imageBase64 || selectedList.length === 0}
-                    className="btn-3d font-bold py-3 px-6 text-sm flex items-center justify-center gap-2 w-full max-w-md">
-                    <Wand2 size={16} />
-                    چیدمان هوشمند با هومینو استودیو
+                <div className="p-3 rounded-2xl bg-slate-900/90 border border-emerald-500/30 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-300">توضیحات طراحی</span>
+                  <input
+                    type="text"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="دستور به AI..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* 6. Dual Action Buttons */}
+              <div className="space-y-2">
+                <button
+                  onClick={generate}
+                  disabled={loading || !imageBase64 || selectedList.length === 0}
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 text-slate-950 font-black text-xs md:text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:opacity-95 disabled:opacity-40 transition-all"
+                >
+                  <Wand2 size={16} />
+                  شروع طراحی هوشمند با وسایل انتخابی
+                </button>
+
+                <button
+                  onClick={handleAutoSuggestDesign}
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 shadow transition-all"
+                >
+                  <Sparkles size={14} className="text-emerald-400" />
+                  طراحی پیشنهادی هومینو استودیو (انتخاب خودکار)
+                </button>
+              </div>
+
+              {/* Progress Loading Steps */}
+              {loading && (
+                <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30">
+                  <AIDesignProgress steps={progressSteps} currentLabel={STAGE_CONFIG[currentStage]?.label} />
+                </div>
+              )}
+
+              {/* Error Notification */}
+              {aiError && !loading && (
+                <div className="p-3 rounded-xl border border-red-500/40 bg-red-950/20 text-[11px] text-red-300">
+                  <p className="font-bold">خطا: {aiError}</p>
+                  <button onClick={generate} className="text-emerald-400 hover:underline font-bold mt-1 inline-flex items-center gap-1">
+                    <RefreshCw size={11} /> تلاش مجدد
                   </button>
-                )}
+                </div>
+              )}
 
-                {/* ── RESULT ──────────────────── */}
-                {loading && (
-                  <div className="max-w-md">
-                    <AIDesignProgress steps={progressSteps} currentLabel={STAGE_CONFIG[currentStage]?.label} />
-                  </div>
-                )}
+            </div>
 
-                {aiError && !loading && (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm flex items-start gap-3 max-w-md">
-                    <Info size={16} className="shrink-0 mt-0.5 text-destructive" />
-                    <div className="flex-1 space-y-2">
-                      <p className="text-destructive font-medium">خطا در تولید طراحی</p>
-                      <p className="text-muted-foreground text-xs">{aiError}</p>
-                      <button onClick={generate} className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline">
-                        <RefreshCw size={12} /> تلاش دوباره
+            {/* ── LEFT COLUMN: RENDER VIEWPORT STAGE & PRODUCTS BREAKDOWN (سمت چپ - نمایش رندر و محصولات) ── */}
+            <div className="lg:col-span-7 space-y-4">
+
+              {/* Left Stage Frame Viewport */}
+              <div className="p-5 rounded-3xl bg-slate-900/90 border border-emerald-500/30 shadow-2xl backdrop-blur-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-black text-emerald-400 flex items-center gap-2">
+                    <Wand2 size={16} />
+                    خروجی طراحی و چیدمان هومینو استودیو
+                  </h3>
+
+                  {geminiResult && (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setFullscreen(!fullscreen)} className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white">
+                        {fullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                      </button>
+                      <button onClick={() => {
+                        const img = resultRef.current?.querySelector("img");
+                        if (img) {
+                          const link = document.createElement("a");
+                          link.download = "homeino-design.png";
+                          link.href = img.src;
+                          link.click();
+                          toast.success("تصویر خروجی ذخیره گردید");
+                        }
+                      }} className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white">
+                        <Download size={13} />
+                      </button>
+                      <button onClick={async () => {
+                        try {
+                          await navigator.share({ title: "طراحی هومینو", text: "طراحی هوشمند اتاق من", url: window.location.href });
+                        } catch {
+                          navigator.clipboard?.writeText(window.location.href);
+                          toast.success("لینک کپی شد");
+                        }
+                      }} className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white">
+                        <Share2 size={13} />
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {geminiResult && (
-                  <div ref={resultRef} className={`space-y-4 transition-all ${fullscreen ? "fixed inset-4 z-50 bg-background overflow-y-auto p-6 rounded-2xl shadow-2xl border border-border" : ""}`}>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-lg">نتیجه چیدمان</h3>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setFullscreen(!fullscreen)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
-                          {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                        </button>
-                        <button onClick={() => {
-                          const img = resultRef.current?.querySelector("img");
-                          if (img) {
-                            const link = document.createElement("a");
-                            link.download = "homeino-design.png";
-                            link.href = img.src;
-                            link.click();
-                            toast.success("تصویر ذخیره شد");
-                          } else {
-                            toast.error("تصویری برای ذخیره وجود ندارد");
-                          }
-                        }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
-                          <Download size={14} />
-                        </button>
-                        <button onClick={async () => {
-                          try {
-                            await navigator.share({
-                              title: "طراحی هوشمند هومینو",
-                              text: "این طراحی رو با هومینو استودیو هومینو انجام دادم",
-                              url: window.location.href,
-                            });
-                          } catch {
-                            navigator.clipboard?.writeText(window.location.href);
-                            toast.success("لینک کپی شد");
-                          }
-                        }} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80">
-                          <Share2 size={14} />
-                        </button>
-                      </div>
+                {/* Viewport Render Canvas */}
+                <div ref={resultRef} className={`rounded-2xl overflow-hidden border border-emerald-500/30 bg-slate-950 relative aspect-video flex items-center justify-center ${fullscreen ? "fixed inset-4 z-50 bg-slate-950 p-6" : ""}`}>
+                  {geminiResult?.status === "ok" && imageBase64 ? (
+                    showBefore ? (
+                      <img src={imageBase64} alt="فضای اصلی" className="w-full h-full object-cover" />
+                    ) : (
+                      <ProductOverlay
+                        roomImage={imageBase64}
+                        placements={geminiResult.placements}
+                        onProductClick={addToCart}
+                      />
+                    )
+                  ) : imageBase64 ? (
+                    <img src={imageBase64} alt="اتاق شما" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-8 space-y-2 text-slate-500">
+                      <Wand2 size={36} className="mx-auto text-slate-600 animate-pulse" />
+                      <p className="text-xs font-bold">پیش‌نمایش چیدمان در این کادر قرار می‌گیرد</p>
+                      <p className="text-[10px]">عکس اتاق را بفرستید و وسایل را از پنل سمت راست انتخاب کنید</p>
                     </div>
+                  )}
+                </div>
 
-                    {geminiResult.status !== "ok" && (
-                      <div className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground flex items-start gap-2">
-                        <Info size={16} className="shrink-0 mt-0.5" />
-                        <div className="flex-1 space-y-2">
-                          <span>{geminiResult.consultation || "طراحی معتبری تولید نشد"}</span>
-                          <div><button onClick={generate} className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"><RefreshCw size={12} /> تلاش دوباره</button></div>
-                        </div>
-                      </div>
-                    )}
-
-                    {geminiResult.status === "ok" && imageBase64 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setShowBefore(false)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                              !showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
-                            }`}
-                          >
-                            نتیجه طراحی
-                          </button>
-                          <button
-                            onClick={() => setShowBefore(true)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                              showBefore ? "bg-accent/10 text-accent border-accent/30" : "bg-card text-muted-foreground border-border"
-                            }`}
-                          >
-                            تصویر اصلی
-                          </button>
-                        </div>
-                        <div className="rounded-2xl overflow-hidden border border-border shadow-lg bg-card">
-                          {showBefore ? (
-                            <img src={imageBase64} alt="فضای اصلی" className="w-full" />
-                          ) : (
-                            <ProductOverlay
-                              roomImage={imageBase64}
-                              placements={geminiResult.placements}
-                              onProductClick={addToCart}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <button onClick={generate} disabled={loading}
-                      className="w-full bg-card border border-border hover:border-accent text-foreground py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm transition-all">
-                      <RefreshCw size={15} /> چیدمان مجدد
+                {/* Before / After toggle button */}
+                {geminiResult?.status === "ok" && (
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setShowBefore(false)}
+                      className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
+                        !showBefore ? "bg-emerald-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      نتیجه رندر چیدمان
                     </button>
-
-                    {/* Detail tabs */}
-                    <div className="space-y-3">
-                      <div className="flex gap-1 bg-card border border-border rounded-xl p-1">
-                        <button onClick={() => setAnalyticsTab("consultation")}
-                          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                            analyticsTab === "consultation" ? "bg-accent/15 text-accent" : "text-muted-foreground"
-                          }`}>
-                          <Lightbulb size={13} /> مشاوره هومینو استودیو
-                        </button>
-                        <button onClick={() => setAnalyticsTab("placements")}
-                          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                            analyticsTab === "placements" ? "bg-accent/15 text-accent" : "text-muted-foreground"
-                          }`}>
-                          <Layers size={13} /> جزئیات وسایل ({geminiResult.placements.length})
-                        </button>
-                      </div>
-
-                      {analyticsTab === "consultation" && (
-                        <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Palette size={15} className="text-accent shrink-0" />
-                            <span className="text-xs font-bold text-accent">سبک انتخابی شما:</span>
-                            <Badge variant="secondary" className="text-xs">{STYLES.find((s) => s.id === style)?.label || style}</Badge>
-                          </div>
-                          <div className="flex gap-2 items-start">
-                            <Lightbulb size={15} className="text-accent shrink-0 mt-0.5" />
-                            <p className="text-sm leading-loose text-foreground break-words whitespace-pre-wrap">{geminiResult.consultation}</p>
-                          </div>
-                          <div className="flex items-center gap-2 pt-2 border-t border-accent/20">
-                            <Banknote size={14} className="text-accent shrink-0" />
-                            <span className="text-xs text-muted-foreground">جمع قیمت (از دیتابیس):</span>
-                            <span className="text-sm font-bold text-accent">{fmt(geminiResult.totalPrice)}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {analyticsTab === "placements" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
-                          {geminiResult.placements.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-4">هیچ وسیله‌ای جایگذاری نشد.</p>
-                          ) : geminiResult.placements.map((pl) => {
-                            const product = pl.product;
-                            return (
-                              <div key={pl.product_id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-center">
-                                <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
-                                  {product.image_url && <img src={product.image_url} className="w-full h-full object-cover" />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold line-clamp-1">{product.name}</p>
-                                  <p className="text-xs text-accent font-bold mt-0.5">{fmt(product.price)}</p>
-                                </div>
-                                <button onClick={() => addToCart(product)}
-                                  className="text-muted-foreground hover:text-accent transition-colors shrink-0" title="افزودن به سبد خرید">
-                                  <ShoppingCart size={14} />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Buy the look */}
-                    <div className="pt-4 border-t border-border space-y-3">
-                      <h3 className="font-bold flex items-center gap-2">
-                        <ShoppingBag size={18} className="text-accent" /> خرید وسایل این طرح
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
-                        {selectedList.map((p) => (
-                          <div key={p.id} className="flex items-center gap-2 bg-card border border-border rounded-xl p-2">
-                            <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0">
-                              {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold line-clamp-1">{p.name}</p>
-                              <p className="text-xs text-accent">{fmt(p.price)}</p>
-                            </div>
-                            <button onClick={() => addToCart(p)}
-                              className="text-xs bg-accent/10 hover:bg-accent/20 text-accent px-2 py-1 rounded-lg transition-colors shrink-0">
-                              <ShoppingCart size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <button onClick={buyAllProducts}
-                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all">
-                        <ShoppingBag size={16} /> خرید همه وسایل ({fmt(total)})
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowBefore(true)}
+                      className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all ${
+                        showBefore ? "bg-emerald-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      تصویر اولیه اتاق
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* ── SIDEBAR ───────────────────── */}
-              {!geminiResult && (
-                <div className="space-y-4">
-                  {/* Selected products summary */}
-                  <div className="bg-card border border-border rounded-2xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold flex items-center gap-2 text-sm">
-                        <ShoppingCart size={16} /> انتخاب شده ({selectedList.length})
-                      </h3>
-                      {selectedList.length > 0 && (
-                        <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">پاک کردن</button>
-                      )}
-                    </div>
-                    {selectedList.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">هنوز وسیله‌ای انتخاب نشده. از بخش محصولات انتخاب کن.</p>
-                    ) : (
-                      <div className="space-y-2 max-h-52 overflow-y-auto">
-                        {selectedList.map((p) => {
-                          const qty = quantities[p.id] || 1;
-                          return (
-                            <div key={p.id} className="flex items-center gap-2 text-xs">
-                              <div className="w-8 h-8 rounded-lg bg-muted overflow-hidden shrink-0">
-                                {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                              <p className="line-clamp-1 font-medium text-xs">{p.name}</p>
-                              <p className="text-accent text-xs">{fmt((p.price || 0) * qty)}</p>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => setQuantity(p.id, qty + 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] hover:bg-accent/10">+</button>
-                                <span className="text-[10px] font-bold w-4 text-center">{qty}</span>
-                                <button onClick={() => qty > 1 ? setQuantity(p.id, qty - 1) : toggleProduct(p)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-[10px] hover:bg-accent/10">-</button>
-                              </div>
-                              <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive shrink-0">
-                                <X size={12} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {selectedList.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between items-center">
-                        <span className="text-muted-foreground">مجموع</span>
-                        <span className="font-bold text-accent">{fmt(total)}</span>
-                      </div>
-                    )}
+              {/* ── PRODUCTS USED BREAKDOWN CARD (پایین تصویر: کالاها + اسم فروشگاه + قیمت + جمع کل) ── */}
+              {selectedList.length > 0 && (
+                <div className="p-5 rounded-3xl bg-slate-900/90 border border-emerald-500/30 shadow-2xl backdrop-blur-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+                    <h3 className="text-xs font-black text-white flex items-center gap-1.5">
+                      <ShoppingBag size={16} className="text-emerald-400" />
+                      کالاهای استفاده‌شده در این طرح ({selectedList.length} کالا)
+                    </h3>
                   </div>
 
-                  {/* Generate button in sidebar when ready */}
-                  {imageBase64 && selectedList.length > 0 && !loading && (
-                    <button onClick={generate} className="btn-3d w-full font-bold py-3 text-sm flex items-center justify-center gap-2">
-                      <Wand2 size={16} /> چیدمان با هومینو استودیو
+                  {/* List of used products with seller store brand names */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                    {selectedList.map((p) => {
+                      const storeBrand = sellerMap[p.profile_id || ""] || "فروشگاه هومینو";
+                      const qty = quantities[p.id] || 1;
+                      return (
+                        <div key={p.id} className="p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-slate-900 overflow-hidden shrink-0 border border-slate-800">
+                            {p.image_url ? (
+                              <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">کالا</div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-white line-clamp-1">{p.name}</p>
+                            <p className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5 font-semibold">
+                              <Store size={11} /> {storeBrand}
+                            </p>
+                            <p className="text-xs font-black text-gold mt-1">
+                              {fmt((p.price || 0) * qty)} {qty > 1 && <span className="text-[9px] text-slate-400 font-normal">({qty} عدد)</span>}
+                            </p>
+                          </div>
+
+                          <button onClick={() => toggleProduct(p)} className="text-slate-500 hover:text-red-400 p-1">
+                            <X size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Total Amount Sum Display */}
+                  <div className="pt-3 border-t border-emerald-500/20 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300">جمع کل فاکتور دیتابیس:</span>
+                    <span className="text-base font-black text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                      {fmt(total)}
+                    </span>
+                  </div>
+
+                  {/* ── POST-DESIGN ACTION BUTTONS (ذخیره در علاقه‌مندی + خرید و ادامه تا درگاه) ── */}
+                  <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                    {/* Action 1: Save to Wishlist */}
+                    <button
+                      onClick={handleSaveToWishlist}
+                      className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 shadow transition-all"
+                    >
+                      <Heart size={16} className="text-emerald-400" />
+                      ذخیره به عنوان علاقه‌مندی
                     </button>
-                  )}
+
+                    {/* Action 2: Add to Cart & Proceed to Payment Gateway */}
+                    <button
+                      onClick={handleCheckoutAndPay}
+                      className="py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all"
+                    >
+                      <CreditCard size={16} />
+                      ثبت سفارش و ادامه تا درگاه پرداخت
+                    </button>
+                  </div>
                 </div>
               )}
+
             </div>
 
-            {/* Floating selected products panel */}
-            {!loading && selectedList.length > 0 && (
-              <SelectedProductsFloatingPanel
-                products={selectedList}
-                total={total}
-                onRemove={(id) => toggleProduct(selectedList.find((p) => p.id === id)!)}
-                onAddToCart={addToCart}
-                onBuyAll={buyAllProducts}
-                onClear={() => setSelected({})}
-              />
-            )}
-          </>
+          </div>
         )}
+
       </main>
       <Footer />
     </div>

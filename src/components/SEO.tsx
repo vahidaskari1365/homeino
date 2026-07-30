@@ -11,16 +11,32 @@ interface SEOProps {
   jsonLd?: object;
 }
 
+const defaultOrganizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "هومینو | Homeino",
+  "url": "https://homeino.ir",
+  "logo": "https://homeino.ir/favicon.ico",
+  "description": "پلتفرم جامع دکوراسیون داخلی، طراحی چیدمان خانه با هوش مصنوعی و خرید مستقیم مبلمان",
+  "sameAs": [
+    "https://instagram.com/homeino_ir"
+  ]
+};
+
 const SEO: React.FC<SEOProps> = ({
-  title = 'هومینو | Homeino - مرجع دکوراسیون و لوازم خانه',
-  description = 'هومینو - پلتفرم جامع دکوراسیون داخلی: طراحی با هومینو استودیو، خرید مستقیم از تولیدکنندگان، ست‌های آماده دکوراسیون و مشاوره تخصصی. خانه رویایی‌تان را بسازید.',
-  keywords = 'دکوراسیون, مبلمان, چیدمان منزل, طراحی داخلی, هومینو استودیو, خرید مبلمان, فرش, لوستر, پرده, جهیزیه',
+  title = 'هومینو | Homeino - مرجع دکوراسیون و لوازم خانه با AI',
+  description = 'هومینو - پلتفرم جامع دکوراسیون داخلی: طراحی با هوش مصنوعی، خرید مستقیم از تولیدکنندگان، ست‌های آماده دکوراسیون و مشاوره تخصصی.',
+  keywords = 'دکوراسیون, مبلمان, چیدمان منزل, طراحی داخلی, هوش مصنوعی, خرید مبلمان, فرش, لوستر, پرده, جهیزیه',
   ogImage = '/og-image.png',
   ogUrl = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website',
   jsonLd,
 }) => {
-  const siteTitle = `${title} | خانه‌زیبا`;
+  const siteTitle = title.includes('هومینو') || title.includes('Homeino')
+    ? title
+    : `${title} | هومینو`;
+
+  const ldData = jsonLd || defaultOrganizationJsonLd;
 
   return (
     <Helmet>
@@ -39,11 +55,9 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
 
-      {jsonLd && (
-        <script type="application/ld+json">
-          {JSON.stringify(jsonLd)}
-        </script>
-      )}
+      <script type="application/ld+json">
+        {JSON.stringify(ldData)}
+      </script>
     </Helmet>
   );
 };
