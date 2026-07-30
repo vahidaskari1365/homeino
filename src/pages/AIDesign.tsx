@@ -324,7 +324,7 @@ const AIDesign = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-6 py-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm">
+        <Link to="/" className="inline-flex items-center gap-2 text-stone-500 hover:text-foreground mb-6 text-sm">
           <ArrowLeft size={16} /> بازگشت به خانه
         </Link>
 
@@ -334,7 +334,7 @@ const AIDesign = () => {
             <span className="text-accent text-sm font-medium">طراح هوشمند هومینو</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3">طراحی اتاق با هوش مصنوعی</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-stone-600 max-w-2xl mx-auto">
             عکس خانه‌ات را آپلود کن، مبل، پرده، فرش، تخت و هر چیزی که می‌خواهی را از محصولات سایت انتخاب کن — هوش مصنوعی آن‌ها را داخل عکس خانه‌ات می‌چیند.
           </p>
         </div>
@@ -355,9 +355,9 @@ const AIDesign = () => {
                   <img src={imageBase64} alt="فضای آپلود شده" className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-center p-6">
-                    <Upload className="mx-auto mb-3 text-muted-foreground" size={36} />
-                    <p className="text-sm text-muted-foreground">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">JPG/PNG</p>
+                    <Upload className="mx-auto mb-3 text-stone-500" size={36} />
+                    <p className="text-sm text-stone-600">برای آپلود کلیک کنید یا عکس را اینجا بکشید</p>
+                    <p className="text-xs text-stone-400 mt-1">JPG/PNG</p>
                   </div>
                 )}
                 <input ref={inputRef} type="file" accept="image/*" className="hidden"
@@ -372,7 +372,7 @@ const AIDesign = () => {
                 {STYLES.map((s) => (
                   <button key={s.id} onClick={() => setStyle(s.id)}
                     className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      style === s.id ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                      style === s.id ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-stone-500 hover:border-accent/50"
                     }`}>
                     {s.label}
                   </button>
@@ -392,7 +392,7 @@ const AIDesign = () => {
                   return (
                     <button key={c.slug} onClick={() => setActiveCat(c.slug)}
                       className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition-all ${
-                        activeCat === c.slug ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-muted-foreground hover:border-accent/50"
+                        activeCat === c.slug ? "border-accent bg-accent/15 text-foreground" : "border-border bg-card text-stone-500 hover:border-accent/50"
                       }`}>
                       <span>{c.icon}</span>
                       <span>{c.label}</span>
@@ -405,7 +405,7 @@ const AIDesign = () => {
 
               {/* Products grid */}
               {currentProducts.length === 0 ? (
-                <div className="text-center py-10 bg-card border border-border rounded-2xl text-muted-foreground text-sm">
+                <div className="text-center py-10 bg-card border border-border rounded-2xl text-stone-500 text-sm">
                   هنوز محصولی در این دسته ثبت نشده. می‌توانی بدون انتخاب محصول هم طراحی بزنی — هوش مصنوعی خودش سبک را پیاده می‌کند.
                 </div>
               ) : (
@@ -452,11 +452,11 @@ const AIDesign = () => {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} /> انتخاب شده ({selectedList.length})</h3>
                 {selectedList.length > 0 && (
-                  <button onClick={() => setSelected({})} className="text-xs text-muted-foreground hover:text-foreground">پاک کردن</button>
+                  <button onClick={() => setSelected({})} className="text-xs text-stone-500 hover:text-foreground">پاک کردن</button>
                 )}
               </div>
               {selectedList.length === 0 ? (
-                <p className="text-xs text-muted-foreground">هنوز محصولی انتخاب نشده. می‌تونی بدون محصول هم طراحی بزنی.</p>
+                <p className="text-xs text-stone-500">هنوز محصولی انتخاب نشده. می‌تونی بدون محصول هم طراحی بزنی.</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedList.map((p) => (
@@ -468,7 +468,7 @@ const AIDesign = () => {
                         <div className="line-clamp-1 font-medium">{p.name}</div>
                         <div className="text-accent">{fmt(p.price)}</div>
                       </div>
-                      <button onClick={() => toggleProduct(p)} className="text-muted-foreground hover:text-destructive"><X size={14} /></button>
+                      <button onClick={() => toggleProduct(p)} className="text-stone-500 hover:text-destructive"><X size={14} /></button>
                     </div>
                   ))}
                 </div>
@@ -476,7 +476,7 @@ const AIDesign = () => {
               {selectedList.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-border space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">مجموع</span>
+                    <span className="text-stone-500">مجموع</span>
                     <span className="font-bold text-accent">{fmt(total)}</span>
                   </div>
                   <button 
@@ -496,11 +496,11 @@ const AIDesign = () => {
                   <Loader2 className="animate-spin text-accent" size={22} />
                   <div>
                     <p className="font-bold text-sm text-foreground">{stageConfig.label}</p>
-                    <p className="text-xs text-muted-foreground">لطفاً صبر کنید...</p>
+                    <p className="text-xs text-stone-500">لطفاً صبر کنید...</p>
                   </div>
                 </div>
                 <Progress value={stageConfig.progress} className="h-2" />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[10px] text-stone-500">
                   {STAGES.filter(s => s !== "UPLOADING").map((s) => {
                     const stageIdx = STAGES.indexOf(currentStage);
                     const sIdx = STAGES.indexOf(s);
@@ -537,7 +537,7 @@ const AIDesign = () => {
                   <div className="text-center p-8 z-10 bg-card/80 backdrop-blur-sm w-full h-full absolute inset-0 flex flex-col items-center justify-center">
                     <Loader2 className="animate-spin text-accent mx-auto mb-4" size={48} />
                     <p className="text-lg font-bold text-foreground mb-2">بهبود جزئیات طراحی...</p>
-                    <p className="text-sm text-muted-foreground">بهبود نور، بافت و مواد</p>
+                    <p className="text-sm text-stone-500">بهبود نور، بافت و مواد</p>
                   </div>
                 )}
                 
@@ -550,8 +550,8 @@ const AIDesign = () => {
                   />
                 ) : !loading && !polishing && (
                   <div className="text-center p-12">
-                    <Wand2 className="mx-auto mb-4 text-muted-foreground" size={48} />
-                    <p className="text-muted-foreground">طراحی جدید پس از کلیک بر روی دکمه تولید، اینجا نمایش داده می‌شود</p>
+                    <Wand2 className="mx-auto mb-4 text-stone-500" size={48} />
+                    <p className="text-stone-500">طراحی جدید پس از کلیک بر روی دکمه تولید، اینجا نمایش داده می‌شود</p>
                   </div>
                 )}
               </div>
@@ -564,7 +564,7 @@ const AIDesign = () => {
                     <button
                       onClick={() => setAnalyticsTab("tip")}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                        analyticsTab === "tip" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
+                        analyticsTab === "tip" ? "bg-accent/15 text-accent" : "text-stone-500 hover:text-foreground"
                       }`}
                     >
                       <Lightbulb size={14} /> تحلیل فضا
@@ -573,7 +573,7 @@ const AIDesign = () => {
                       <button
                         onClick={() => setAnalyticsTab("colors")}
                         className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                          analyticsTab === "colors" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
+                          analyticsTab === "colors" ? "bg-accent/15 text-accent" : "text-stone-500 hover:text-foreground"
                         }`}
                       >
                         <Palette size={14} /> پالت رنگی
@@ -583,7 +583,7 @@ const AIDesign = () => {
                       <button
                         onClick={() => setAnalyticsTab("advice")}
                         className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                          analyticsTab === "advice" ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground"
+                          analyticsTab === "advice" ? "bg-accent/15 text-accent" : "text-stone-500 hover:text-foreground"
                         }`}
                       >
                         <Target size={14} /> چیدمان
@@ -597,7 +597,7 @@ const AIDesign = () => {
                       <Lightbulb className="text-accent shrink-0" size={20} />
                       <div>
                         <div className="text-xs font-bold text-accent mb-1">تحلیل فضا:</div>
-                        <p className="text-sm text-foreground leading-relaxed">{roomTip}</p>
+                        <p className="text-sm text-stone-500 leading-relaxed">{roomTip}</p>
                       </div>
                     </div>
                   )}
@@ -613,7 +613,7 @@ const AIDesign = () => {
                               className="w-12 h-12 rounded-xl shadow-md border border-border"
                               style={{ backgroundColor: hex }}
                             />
-                            <span className="text-[10px] text-muted-foreground font-mono">{hex}</span>
+                            <span className="text-[10px] text-stone-500 font-mono">{hex}</span>
                           </div>
                         ))}
                       </div>
@@ -674,7 +674,7 @@ const AIDesign = () => {
                       <Check size={12} className="ml-1" /> طراحی تأیید شده
                     </Badge>
                   )}
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-stone-500 mb-4">
                     {designConfirmed
                       ? "طراحی مورد تأیید شماست. محصولات زیر در این طرح استفاده شده‌اند:"
                       : "طراحی خود را تأیید کنید و سپس محصولات را به سبد خرید اضافه نمایید."}
