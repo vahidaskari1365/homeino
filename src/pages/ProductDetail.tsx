@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { formatNumber as fmt } from "@/lib/formatPrice";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowRight, ShoppingBag, Minus, Plus, Store, MapPin, Phone, BadgeCheck,
@@ -12,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import WishlistButton from "@/components/WishlistButton";
 import CompareButton from "@/components/CompareButton";
-import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import ReviewSection from "@/components/ReviewSection";
 import ProductReviewsDialog from "@/components/ProductReviewsDialog";
 import PriceQuoteDialog from "@/components/PriceQuoteDialog";
@@ -46,6 +44,8 @@ type Product = {
   attributes?: Record<string, unknown> | null;
   rating?: number | null;
 };
+
+const fmt = (n: number) => new Intl.NumberFormat("fa-IR").format(n);
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -132,43 +132,10 @@ const ProductDetail = () => {
     : [];
   const rating = Number(product?.rating || 0);
 
-  const productSchema = product ? {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": product.name,
-    "image": product.image_url ? [product.image_url] : [],
-    "description": product.description || product.name,
-    "sku": product.id,
-    "offers": {
-      "@type": "Offer",
-      "priceCurrency": "IRR",
-      "price": product.price ? product.price * 10 : 0,
-      "priceValidUntil": "2027-12-31",
-      "itemCondition": "https://schema.org/NewCondition",
-      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "seller": {
-        "@type": "Organization",
-        "name": seller?.brand_name || "هومینو"
-      }
-    },
-    ...(rating > 0 ? {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": rating.toFixed(1),
-        "reviewCount": "1"
-      }
-    } : {})
-  } : undefined;
-
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {product && (
-        <SEO
-          title={product.name}
-          description={product.description || `${product.name} در هومینو - مرجع خرید دکوراسیون و لوازم خانه`}
-          ogImage={product.image_url || undefined}
-          jsonLd={productSchema}
-        />
+        <SEO title={product.name} description={product.description || `${product.name} در هومینو`} />
       )}
       <Navbar />
       <main className="container mx-auto px-6 pt-28 pb-16">
@@ -238,12 +205,6 @@ const ProductDetail = () => {
                       shop_id: product.profile_id,
                       shop_name: seller?.brand_name || "",
                     }} />
-                    <ViewInMyRoomButton
-                      productId={product.id}
-                      productName={product.name}
-                      productImage={product.image_url}
-                      productPrice={product.price}
-                    />
                   </div>
                 </div>
 
@@ -376,34 +337,23 @@ const ProductDetail = () => {
                 <h2 className="text-2xl font-black mb-6">محصولات مشابه از این فروشنده</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                   {related.map((r) => (
-                    <div key={r.id} className="group rounded-2xl overflow-hidden bg-card border border-border hover:border-gold/40 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500">
-                      <Link to={`/product/${r.id}`}>
-                        <div className="relative overflow-hidden bg-muted">
-                          {r.image_url ? (
-                            <OptimizedImage src={r.image_url} alt={r.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
-                          ) : (
-                            <div className="aspect-square flex items-center justify-center text-muted-foreground"><Package size={32} /></div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-bold text-sm line-clamp-1">{r.name}</h3>
-                          {r.price ? (
-                            <span className="text-gold font-black text-sm">{fmt(r.price)} <span className="text-xs font-semibold text-muted-foreground">تومان</span></span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground font-semibold">استعلام قیمت</span>
-                          )}
-                        </div>
-                      </Link>
-                      <div className="px-3 pb-3">
-                        <ViewInMyRoomButton
-                          productId={r.id}
-                          productName={r.name}
-                          productImage={r.image_url}
-                          productPrice={r.price}
-                          variant="full"
-                        />
+                    <Link to={`/product/${r.id}`} key={r.id} className="group rounded-2xl overflow-hidden bg-card border border-border hover:border-gold/40 hover:shadow-luxury hover:-translate-y-1 transition-all duration-500">
+                      <div className="relative overflow-hidden bg-muted">
+                        {r.image_url ? (
+                          <OptimizedImage src={r.image_url} alt={r.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
+                        ) : (
+                          <div className="aspect-square flex items-center justify-center text-muted-foreground"><Package size={32} /></div>
+                        )}
                       </div>
-                    </div>
+                      <div className="p-3">
+                        <h3 className="font-bold text-sm line-clamp-1">{r.name}</h3>
+                        {r.price ? (
+                          <span className="text-gold font-black text-sm">{fmt(r.price)} <span className="text-xs font-semibold text-muted-foreground">تومان</span></span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground font-semibold">استعلام قیمت</span>
+                        )}
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </section>

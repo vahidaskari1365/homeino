@@ -48,13 +48,10 @@ import {
   Plus,
   Trash2,
   Pencil,
-  ClipboardList,
-  Search,
   Eye,
   EyeOff,
   CheckCircle2,
   XCircle,
-  Crown,
 } from "lucide-react";
 import {
   LineChart,
@@ -70,10 +67,6 @@ import {
   PieChart,
   Pie
 } from "recharts";
-import { auditService, type AuditLog } from "@/services/auditService";
-import { getActorLabel, getActionLabel } from "@/hooks/useAuditLogs";
-import { formatPersianDate } from "@/lib/date";
-import { formatPrice as fmt } from "@/lib/formatPrice";
 import Navbar from "@/components/Navbar";
 
 type ShopProfile = {
@@ -104,7 +97,7 @@ type AdminProduct = {
   price: number | null;
   stock: number;
   is_active: boolean;
-  stores: { name: string } | null;
+  profiles: { brand_name: string } | null;
 };
 
 type Category = {
@@ -195,12 +188,9 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="shops" className="w-full" dir="rtl">
-          <TabsList className="grid grid-cols-5 lg:grid-cols-10 mb-6 h-auto">
+          <TabsList className="grid grid-cols-4 lg:grid-cols-8 mb-6 h-auto">
             <TabsTrigger value="shops" className="flex flex-col gap-1 py-2">
               <Store className="h-4 w-4" /> <span className="text-xs">فروشگاه‌ها</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex flex-col gap-1 py-2">
-              <ShoppingCart className="h-4 w-4" /> <span className="text-xs">سفارش‌ها</span>
             </TabsTrigger>
             <TabsTrigger value="listings" className="flex flex-col gap-1 py-2">
               <ShoppingBag className="h-4 w-4" /> <span className="text-xs">دست دوم</span>
@@ -226,13 +216,9 @@ const Admin = () => {
             <TabsTrigger value="analytics" className="flex flex-col gap-1 py-2">
               <BarChart className="h-4 w-4" /> <span className="text-xs">آمار کل</span>
             </TabsTrigger>
-            <TabsTrigger value="audit" className="flex flex-col gap-1 py-2">
-              <ClipboardList className="h-4 w-4" /> <span className="text-xs">رویدادها</span>
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="shops"><ShopsTab /></TabsContent>
-          <TabsContent value="orders"><AdminOrdersTab /></TabsContent>
           <TabsContent value="listings"><ListingsTab /></TabsContent>
           <TabsContent value="users"><UsersTab isAdmin={isAdmin} /></TabsContent>
           <TabsContent value="products"><ProductsTab /></TabsContent>
@@ -241,7 +227,6 @@ const Admin = () => {
           <TabsContent value="payments"><PaymentsTab /></TabsContent>
           <TabsContent value="ads"><AdsTab /></TabsContent>
           <TabsContent value="analytics"><AnalyticsTab /></TabsContent>
-          <TabsContent value="audit"><AuditTab /></TabsContent>
         </Tabs>
       </div>
     </div>
@@ -259,11 +244,27 @@ const AnalyticsTab = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [dashStats, { data: views }] = await Promise.all([
-        adminService.getDashboardStats(),
+      const [
+        { count: userCount },
+        { count: shopCount },
+        { count: productCount },
+        { count: orderCount },
+        { data: payments },
+        { data: views }
+      ] = await Promise.all([
+        supabase.from("user_roles").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("products").select("*", { count: "exact", head: true }),
+        supabase.from("orders").select("*", { count: "exact", head: true }),
+        supabase.from("payments").select("amount, status, created_at"),
         supabase.from("product_daily_views").select("views, day").order("day", { ascending: true })
       ]);
 
+      const totalRevenue = (payments || [])
+        .filter(p => p.status === "paid")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      // Group views by day
       const dailyViews = (views || []).reduce((acc: { day: string; views: number }[], curr: { day: string; views: number }) => {
         const existing = acc.find(a => a.day === curr.day);
         if (existing) {
@@ -276,14 +277,13 @@ const AnalyticsTab = () => {
 
       setData({
         stats: [
-          { label: "کل کاربران", value: dashStats?.total_users ?? 0, icon: Users, color: "text-blue-600" },
-          { label: "فروشگاه‌ها", value: dashStats?.total_stores ?? 0, icon: Store, color: "text-emerald-600" },
-          { label: "محصولات", value: dashStats?.total_products ?? 0, icon: Package, color: "text-orange-600" },
-          { label: "سفارش‌ها", value: dashStats?.total_orders ?? 0, icon: ShoppingBag, color: "text-purple-600" },
-          { label: "درآمد کل", value: `${((dashStats?.total_revenue ?? 0) / 1000000).toFixed(1)}M`, icon: CreditCard, color: "text-gold" },
-          { label: "اشتراک‌های فعال", value: dashStats?.active_subscriptions ?? 0, icon: Crown, color: "text-amber-600" },
+          { label: "کل کاربران", value: userCount || 0, icon: Users, color: "text-blue-600" },
+          { label: "فروشگاه‌ها", value: shopCount || 0, icon: Store, color: "text-emerald-600" },
+          { label: "محصولات", value: productCount || 0, icon: Package, color: "text-orange-600" },
+          { label: "سفارش‌ها", value: orderCount || 0, icon: ShoppingBag, color: "text-purple-600" },
+          { label: "درآمد کل", value: `${(totalRevenue / 1000000).toFixed(1)}M`, icon: CreditCard, color: "text-gold" },
         ],
-        dailyViews: dailyViews.slice(-14),
+        dailyViews: dailyViews.slice(-14), // Last 14 days
       });
       setLoading(false);
     };
@@ -295,7 +295,7 @@ const AnalyticsTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {data.stats.map((s, i) => (
           <Card key={i}>
             <CardContent className="p-6">
@@ -304,7 +304,7 @@ const AnalyticsTab = () => {
               </div>
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground">{s.label}</p>
-                <h3 className="text-2xl font-bold">{typeof s.value === "number" ? s.value.toLocaleString() : s.value}</h3>
+                <h3 className="text-2xl font-bold">{s.value.toLocaleString("fa-IR")}</h3>
               </div>
             </CardContent>
           </Card>
@@ -345,149 +345,6 @@ const AnalyticsTab = () => {
         </CardContent>
       </Card>
     </div>
-  );
-};
-
-type AdminOrderItem = {
-  id: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-};
-
-type AdminOrder = {
-  id: string;
-  recipient_name: string;
-  phone: string;
-  city: string;
-  address: string;
-  note?: string | null;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  public_profiles?: {
-    id: string;
-    brand_name: string;
-    phone?: string | null;
-    city?: string | null;
-  } | null;
-  order_items?: AdminOrderItem[];
-};
-
-// ==================== ORDERS TAB ====================
-const AdminOrdersTab = () => {
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        public_profiles (
-          id,
-          brand_name,
-          phone,
-          city
-        ),
-        order_items (
-          id,
-          product_name,
-          quantity,
-          unit_price
-        )
-      `)
-      .order("created_at", { ascending: false });
-
-    setOrders((data as unknown as AdminOrder[]) ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const updateStatus = async (orderId: string, status: string) => {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
-    if (!error) {
-      toast.success("وضعیت سفارش به‌روزرسانی شد");
-      load();
-    } else {
-      toast.error("خطا در به‌روزرسانی وضعیت سفارش");
-    }
-  };
-
-  if (loading) return <Loader2 className="h-6 w-6 animate-spin mx-auto mt-12" />;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>مدیریت کلی سفارش‌های فروشگاه‌ها ({orders.length})</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {orders.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">سفارشی ثبت نشده است</p>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((o) => (
-              <Card key={o.id} className="p-4 bg-muted/30 border-border space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground">{o.recipient_name}</span>
-                      <span className="text-xs text-muted-foreground">({o.phone})</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      شهر: {o.city} — آدرس: {o.address}
-                    </p>
-                    {o.note && <p className="text-[11px] text-amber-600 font-semibold mt-1">توضیحات: {o.note}</p>}
-                  </div>
-
-                  <div className="text-left">
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-bold mb-1 block">
-                      فروشگاه: {o.public_profiles?.brand_name || "نامشخص"}
-                    </Badge>
-                    <p className="text-xs font-black text-gold">مبلغ کل: {fmt(o.total_amount)}</p>
-                  </div>
-                </div>
-
-                {/* Items List */}
-                <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-muted-foreground">اقلام سفارش:</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {(o.order_items || []).map((item: AdminOrderItem) => (
-                      <div key={item.id} className="flex items-center justify-between text-xs bg-card p-2 rounded-lg border border-border">
-                        <span className="font-bold line-clamp-1">{item.product_name}</span>
-                        <span className="text-muted-foreground font-semibold">{item.quantity} عدد × {fmt(item.unit_price)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Status Bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-border flex-wrap gap-2 text-xs">
-                  <span className="text-muted-foreground">تاریخ: {formatPersianDate(o.created_at)}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">وضعیت:</span>
-                    <Select value={o.status || "pending"} onValueChange={(v) => updateStatus(o.id, v)}>
-                      <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">در انتظار</SelectItem>
-                        <SelectItem value="confirmed">تأیید شده / ارسال</SelectItem>
-                        <SelectItem value="shipped">ارسال شده</SelectItem>
-                        <SelectItem value="delivered">تحویل شده</SelectItem>
-                        <SelectItem value="cancelled">لغو شده</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 };
 
@@ -751,7 +608,7 @@ const ProductsTab = () => {
     setLoading(true);
     const { data } = await supabase
       .from("products")
-      .select("*, stores(name)")
+      .select("*, profiles(brand_name)")
       .order("created_at", { ascending: false });
     setProducts((data as AdminProduct[]) ?? []);
     setLoading(false);
@@ -795,7 +652,7 @@ const ProductsTab = () => {
             {products.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell>{p.stores?.name ?? "-"}</TableCell>
+                <TableCell>{p.profiles?.brand_name ?? "-"}</TableCell>
                 <TableCell>{p.price ? `${Number(p.price).toLocaleString()} ت` : "-"}</TableCell>
                 <TableCell>{p.stock}</TableCell>
                 <TableCell>
@@ -1006,8 +863,8 @@ const PaymentsTab = () => {
             <TableBody>
               {payments.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell><code className="text-xs">{p.order_id?.slice(0, 8) ?? "-"}</code></TableCell>
-                  <TableCell>{Number(p.amount ?? 0).toLocaleString()} ت</TableCell>
+                  <TableCell><code className="text-xs">{p.order_id.slice(0, 8)}</code></TableCell>
+                  <TableCell>{Number(p.amount).toLocaleString()} ت</TableCell>
                   <TableCell><Badge variant="outline">{p.method}</Badge></TableCell>
                   <TableCell>{statusBadge(p.status)}</TableCell>
                   <TableCell>
@@ -1076,8 +933,8 @@ const AdsTab = () => {
       end_date: form.end_date || null,
     };
     const { error } = editing
-      ? await supabase.from("advertisements").update(payload).eq("id", editing.id)
-      : await supabase.from("advertisements").insert(payload);
+      ? await supabase.from("advertisements").update(payload as any).eq("id", editing.id)
+      : await supabase.from("advertisements").insert(payload as any);
     if (error) toast.error(error.message);
     else { toast.success(editing ? "ویرایش شد" : "اضافه شد"); setOpen(false); load(); }
   };
@@ -1172,104 +1029,6 @@ const AdsTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
-  );
-};
-
-// ============ AUDIT LOG TAB ============
-const AuditTab = () => {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actorFilter, setActorFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [targetFilter, setTargetFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    const result = await auditService.search({
-      actor_id: actorFilter || undefined,
-      action: actionFilter || undefined,
-      target_type: targetFilter || undefined,
-      actor_type: typeFilter || undefined,
-      limit: 100,
-    });
-    setLogs(result.logs);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [load]);
-
-  const doSearch = () => load();
-
-  const ACTOR_COLORS: Record<string, string> = {
-    user: "bg-blue-100 text-blue-800",
-    seller: "bg-emerald-100 text-emerald-800",
-    admin: "bg-red-100 text-red-800",
-    system: "bg-purple-100 text-purple-800",
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>رویدادهای سیستم (Audit Log)</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Input placeholder="شناسه بازیگر" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)} />
-          <Input placeholder="نوع هدف (مثال: product)" value={targetFilter} onChange={(e) => setTargetFilter(e.target.value)} />
-          <Input placeholder="عملیات (مثال: product_created)" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} />
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger><SelectValue placeholder="نوع بازیگر" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">همه</SelectItem>
-              <SelectItem value="user">کاربر</SelectItem>
-              <SelectItem value="seller">فروشنده</SelectItem>
-              <SelectItem value="admin">مدیر</SelectItem>
-              <SelectItem value="system">سیستم</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={doSearch} className="gap-1"><Search size={14} /> جستجو</Button>
-        </div>
-
-        {loading ? (
-          <Loader2 className="h-6 w-6 animate-spin mx-auto mt-8" />
-        ) : logs.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">رویدادی ثبت نشده است</p>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>زمان</TableHead>
-                  <TableHead>بازیگر</TableHead>
-                  <TableHead>هدف</TableHead>
-                  <TableHead>عملیات</TableHead>
-                  <TableHead>جزئیات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell className="text-xs whitespace-nowrap">{formatPersianDate(l.created_at)}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${ACTOR_COLORS[l.actor_type] || "bg-gray-100 text-gray-800"}`}>
-                        {getActorLabel(l.actor_type)}
-                        <span className="text-[10px] opacity-70">({l.actor_id?.slice(0, 8)}...)</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs">{l.target_type}{l.target_id ? ` (${l.target_id.slice(0, 8)}...)` : ""}</TableCell>
-                    <TableCell className="text-xs font-medium">{getActionLabel(l.action)}</TableCell>
-                    <TableCell className="text-xs max-w-[200px] truncate" title={JSON.stringify(l.new_values)}>
-                      {Object.keys(l.new_values || {}).length > 0 ? `${Object.keys(l.new_values).length} فیلد` : "-"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
     </Card>
   );
 };

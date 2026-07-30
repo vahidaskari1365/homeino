@@ -1,13 +1,6 @@
--- Create ENUMs (safe: no-op if already exists)
-DO $$ BEGIN
-  CREATE TYPE inspiration_style AS ENUM ('modern', 'classic', 'minimal', 'luxury', 'traditional', 'industrial', 'scandinavian', 'bohemian');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  CREATE TYPE inspiration_room_type AS ENUM ('living', 'bedroom', 'kitchen', 'bathroom', 'office', 'dining', 'outdoor');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Create ENUMs
+CREATE TYPE inspiration_style AS ENUM ('modern', 'classic', 'minimal', 'luxury', 'traditional', 'industrial', 'scandinavian', 'bohemian');
+CREATE TYPE inspiration_room_type AS ENUM ('living', 'bedroom', 'kitchen', 'bathroom', 'office', 'dining', 'outdoor');
 
 -- Create inspirations table
 CREATE TABLE IF NOT EXISTS inspirations (

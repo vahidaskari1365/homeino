@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
-import { ProfileTrustPills } from "@/components/ProfileTrustPills";
 import { formatPersianDate } from "@/lib/date";
-import { formatPrice as fmt } from "@/lib/formatPrice";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InquiryDialog from "@/components/InquiryDialog";
@@ -13,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import WishlistButton from "@/components/WishlistButton";
 import CompareButton from "@/components/CompareButton";
-import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 import ReviewSection from "@/components/ReviewSection";
 import ProductReviewsDialog from "@/components/ProductReviewsDialog";
 import PriceQuoteDialog from "@/components/PriceQuoteDialog";
@@ -131,21 +128,7 @@ const ShopDetail = () => {
       {profile && (
         <SEO 
           title={profile.brand_name} 
-          description={profile.description || `محصولات و خدمات ${profile.brand_name} در هومینو`}
-          jsonLd={{
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            "name": profile.brand_name,
-            "description": profile.description || profile.brand_name,
-            "address": profile.address ? {
-              "@type": "PostalAddress",
-              "streetAddress": profile.address,
-              "addressLocality": profile.city || "تهران",
-              "addressCountry": "IR"
-            } : undefined,
-            "telephone": profile.phone || undefined,
-            "url": profile.website || undefined
-          }}
+          description={profile.description || `محصولات و خدمات ${profile.brand_name} در خانه‌زیبا`}
         />
       )}
       <Navbar />
@@ -167,21 +150,18 @@ const ShopDetail = () => {
             <header className="mb-10 p-6 md:p-8 rounded-xl border border-border bg-card">
               <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
                 <h1 className="text-3xl md:text-4xl font-display text-gold font-bold">{profile.brand_name}</h1>
-                <div className="flex flex-col items-end gap-1">
-                  {profile.contact_published && (
-                    <>
-                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
-                        <BadgeCheck size={14} /> اطلاعات تأیید شده
+                {profile.contact_published && (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                      <BadgeCheck size={14} /> اطلاعات تأیید شده
+                    </span>
+                    {profile.contact_published_at && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalendarCheck size={12} /> آخرین تأیید: {formatPersianDate(profile.contact_published_at)}
                       </span>
-                      {profile.contact_published_at && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <CalendarCheck size={12} /> آخرین تأیید: {formatPersianDate(profile.contact_published_at)}
-                        </span>
-                      )}
-                    </>
-                  )}
-                  <ProfileTrustPills profileId={profile.id} size="xs" />
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
               {profile.description && (
                 <p className="text-muted-foreground leading-relaxed mb-4 max-w-3xl">{profile.description}</p>
@@ -281,12 +261,6 @@ const ShopDetail = () => {
                             shop_id: profile.id,
                             shop_name: profile.brand_name,
                           }} />
-                          <ViewInMyRoomButton
-                            productId={p.id}
-                            productName={p.name}
-                            productImage={p.image_url}
-                            productPrice={p.price}
-                          />
                         </div>
                       </div>
                       <CardContent className="p-4 space-y-2">
@@ -297,7 +271,7 @@ const ShopDetail = () => {
                         <div className="flex items-center justify-between pt-2 border-t border-border/40">
                           {p.price ? (
                             <span className="text-gold font-extrabold text-base">
-                              {fmt(p.price)}
+                              {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs font-semibold">استعلام قیمت</span>

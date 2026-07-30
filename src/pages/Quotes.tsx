@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { formatPrice as fmt } from "@/lib/formatPrice";
 import { ArrowRight, Tag, Loader2, Check, X, Clock, MessageCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -45,6 +44,8 @@ const STATUS: Record<Status, { label: string; cls: string }> = {
   expired: { label: "منقضی", cls: "bg-muted text-muted-foreground border-border" },
 };
 
+const fmt = (n: number | null) => (n == null ? "—" : new Intl.NumberFormat("fa-IR").format(n) + " تومان");
+
 const Quotes = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -62,7 +63,7 @@ const Quotes = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate("/auth"); return; }
 
-    const { data: prof } = await supabase.from("public_profiles").select("id").eq("user_id", user.id).maybeSingle();
+    const { data: prof } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
     setHasShop(!!prof);
 
     const my = await supabase.from("price_quotes").select("*").eq("customer_id", user.id).order("created_at", { ascending: false });

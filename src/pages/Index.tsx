@@ -6,6 +6,7 @@ import InspirationSection from "@/components/InspirationSection";
 import BudgetSection from "@/components/BudgetSection";
 import ServicesSection from "@/components/ServicesSection";
 import Newsletter from "@/components/Newsletter";
+import ChatBot from "@/components/ChatBot";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -20,11 +21,11 @@ import imgBedroom from "@/assets/board/b-bedroom.jpg";
 import imgKitchen from "@/assets/board/b-kitchen.jpg";
 
 const BACKGROUNDS = [
-  { id: "hero", src: sceneLiving },
-  { id: "categories", src: imgLiving },
-  { id: "ai-design", src: sceneKitchen },
-  { id: "inspiration", src: sceneBedroom },
-  { id: "budget", src: imgBedroom },
+  { id: "hero", src: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=80" }, // Stunning Villa Exterior
+  { id: "categories", src: sceneLiving }, // Enters into living room
+  { id: "ai-design", src: imgLiving }, // Sitting on sofa
+  { id: "inspiration", src: sceneBedroom }, // Cozy Bedroom
+  { id: "budget", src: imgBedroom }, // Study Room
 ];
 
 const Index = () => {
@@ -127,8 +128,6 @@ const Index = () => {
         <CategoriesSection />
       </Reveal>
 
-      <Reveal variant="scale" delay={80}>
-      </Reveal>
 
       <Reveal variant="up" delay={0}>
         <InspirationSection />
@@ -149,6 +148,7 @@ const Index = () => {
       </Reveal>
 
       <Footer />
+      <ChatBot />
     </div>
   );
 };

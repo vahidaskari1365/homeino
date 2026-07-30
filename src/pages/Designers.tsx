@@ -213,7 +213,7 @@ const Designers = () => {
                       <div className="flex flex-wrap gap-1">
                         {(d.specialties ?? []).slice(0, 4).map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}
                       </div>
-                      {d.hourly_rate && <div className="text-sm text-gold">از {Number(d.hourly_rate).toLocaleString("en-US")} تومان/ساعت</div>}
+                      {d.hourly_rate && <div className="text-sm text-gold">از {Number(d.hourly_rate).toLocaleString("fa-IR")} تومان/ساعت</div>}
                     </CardContent>
                   </Card>
                 ))}
@@ -322,7 +322,7 @@ const Designers = () => {
                   <div className="flex flex-wrap gap-1">
                     {(selected.specialties ?? []).map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}
                   </div>
-                  {selected.hourly_rate && <div className="text-sm text-gold">نرخ: از {Number(selected.hourly_rate).toLocaleString("en-US")} تومان/ساعت</div>}
+                  {selected.hourly_rate && <div className="text-sm text-gold">نرخ: از {Number(selected.hourly_rate).toLocaleString("fa-IR")} تومان/ساعت</div>}
                   <div>
                     <h3 className="font-semibold mb-3">نمونه کارها ({selectedPortfolio.length})</h3>
                     <div className="grid sm:grid-cols-2 gap-3">

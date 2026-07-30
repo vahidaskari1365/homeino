@@ -1,107 +1,44 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
-const getCorsHeaders = (req: Request): Record<string, string> => {
-  const origin = req.headers.get("Origin") || "";
-  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-  const allowed = ["http://localhost:5173", "http://localhost:8080", "http://localhost:3000"];
-  if (supabaseUrl && !allowed.includes(supabaseUrl)) allowed.push(supabaseUrl);
-  const isAllowed = allowed.some((a) => origin === a) || /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(origin);
-  return {
-    "Access-Control-Allow-Origin": isAllowed ? origin : allowed[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Max-Age": "86400",
-  };
-}
-
-const AI_TIMEOUT_MS = 25_000
-
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try { return await fetch(url, { ...options, signal: controller.signal }) }
-  finally { clearTimeout(timer) }
-}
-
-async function callVisionAI(prompt: string, imageUrl: string): Promise<string | null> {
-  const apiKey = Deno.env.get("ZHIPU_API_KEY")
-  if (!apiKey) return null
-
-  const models = ["glm-4v", "glm-4v-plus", "glm-4v-flash"]
-  for (const model of models) {
-    try {
-      const res = await fetchWithTimeout(
-        "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-        {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model,
-            messages: [{
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: imageUrl } },
-              ],
-            }],
-          }),
-        },
-        AI_TIMEOUT_MS
-      )
-      if (res.ok) {
-        const data = await res.json()
-        const text = data?.choices?.[0]?.message?.content
-        if (text) return text
-      } else {
-        const errText = await res.text()
-        console.error(`Zhipu ${model} failed:`, errText)
-      }
-    } catch (e) {
-      console.error(`Zhipu ${model} error:`, e instanceof Error ? e.message : e)
-    }
-  }
-
-  // Fallback: try text-only model (no image analysis, just metadata extraction)
-  try {
-    const res = await fetchWithTimeout(
-      "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-      {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "glm-4-flash",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      },
-      AI_TIMEOUT_MS
-    )
-    if (res.ok) {
-      const data = await res.json()
-      const text = data?.choices?.[0]?.message?.content
-      if (text) return text
-    }
-  } catch (e) {
-    console.error("Zhipu text fallback error:", e instanceof Error ? e.message : e)
-  }
-
-  return null
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    )
+  // Only allow calls from our own scheduled job / trusted server (service role).
+  const authHeader = req.headers.get("Authorization")
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
+  }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    serviceKey
+  )
+
+  const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY")
+  if (!ZHIPU_API_KEY) {
+    return new Response(JSON.stringify({ error: "AI service not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
+  }
+
+  try {
+    // 1. Fetch unprocessed inspirations
     const { data: unprocessed, error: fetchError } = await supabase
       .from("inspirations")
       .select("*")
       .eq("ai_processed", false)
-      .limit(5)
+      .limit(5) // Process in small batches
 
     if (fetchError) throw fetchError
     if (!unprocessed || unprocessed.length === 0) {
@@ -113,56 +50,74 @@ serve(async (req) => {
     const results = []
 
     for (const item of unprocessed) {
-      console.log(`Processing item: ${item.id} - ${item.title}`)
+      console.log(`Processing item: ${item.title}`)
 
       const prompt = `
-Analyze this interior design image and provide the following in Persian (Farsi):
-1. title_fa: A catchy Persian title for this design.
-2. description_fa: A brief (2-3 sentences) description in Persian.
-3. style: One of (modern, classic, minimal, luxury, traditional, industrial, scandinavian, bohemian). MUST be one of these English words.
-4. room_type: One of (living, bedroom, kitchen, bathroom, office, dining, outdoor). MUST be one of these English words.
-5. tags: 5-8 Persian tags as an array of strings.
-6. color_palette: An array of 5 hex color codes.
+        Analyze this interior design image and provide the following in Persian (Farsi):
+        1. title_fa: A catchy Persian title for this design.
+        2. description_fa: A brief (2-3 sentences) description in Persian.
+        3. style: One of (modern, classic, minimal, luxury, traditional, industrial, scandinavian, bohemian). MUST be one of these English words.
+        4. room_type: One of (living, bedroom, kitchen, bathroom, office, dining, outdoor). MUST be one of these English words.
+        5. tags: 5-8 Persian tags as an array of strings.
+        6. color_palette: An array of 5 hex color codes.
 
-Return ONLY raw JSON object.
-`
+        Return ONLY raw JSON object.
+      `
 
-      const content = await callVisionAI(prompt, item.image_url)
-      if (!content) {
-        console.error(`All AI models failed for item ${item.id}, skipping`)
-        results.push({ id: item.id, status: "ai_failed" })
+      const aiResponse = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${ZHIPU_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "glm-4v",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: item.image_url } }
+              ],
+            },
+          ],
+        }),
+      })
+
+      if (!aiResponse.ok) {
+        const errText = await aiResponse.text()
+        console.error(`AI Error for ${item.id}:`, errText)
         continue
       }
 
+      const aiData = await aiResponse.json()
+      const content = aiData.choices?.[0]?.message?.content || ""
+      
       try {
         const cleanContent = content.replace(/```json|```/g, "").trim()
         const parsed = JSON.parse(cleanContent)
 
-        const updateData: Record<string, unknown> = {
-          ai_processed: true,
-          ai_translated: true,
-        }
-        if (parsed.title_fa) updateData.title_fa = parsed.title_fa
-        if (parsed.description_fa) updateData.description_fa = parsed.description_fa
-        if (parsed.style) updateData.style = parsed.style
-        if (parsed.room_type) updateData.room_type = parsed.room_type
-        if (parsed.tags) updateData.tags = parsed.tags
-        if (parsed.color_palette) updateData.color_palette = parsed.color_palette
-
         const { error: updateError } = await supabase
           .from("inspirations")
-          .update(updateData)
+          .update({
+            title_fa: parsed.title_fa,
+            description_fa: parsed.description_fa,
+            style: parsed.style,
+            room_type: parsed.room_type,
+            tags: parsed.tags,
+            color_palette: parsed.color_palette,
+            ai_processed: true,
+            ai_translated: true
+          })
           .eq("id", item.id)
 
         if (updateError) {
           console.error(`Update Error for ${item.id}:`, updateError)
-          results.push({ id: item.id, status: "update_error", error: updateError.message })
         } else {
           results.push({ id: item.id, status: "processed" })
         }
       } catch (parseError) {
-        console.error(`Parse Error for ${item.id}:`, parseError instanceof Error ? parseError.message : parseError, content)
-        results.push({ id: item.id, status: "parse_error" })
+        console.error(`Parse Error for ${item.id}:`, parseError, content)
       }
     }
 
@@ -170,8 +125,8 @@ Return ONLY raw JSON object.
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (error) {
-    console.error("AI Processor error:", error instanceof Error ? error.message : error)
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    console.error("AI Processor error:", error)
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     })

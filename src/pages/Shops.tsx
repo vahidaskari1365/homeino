@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MapPin, Phone, Globe, Package, Store, BadgeCheck, CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
-import { ProfileTrustPills } from "@/components/ProfileTrustPills";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedImage from "@/components/OptimizedImage";
 import SEO from "@/components/SEO";
-import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
 
 type Category = { id: string; name: string; slug: string };
 
@@ -44,7 +42,7 @@ type Product = {
   category_id: string | null;
   profile_id: string;
   attributes?: Record<string, unknown> | null;
-  stores: { name: string; city: string | null } | null;
+  profiles: { brand_name: string; city: string | null } | null;
 };
 
 const ALL = "all";
@@ -116,10 +114,10 @@ const Shops = () => {
 
       let productQuery = supabase
         .from("products")
-        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, stores!store_id(name, city)", { count: 'exact' })
+        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, profiles(brand_name, city)", { count: 'exact' })
         .eq("is_active", true);
 
-      if (city !== ALL) productQuery = productQuery.eq("stores.city", city);
+      if (city !== ALL) productQuery = productQuery.eq("profiles.city", city);
       if (category !== ALL) productQuery = productQuery.eq("category_id", category);
       if (search) productQuery = productQuery.ilike("name", `%${search}%`);
       if (minPrice !== undefined) productQuery = productQuery.gte("price", minPrice);
@@ -303,22 +301,19 @@ const Shops = () => {
                         <CardHeader>
                           <div className="flex items-start justify-between gap-2">
                             <CardTitle className="text-xl text-gold">{p.brand_name}</CardTitle>
-                            <div className="flex flex-col items-end gap-0.5 shrink-0">
-                              {p.contact_published && (
-                                <>
-                                  <span title="اطلاعات تأیید شده"
-                                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
-                                    <BadgeCheck size={12} /> تأیید شده
+                            {p.contact_published && (
+                              <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                <span title="اطلاعات تأیید شده"
+                                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-brand/15 text-emerald-brand border border-emerald-brand/30">
+                                  <BadgeCheck size={12} /> تأیید شده
+                                </span>
+                                {p.contact_published_at && (
+                                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                    <CalendarCheck size={10} /> {formatPersianDate(p.contact_published_at)}
                                   </span>
-                                  {p.contact_published_at && (
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <CalendarCheck size={10} /> {formatPersianDate(p.contact_published_at)}
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                              <ProfileTrustPills profileId={p.id} size="xs" />
-                            </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                           {p.description && (
                             <CardDescription className="line-clamp-2">{p.description}</CardDescription>
@@ -403,32 +398,22 @@ const Shops = () => {
                           {/* Hover Info Overlay */}
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 text-white z-10">
                             <span className="text-[10px] text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-full w-fit mb-2">
-                              {p.stores?.city || "هومینور"}
+                              {p.profiles?.city || "هومینور"}
                             </span>
                             <h3 className="font-bold text-base line-clamp-2 mb-1">{p.name}</h3>
-                            <p className="text-xs text-gray-300 font-medium mb-3">{p.stores?.name}</p>
+                            <p className="text-xs text-gray-300 font-medium mb-3">{p.profiles?.brand_name}</p>
 
                             <div className="flex items-center justify-between border-t border-white/20 pt-2 mt-1">
                               {p.price ? (
                                 <span className="text-gold font-extrabold text-sm">
-                                  {new Intl.NumberFormat("en-US").format(p.price)} تومان
+                                  {new Intl.NumberFormat("fa-IR").format(p.price)} تومان
                                 </span>
                               ) : (
                                 <span className="text-gray-300 text-xs font-semibold">استعلام قیمت</span>
                               )}
-                              <div className="flex gap-1">
-                                <ViewInMyRoomButton
-                                  productId={p.id}
-                                  productName={p.name}
-                                  productImage={p.image_url}
-                                  productPrice={p.price}
-                                  variant="full"
-                                  className="text-[10px] bg-accent/90 text-white font-bold px-2 py-1 rounded-lg border-0 hover:bg-accent"
-                                />
-                                <span className="text-[11px] font-bold text-white bg-gold/80 px-2.5 py-1 rounded-lg">
-                                  مشاهده جزئیات
-                                </span>
-                              </div>
+                              <span className="text-[11px] font-bold text-white bg-gold/80 px-2.5 py-1 rounded-lg">
+                                مشاهده جزئیات
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -437,15 +422,15 @@ const Shops = () => {
                         <div className="p-4 space-y-2">
                           <h3 className="font-bold text-sm text-foreground line-clamp-1">{p.name}</h3>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>{p.stores?.name}</span>
-                            {p.stores?.city && (
+                            <span>{p.profiles?.brand_name}</span>
+                            {p.profiles?.city && (
                               <span className="flex items-center gap-1">
-                                <MapPin size={12} />{p.stores.city}
+                                <MapPin size={12} />{p.profiles.city}
                               </span>
                             )}
                           </div>
                           <div className="text-gold font-bold text-xs pt-1 border-t border-border/40 mt-1">
-                            {p.price ? `${new Intl.NumberFormat("en-US").format(p.price)} تومان` : "استعلام قیمت"}
+                            {p.price ? `${new Intl.NumberFormat("fa-IR").format(p.price)} تومان` : "استعلام قیمت"}
                           </div>
                         </div>
                       </Card>

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Authenticated users view approved listings" ON public.second_hand_listings;

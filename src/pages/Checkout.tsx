@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowRight, CreditCard, MapPin, Phone, User, ShoppingBag, CheckCircle2, Percent, Check, AlertCircle } from "lucide-react";
 import { formatPersianPrice } from "@/lib/calculations";
-import { trackEvent } from "@/lib/tracking";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -111,7 +110,7 @@ const Checkout = () => {
     setCouponError(null);
     setCouponSuccess(null);
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await (supabase as any)
         .from("coupons")
         .select("*")
         .eq("code", couponCode.trim().toUpperCase())
@@ -119,6 +118,7 @@ const Checkout = () => {
         .maybeSingle();
 
       if (error) throw error;
+      const data: any = rawData;
 
       if (!data) {
         setCouponError("کد تخفیف معتبر نیست یا منقضی شده است");
@@ -250,16 +250,6 @@ const Checkout = () => {
           });
         }
 
-        trackEvent("purchase_conversion", {
-          entityType: "order",
-          entityId: orderId || "",
-          metadata: { amount: savedOrderAmount, items_count: items.length },
-        });
-        trackEvent("order_placed", {
-          entityType: "order",
-          entityId: orderId || "",
-          metadata: { amount: savedOrderAmount, items_count: items.length },
-        });
         clear();
         setStep("success");
       } catch (error) {

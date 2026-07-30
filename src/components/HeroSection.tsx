@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Search, Sparkles, ArrowLeft } from "lucide-react";
 import sceneLiving from "@/assets/hero-cinematic-living.jpg";
 import sceneBedroom from "@/assets/hero-cinematic-bedroom.jpg";
@@ -87,7 +86,7 @@ const HeroSection = () => {
 
           {/* Subhead */}
           <p className="mt-7 text-base sm:text-2xl text-white/95 max-w-3xl mx-auto leading-relaxed font-medium drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-            از الهام گرفتن تا خرید، از طراحی با هومینو استودیو تا تجهیز کامل خانه — همه چیز در یک پلتفرم.
+            از الهام گرفتن تا خرید، از طراحی با هوش مصنوعی تا تجهیز کامل خانه — همه چیز در یک پلتفرم.
           </p>
 
           {/* Search bar */}
@@ -124,13 +123,13 @@ const HeroSection = () => {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 w-full">
-            <Link
-              to="/ai-design"
+            <a
+              href="/ai-design"
               className="group bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:scale-[1.03] transition-transform shadow-lg"
             >
               <Sparkles size={20} />
-              طراحی رایگان با هومینو استودیو
-            </Link>
+              طراحی رایگان با هوش مصنوعی
+            </a>
             <a
               href="#complete-sets"
               className="group text-white px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 border border-white/25 hover:border-primary/60 hover:text-primary transition-colors backdrop-blur-sm bg-stone-900/10"

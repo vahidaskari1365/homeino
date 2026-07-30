@@ -40,7 +40,7 @@ const Footer = () => {
 
           <div>
             <h4 className="text-primary-foreground font-bold mb-4">خدمات</h4>
-            {["طراحی با هومینو استودیو", "ست‌های کامل دکوراسیون", "مشاوره رایگان", "آگهی دست دوم", "نصب و اجرا"].map((item) => (
+            {["طراحی با هوش مصنوعی", "ست‌های کامل دکوراسیون", "مشاوره رایگان", "آگهی دست دوم", "نصب و اجرا"].map((item) => (
               <a key={item} href="#" className="block text-cream/50 text-sm hover:text-gold transition-colors py-1.5">
                 {item}
               </a>

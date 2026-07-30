@@ -144,7 +144,7 @@ const Consultations = () => {
 
   const updateStatus = async (status: string) => {
     if (!active) return;
-    const { error } = await supabase.from("consultations").update({ status, completed_at: status === "completed" ? new Date().toISOString() : null }).eq("id", active.id);
+    const { error } = await supabase.from("consultations").update({ status: status as any, completed_at: status === "completed" ? new Date().toISOString() : null }).eq("id", active.id);
     if (error) { toast({ title: "خطا", description: error.message, variant: "destructive" }); return; }
     toast({ title: "بروزرسانی شد" });
     if (userId) await loadList(userId, designerId);
@@ -190,7 +190,7 @@ const Consultations = () => {
                       </CardHeader>
                       <CardContent className="text-sm text-muted-foreground">
                         <div>{typeLabels[c.consultation_type]}</div>
-                        {c.final_price && <div className="text-gold mt-1">قیمت نهایی: {Number(c.final_price).toLocaleString("en-US")} تومان</div>}
+                        {c.final_price && <div className="text-gold mt-1">قیمت نهایی: {Number(c.final_price).toLocaleString("fa-IR")} تومان</div>}
                       </CardContent>
                     </Card>
                   ))}

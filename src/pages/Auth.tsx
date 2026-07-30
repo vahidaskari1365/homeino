@@ -12,7 +12,6 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, ArrowRight, Sparkles, Factory } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 import SEO from "@/components/SEO";
-import { trackEvent } from "@/lib/tracking";
 
 interface Category {
   id: string;
@@ -177,12 +176,6 @@ const Auth = () => {
       toast({ title: "ثبت‌نام ناموفق", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "حساب ساخته شد", description: "خوش آمدید!" });
-      trackEvent("user_registered", {
-        metadata: {
-          is_producer: isProducer,
-          has_brand: !!brandName,
-        },
-      });
     }
   };
 

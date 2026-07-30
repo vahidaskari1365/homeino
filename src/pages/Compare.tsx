@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { formatPrice as fmtPrice } from "@/lib/formatPrice";
-import { Link, useSearchParams } from "react-router-dom";
-import { Scale, ArrowLeft, Star, X, ShoppingBag } from "lucide-react";
+import { Link } from "react-router-dom";
+import { X, ArrowRight, Scale } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import { useCompare } from "@/contexts/CompareContext";
-import ViewInMyRoomButton from "@/components/ViewInMyRoomButton";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Enriched = {
@@ -29,16 +26,16 @@ const Compare = () => {
     (async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, attributes, rating, store_id, stores!store_id(id, name)")
+        .select("id, attributes, rating, profile_id, profiles(id, brand_name)")
         .in("id", ids);
       const map: Record<string, Enriched> = {};
-      (data || []).forEach((p: { id: string; attributes: Record<string, unknown> | null; rating: number | null; store_id: string | null; stores: { id: string; name: string | null } | null }) => {
+      (data || []).forEach((p: any) => {
         map[p.id] = {
           id: p.id,
-          attributes: p.attributes || {},
+          attributes: (p.attributes as Record<string, unknown>) || {},
           rating: Number(p.rating || 0),
-          shop_id: p.stores?.id,
-          shop_name: p.stores?.name,
+          shop_id: p.profiles?.id,
+          shop_name: p.profiles?.brand_name,
         };
       });
       setEnriched(map);
@@ -53,6 +50,9 @@ const Compare = () => {
     });
     return Array.from(keys);
   }, [items, enriched]);
+
+  const fmtPrice = (p: number | null) =>
+    p == null ? "—" : new Intl.NumberFormat("fa-IR").format(p) + " تومان";
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,14 +102,6 @@ const Compare = () => {
                           )}
                         </div>
                         <div className="font-semibold text-foreground">{it.name}</div>
-                        <ViewInMyRoomButton
-                          productId={it.id}
-                          productName={it.name}
-                          productImage={it.image_url}
-                          productPrice={it.price}
-                          variant="full"
-                          className="mt-1"
-                        />
                       </div>
                     </th>
                   ))}

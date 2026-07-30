@@ -169,7 +169,7 @@ const SecondHand = () => {
             <div className="flex items-center justify-between border-t border-white/20 pt-2">
               {l.price ? (
                 <span className="text-gold font-extrabold text-sm">
-                  {Number(l.price).toLocaleString("en-US")} تومان
+                  {Number(l.price).toLocaleString("fa-IR")} تومان
                 </span>
               ) : (
                 <span className="text-gray-300 text-xs">توافقی</span>
@@ -192,7 +192,7 @@ const SecondHand = () => {
               </div>
             )}
             {l.price ? (
-              <div className="text-gold font-bold">{Number(l.price).toLocaleString("en-US")} تومان</div>
+              <div className="text-gold font-bold">{Number(l.price).toLocaleString("fa-IR")} تومان</div>
             ) : (
               <div className="text-muted-foreground">توافقی</div>
             )}
@@ -357,7 +357,7 @@ const SecondHand = () => {
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground">قیمت</span>
                     <span className="text-xl font-black text-gold mt-1">
-                      {selectedListing.price ? `${Number(selectedListing.price).toLocaleString("en-US")} تومان` : "توافقی"}
+                      {selectedListing.price ? `${Number(selectedListing.price).toLocaleString("fa-IR")} تومان` : "توافقی"}
                     </span>
                   </div>
 

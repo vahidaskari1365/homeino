@@ -67,7 +67,7 @@ const SiteVisits = () => {
     if (!user) { setLoading(false); return; }
     setUserId(user.id);
 
-    const { data: profs } = await supabase.from("public_profiles").select("id").eq("user_id", user.id);
+    const { data: profs } = await supabase.from("profiles").select("id").eq("user_id", user.id);
     const ids = (profs || []).map((p: { id: string }) => p.id);
     setProfileIds(ids);
 

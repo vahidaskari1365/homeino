@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { formatPersianDate } from "@/lib/date";
-import StarRating from "@/StarRating"; // Note: It is imported as StarRating from @/components/StarRating in original. Let's see original imports: import StarRating from "@/components/StarRating";
 import StarRatingComponent from "@/components/StarRating";
 import { Trash2, MessageSquare, Check, Star, ArrowUpDown } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -85,11 +84,11 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
   const load = async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id, user_id, rating, title, body, created_at, is_verified_purchase")
+      .select("id, user_id, rating, title, body, created_at")
       .eq("target_type", targetType)
       .eq("target_id", targetId)
       .order("created_at", { ascending: false });
-    setReviews((data as Review[]) || []);
+    setReviews((data as unknown as Review[]) || []);
   };
 
   useEffect(() => {
@@ -125,7 +124,6 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       rating,
       title: title.trim() || null,
       body: body.trim() || null,
-      is_verified_purchase: isVerified,
     };
     const { error } = await supabase
       .from("reviews")
@@ -134,15 +132,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
     if (!error) {
       toast({ title: "ثبت شد", description: "نظر شما با موفقیت ثبت شد" });
       
-      // Create notification for seller
-      await supabase.rpc("create_notification", {
-        _user_id: profileId,
-        _title: "نظر جدید",
-        _body: `یک نظر جدید برای ${targetType === 'product' ? 'محصول' : 'فروشگاه'} شما ثبت شد.`,
-        _type: "review_new",
-        _link: targetType === 'product' ? `/shops/${profileId}` : `/shops/${targetId}`,
-        _metadata: { target_id: targetId, target_type: targetType }
-      });
+      // Notification is created automatically by DB trigger
 
       load();
     }
@@ -190,12 +180,12 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-xl font-display font-bold flex items-center gap-2">
           <MessageSquare className="text-gold" size={20} />
-          نظرات و امتیازها ({reviews.length.toLocaleString("en-US")})
+          نظرات و امتیازها ({reviews.length.toLocaleString("fa-IR")})
         </h3>
         {reviews.length > 0 && (
           <div className="flex items-center gap-2">
             <StarRatingComponent value={Math.round(avg)} readOnly size={16} />
-            <span className="text-sm text-muted-foreground">{avg.toFixed(1).toLocaleString("en-US")} از ۵</span>
+            <span className="text-sm text-muted-foreground">{avg.toFixed(1)} از ۵</span>
           </div>
         )}
       </div>
@@ -207,12 +197,12 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               {/* Overall Score */}
               <div className="text-center md:border-l md:border-border">
-                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1).toLocaleString("en-US")}</span>
+                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1)}</span>
                 <div className="flex justify-center my-2">
                   <StarRatingComponent value={Math.round(avg)} readOnly size={20} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  براساس {reviews.length.toLocaleString("en-US")} امتیاز ثبت شده
+                  براساس {reviews.length.toLocaleString("fa-IR")} امتیاز ثبت شده
                 </p>
               </div>
 
@@ -224,7 +214,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
                   return (
                     <div key={star} className="flex items-center gap-3 text-xs text-muted-foreground">
                       <div className="w-12 text-right flex items-center gap-1">
-                        <span className="font-semibold">{star.toLocaleString("en-US")}</span>
+                        <span className="font-semibold">{star.toLocaleString("fa-IR")}</span>
                         <Star size={12} className="text-gold fill-gold shrink-0" />
                       </div>
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -234,8 +224,8 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
                         />
                       </div>
                       <div className="w-16 text-left flex justify-between font-mono text-[10px]">
-                        <span>{Math.round(percentage).toLocaleString("en-US")}٪</span>
-                        <span className="text-muted-foreground/60">({count.toLocaleString("en-US")})</span>
+                        <span>{Math.round(percentage).toLocaleString("fa-IR")}٪</span>
+                        <span className="text-muted-foreground/60">({count.toLocaleString("fa-IR")})</span>
                       </div>
                     </div>
                   );
@@ -293,7 +283,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
           <div className="flex items-center gap-2 text-xs">
             <ArrowUpDown size={14} className="text-muted-foreground" />
             <span className="text-muted-foreground">مرتب‌سازی براساس:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "highest" | "lowest")}>
               <SelectTrigger className="w-36 h-8 text-xs font-semibold">
                 <SelectValue placeholder="مرتب‌سازی" />
               </SelectTrigger>

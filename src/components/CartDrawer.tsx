@@ -103,7 +103,7 @@ const CartDrawer = () => {
       await supabase.rpc("create_notification", {
         _user_id: profile_id,
         _title: "سفارش جدید",
-        _body: `یک سفارش جدید به مبلغ ${totalAmount.toLocaleString("en-US")} تومان ثبت شد.`,
+        _body: `یک سفارش جدید به مبلغ ${totalAmount.toLocaleString("fa-IR")} تومان ثبت شد.`,
         _type: "order_new",
         _link: "/dashboard",
         _metadata: { order_id: order.id }
@@ -150,7 +150,7 @@ const CartDrawer = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium line-clamp-1">{i.name}</p>
-                        <p className="text-gold text-sm">{i.price.toLocaleString("en-US")} تومان</p>
+                        <p className="text-gold text-sm">{i.price.toLocaleString("fa-IR")} تومان</p>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
                             <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(i.product_id, i.quantity - 1)}>
@@ -172,7 +172,7 @@ const CartDrawer = () => {
                 <div className="pt-4 border-t border-border space-y-3">
                   <div className="flex justify-between font-bold">
                     <span>جمع کل:</span>
-                    <span className="text-gold">{totalAmount.toLocaleString("en-US")} تومان</span>
+                    <span className="text-gold">{totalAmount.toLocaleString("fa-IR")} تومان</span>
                   </div>
                   <Button onClick={() => { setOpen(false); navigate("/checkout"); }} className="w-full gradient-gold text-primary-foreground">
                     ادامه و تکمیل سفارش
@@ -207,7 +207,7 @@ const CartDrawer = () => {
             </div>
             <div className="flex justify-between text-sm pt-2 border-t border-border">
               <span>مبلغ قابل پرداخت:</span>
-              <span className="text-gold font-bold">{totalAmount.toLocaleString("en-US")} تومان</span>
+              <span className="text-gold font-bold">{totalAmount.toLocaleString("fa-IR")} تومان</span>
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setStep("cart")} className="flex-1">بازگشت</Button>
@@ -265,7 +265,7 @@ const CartDrawer = () => {
             <div className="p-4 bg-muted/50 rounded-xl space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">جمع کالاها:</span>
-                <span>{totalAmount.toLocaleString("en-US")} ت</span>
+                <span>{totalAmount.toLocaleString("fa-IR")} ت</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">هزینه ارسال:</span>
@@ -273,7 +273,7 @@ const CartDrawer = () => {
               </div>
               <div className="flex justify-between font-bold pt-2 border-t">
                 <span>مبلغ نهایی:</span>
-                <span className="text-gold">{totalAmount.toLocaleString("en-US")} تومان</span>
+                <span className="text-gold">{totalAmount.toLocaleString("fa-IR")} تومان</span>
               </div>
             </div>
 
