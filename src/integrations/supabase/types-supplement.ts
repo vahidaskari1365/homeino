@@ -121,4 +121,9 @@ export interface SupplementalTables {
     Insert: { id?: string; user_id: string; file_hash: string; analysis_type: string; result: Json; created_at?: string; expires_at?: string; };
     Update: { id?: string; user_id?: string; file_hash?: string; analysis_type?: string; result?: Json; created_at?: string; expires_at?: string; };
   };
+  messages: {
+    Row: { id: string; sender_id: string; receiver_id: string; product_id: string | null; content: string; is_read: boolean; created_at: string; };
+    Insert: { id?: string; sender_id: string; receiver_id: string; product_id?: string | null; content: string; is_read?: boolean; created_at?: string; };
+    Update: { id?: string; sender_id?: string; receiver_id?: string; product_id?: string | null; content?: string; is_read?: boolean; created_at?: string; };
+  };
 }

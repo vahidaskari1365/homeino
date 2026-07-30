@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette } from "lucide-react";
+import { Search, Menu, X, User, Heart, LogOut, LayoutDashboard, ShieldCheck, Tag, Sparkles, CalendarCheck, Palette, MessageCircle } from "lucide-react";
 
 import CartButton from "./CartButton";
 import NotificationBell from "./NotificationBell";
@@ -68,6 +68,9 @@ const Navbar = () => {
           </Link>
           <Link to="/quotes" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="درخواست‌های قیمت">
             <Tag size={20} />
+          </Link>
+          <Link to="/messages" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="پیام‌ها">
+            <MessageCircle size={20} />
           </Link>
           <Link to="/consultations" className="text-muted-foreground hover:text-gold transition-colors hidden sm:block" title="مشاوره دکوراسیون">
             <Sparkles size={20} />

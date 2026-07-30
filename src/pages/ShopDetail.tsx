@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Globe, User, Package, BadgeCheck, Lock, CalendarCheck, ShoppingBag, MessageCircle } from "lucide-react";
 import { formatPersianDate } from "@/lib/date";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -211,6 +211,11 @@ const ShopDetail = () => {
               )}
               <div className="mt-5 pt-5 border-t border-border flex flex-wrap gap-2">
                 <InquiryDialog profile_id={profile.id} label="ارسال درخواست به فروشگاه" />
+                <Link to={`/messages/${profile.id}`}>
+                  <Button variant="outline" className="gap-2">
+                    <MessageCircle size={16} /> گفتگو با فروشنده
+                  </Button>
+                </Link>
                 <PriceQuoteDialog
                   profile_id={profile.id}
                   request_type="custom"

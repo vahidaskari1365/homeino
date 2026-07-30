@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowRight, ShoppingBag, Minus, Plus, Store, MapPin, Phone, BadgeCheck,
-  Truck, ShieldCheck, RefreshCw, Star, Package, ChevronLeft,
+  Truck, ShieldCheck, RefreshCw, Star, Package, ChevronLeft, MessageCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -277,6 +277,11 @@ const ProductDetail = () => {
                     <>
                       <PriceQuoteDialog profile_id={seller.id} request_type="product" product_id={product.id} title={product.name} label="درخواست قیمت سفارشی" variant="outline" size="sm" />
                       <InquiryDialog profile_id={seller.id} product_id={product.id} label="ارسال استعلام" variant="outline" size="sm" />
+                      <Link to={`/messages/${seller.id}`}>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <MessageCircle size={16} /> گفتگو با فروشنده
+                        </Button>
+                      </Link>
                       <SiteVisitDialog profile_id={seller.id} />
                     </>
                   )}
