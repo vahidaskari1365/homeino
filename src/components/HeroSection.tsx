@@ -124,7 +124,7 @@ const HeroSection = () => {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 w-full">
             <a
-              href="/ai-design"
+              href="#ai-design"
               className="group bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:scale-[1.03] transition-transform shadow-lg"
             >
               <Sparkles size={20} />

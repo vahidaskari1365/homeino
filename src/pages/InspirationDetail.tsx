@@ -37,10 +37,10 @@ const InspirationDetail = () => {
   const { saveInspiration, collections } = useSavedInspirations();
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
 
-  const { data: inspiration, isLoading } = useQuery<any>({
+  const { data: inspiration, isLoading } = useQuery({
     queryKey: ["inspiration", id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("inspirations")
         .select(`
           *,
@@ -57,17 +57,17 @@ const InspirationDetail = () => {
     },
   });
 
-  const { data: related } = useQuery<any[]>({
+  const { data: related } = useQuery({
     queryKey: ["related-inspirations", inspiration?.style, inspiration?.room_type],
     enabled: !!inspiration,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("inspirations")
         .select("*")
         .eq("style", inspiration?.style)
         .neq("id", inspiration?.id)
         .limit(4);
-
+      
       if (error) throw error;
       return data;
     },
@@ -76,7 +76,7 @@ const InspirationDetail = () => {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-cream-dark"><div className="loading-spinner" /></div>;
   if (!inspiration) return <div>یافت نشد</div>;
 
-  const isSaved = (collections as any[] | undefined)?.some((c: any) => c.items?.some?.((i: any) => i.inspiration_id === inspiration.id));
+  const isSaved = collections?.some(c => c.items.some(i => i.inspiration_id === inspiration.id));
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -107,7 +107,7 @@ const InspirationDetail = () => {
               />
               
               {/* Product Hotspots */}
-              {inspiration.products?.map((item: any) => (
+              {inspiration.products?.map((item) => (
                 <div
                   key={item.id}
                   className="absolute z-20 group"
@@ -222,7 +222,7 @@ const InspirationDetail = () => {
                   <ShoppingBag className="text-primary" size={20} /> محصولات این طرح
                 </h3>
                 <div className="space-y-4">
-                  {inspiration.products.map((item: any) => (
+                  {inspiration.products.map((item) => (
                     <Link
                       key={item.id}
                       to={`/product/${item.product?.id}`}
@@ -250,7 +250,7 @@ const InspirationDetail = () => {
           <div className="mt-24">
             <h2 className="text-2xl font-bold mb-8">طرح‌های مشابه</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {related.map((item: any) => (
+              {related.map((item) => (
                 <Link
                   key={item.id}
                   to={`/inspirations/${item.id}`}

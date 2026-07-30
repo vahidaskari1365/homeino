@@ -32,10 +32,10 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
     setLoading(true);
     
     // Use the new RPC if available, or fall back to textSearch
-    const { data: rpcData, error: rpcError } = await (supabase.rpc as any)("search_all", { query: t });
+    const { data: rpcData, error: rpcError } = await supabase.rpc("search_all", { query: t });
     
     if (!rpcError && rpcData) {
-      const res = rpcData as unknown as { products: ProductHit[]; profiles: ShopHit[]; second_hand: SecondHit[] };
+      const res = rpcData as { products: ProductHit[]; profiles: ShopHit[]; second_hand: SecondHit[] };
       setProducts(res.products || []);
       setShops(res.profiles || []);
       setSecond(res.second_hand || []);

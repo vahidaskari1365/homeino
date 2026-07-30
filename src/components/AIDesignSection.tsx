@@ -420,7 +420,7 @@ const AIDesignSection = () => {
 
               {resultImage && (
                 <div className="absolute inset-0">
-                  <BeforeAfterSlider beforeImage={imageBase64 || ""} afterImage={resultImage} />
+                  <BeforeAfterSlider before={imageBase64 || ""} after={resultImage} />
                 </div>
               )}
             </div>

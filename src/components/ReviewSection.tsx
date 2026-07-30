@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { formatPersianDate } from "@/lib/date";
+import StarRating from "@/StarRating"; // Note: It is imported as StarRating from @/components/StarRating in original. Let's see original imports: import StarRating from "@/components/StarRating";
 import StarRatingComponent from "@/components/StarRating";
 import { Trash2, MessageSquare, Check, Star, ArrowUpDown } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -84,11 +85,11 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
   const load = async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id, user_id, rating, title, body, created_at")
+      .select("id, user_id, rating, title, body, created_at, is_verified_purchase")
       .eq("target_type", targetType)
       .eq("target_id", targetId)
       .order("created_at", { ascending: false });
-    setReviews((data as unknown as Review[]) || []);
+    setReviews((data as Review[]) || []);
   };
 
   useEffect(() => {
@@ -124,6 +125,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
       rating,
       title: title.trim() || null,
       body: body.trim() || null,
+      is_verified_purchase: isVerified,
     };
     const { error } = await supabase
       .from("reviews")
@@ -132,7 +134,15 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
     if (!error) {
       toast({ title: "ثبت شد", description: "نظر شما با موفقیت ثبت شد" });
       
-      // Notification is created automatically by DB trigger
+      // Create notification for seller
+      await supabase.rpc("create_notification", {
+        _user_id: profileId,
+        _title: "نظر جدید",
+        _body: `یک نظر جدید برای ${targetType === 'product' ? 'محصول' : 'فروشگاه'} شما ثبت شد.`,
+        _type: "review_new",
+        _link: targetType === 'product' ? `/shops/${profileId}` : `/shops/${targetId}`,
+        _metadata: { target_id: targetId, target_type: targetType }
+      });
 
       load();
     }
@@ -185,7 +195,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
         {reviews.length > 0 && (
           <div className="flex items-center gap-2">
             <StarRatingComponent value={Math.round(avg)} readOnly size={16} />
-            <span className="text-sm text-muted-foreground">{avg.toFixed(1)} از ۵</span>
+            <span className="text-sm text-muted-foreground">{avg.toFixed(1).toLocaleString("fa-IR")} از ۵</span>
           </div>
         )}
       </div>
@@ -197,7 +207,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               {/* Overall Score */}
               <div className="text-center md:border-l md:border-border">
-                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1)}</span>
+                <span className="text-5xl font-extrabold text-foreground">{avg.toFixed(1).toLocaleString("fa-IR")}</span>
                 <div className="flex justify-center my-2">
                   <StarRatingComponent value={Math.round(avg)} readOnly size={20} />
                 </div>
@@ -283,7 +293,7 @@ const ReviewSection = ({ targetType, targetId, profileId }: Props) => {
           <div className="flex items-center gap-2 text-xs">
             <ArrowUpDown size={14} className="text-muted-foreground" />
             <span className="text-muted-foreground">مرتب‌سازی براساس:</span>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "highest" | "lowest")}>
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-36 h-8 text-xs font-semibold">
                 <SelectValue placeholder="مرتب‌سازی" />
               </SelectTrigger>

@@ -27,11 +27,8 @@ import SecondHand from "./pages/SecondHand.tsx";
 import AIDesign from "./pages/AIDesign.tsx";
 import Inspirations from "./pages/Inspirations.tsx";
 import InspirationDetail from "./pages/InspirationDetail.tsx";
-import DesignShopping from "./pages/DesignShopping.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
-import VisualSearch from "./pages/VisualSearch.tsx";
-import Projects from "./pages/Projects.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -67,11 +64,8 @@ const App = () => (
                   <Route path="/ai-design" element={<AIDesign />} />
                   <Route path="/inspirations" element={<Inspirations />} />
                   <Route path="/inspirations/:id" element={<InspirationDetail />} />
-                  <Route path="/design/shopping/:id" element={<DesignShopping />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/budget-estimator" element={<BudgetEstimator />} />
-                  <Route path="/visual-search" element={<VisualSearch />} />
-                  <Route path="/projects" element={<Projects />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

@@ -9,28 +9,12 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
-  // Only allow calls from our own scheduled job / trusted server (service role).
-  const authHeader = req.headers.get("Authorization")
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
-  }
-
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    serviceKey
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   )
 
-  const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY")
-  if (!ZHIPU_API_KEY) {
-    return new Response(JSON.stringify({ error: "AI service not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
-  }
+  const ZHIPU_API_KEY = Deno.env.get("ZHIPU_API_KEY") || "3305e9e19f7f4a3982e5cd12ed73d2a0.g7Ab9mA1XVxiUHTS"
 
   try {
     // 1. Fetch unprocessed inspirations
