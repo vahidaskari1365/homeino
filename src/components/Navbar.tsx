@@ -12,12 +12,13 @@ import logo from "@/assets/homeino-logo.jpg";
 
 const navLinks = [
   { label: "خانه", href: "/" },
-  { label: "طراحی هوش مصنوعی", href: "/ai-design" },
-  { label: "فروشگاه‌ها", href: "/shops" },
-  { label: "الهام دکوراسیون", href: "/inspirations" },
-  { label: "مشاور خرید", href: "/ai-advisor" },
-  { label: "پروژه‌ها", href: "/projects" },
   { label: "دسته‌بندی‌ها", href: "/#categories" },
+  { label: "پروژه‌های من", href: "/projects" },
+  { label: "الهام دکوراسیون", href: "/inspirations" },
+  { label: "طراحی با هوش مصنوعی", href: "/ai-design" },
+  { label: "فروشگاه‌ها", href: "/shops" },
+  { label: "آگهی دست دوم", href: "/second-hand" },
+  { label: "جستجوی تصویری", href: "/visual-search" },
 ];
 
 const Navbar = () => {

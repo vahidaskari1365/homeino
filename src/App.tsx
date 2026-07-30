@@ -31,7 +31,6 @@ import DesignShopping from "./pages/DesignShopping.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import BudgetEstimator from "./pages/BudgetEstimator.tsx";
 import VisualSearch from "./pages/VisualSearch.tsx";
-import AIAdvisor from "./pages/AIAdvisor.tsx";
 import Projects from "./pages/Projects.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -72,7 +71,6 @@ const App = () => (
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/budget-estimator" element={<BudgetEstimator />} />
                   <Route path="/visual-search" element={<VisualSearch />} />
-                  <Route path="/ai-advisor" element={<AIAdvisor />} />
                   <Route path="/projects" element={<Projects />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

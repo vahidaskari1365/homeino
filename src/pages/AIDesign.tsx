@@ -1,10 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import {
-  Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check,
-  ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers, Target, Edit3,
-  Save, RotateCcw, Search, Package2, Store, BadgePercent, TrendingDown,
-  TrendingUp, Truck, Star, AlertTriangle, ChevronDown, ChevronUp,
-} from "lucide-react";
+import { Upload, Wand2, Loader2, Download, ArrowLeft, Sparkles, RefreshCw, Check, ShoppingCart, X, ShoppingBag, Lightbulb, Palette, Layers, Target, Edit3, Save } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,18 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import AIPromptBox from "@/components/AIPromptBox";
-import BudgetInput from "@/components/BudgetInput";
-import EconomyPremiumToggle from "@/components/EconomyPremiumToggle";
-import FinancialReport from "@/components/FinancialReport";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
-import { redesignRoom, replaceProductInImage } from "@/services/huggingface";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { redesignRoom } from "@/services/huggingface";
 import { saveProject, getProject, generateId } from "@/services/projects";
 
 // ---- Types ----
@@ -126,19 +111,32 @@ const AIDesign = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [storeNames, setStoreNames] = useState<Record<string, string>>({});
-  const [storeOffers, setStoreOffers] = useState<Record<string, StoreOffer[]>>({});
-  const [expandedStore, setExpandedStore] = useState<string | null>(null);
-
-  // Smart Replace state
-  const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
-  const [replacingProduct, setReplacingProduct] = useState<{ old: Product; categoryId: string; categorySlug: string } | null>(null);
-  const [replacing, setReplacing] = useState(false);
-  const [replaceCategoryProds, setReplaceCategoryProds] = useState<Product[]>([]);
   const stageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addItem, setOpen: setOpenCart } = useCart();
   const [searchParams] = useSearchParams();
+
+  // Load project from query param
+  useEffect(() => {
+    const projectId = searchParams.get("project");
+    if (!projectId) return;
+    const project = getProject(projectId);
+    if (!project) {
+      toast.error("پروژه مورد نظر یافت نشد");
+      return;
+    }
+    setImageBase64(project.originalImage);
+    setResultImage(project.generatedImage);
+    setStyle(project.style);
+    setPrompt(project.prompt);
+    setRoomTip(project.roomTip);
+    setCurrentProjectId(project.id);
+    setProjectTitle(project.title);
+    if (project.selectedProducts) {
+      setSelected(project.selectedProducts as Record<string, Product>);
+    }
+    toast.success("پروژه بارگذاری شد");
+  }, [searchParams]);
 
   // Load project from query param
   useEffect(() => {
@@ -372,6 +370,35 @@ const AIDesign = () => {
       updatedAt: new Date().toISOString(),
     });
     setCurrentProjectId(id); setSaveDialogOpen(false);
+    toast.success("پروژه با موفقیت ذخیره شد");
+  };
+
+  const handleSaveProject = () => {
+    if (!imageBase64) {
+      toast.error("ابتدا یک عکس آپلود کنید");
+      return;
+    }
+    if (!projectTitle.trim()) {
+      toast.error("لطفاً یک نام برای پروژه وارد کنید");
+      return;
+    }
+    const id = currentProjectId || generateId();
+    saveProject({
+      id,
+      title: projectTitle.trim(),
+      originalImage: imageBase64,
+      generatedImage: resultImage || "",
+      style,
+      prompt,
+      roomTip,
+      selectedProducts: selected,
+      budget: 0,
+      notes: "",
+      createdAt: currentProjectId ? getProject(id)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    setCurrentProjectId(id);
+    setSaveDialogOpen(false);
     toast.success("پروژه با موفقیت ذخیره شد");
   };
 
@@ -1100,9 +1127,18 @@ const AIDesign = () => {
                 </div>
               )}
 
-              {/* Economy & Premium Version */}
-              {resultImage && !loading && !polishing && generatedProducts.length > 0 && (
-                <EconomyPremiumToggle currentProducts={generatedProducts as any} onReplace={(products) => setGeneratedProducts(products as any)} />
+              {resultImage && !loading && !polishing && (
+                <div className="flex gap-3">
+                  <button onClick={download} className="flex-1 bg-card border border-border hover:border-accent text-foreground py-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                    <Download size={18} /> دانلود تصویر
+                  </button>
+                  <button onClick={() => setSaveDialogOpen(true)} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all">
+                    <Save size={18} /> ذخیره پروژه
+                  </button>
+                  <button onClick={() => generate("standard")} className="flex-1 bg-accent text-accent-foreground py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all hover:bg-accent/90">
+                    <RefreshCw size={18} /> طراحی مجدد
+                  </button>
+                </div>
               )}
 
               {/* Financial Report */}
@@ -1193,6 +1229,42 @@ const AIDesign = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setReplaceDialogOpen(false)} className="flex-1" disabled={replacing}>انصراف</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Project Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Save size={18} className="text-emerald-600" />
+              {currentProjectId ? "ویرایش پروژه" : "ذخیره پروژه"}
+            </DialogTitle>
+            <DialogDescription>
+              برای پروژه خود یک نام انتخاب کنید تا بعداً بتوانید به راحتی آن را پیدا کنید.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="مثلاً: طراحی اتاق پذیرایی مدرن"
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              className="w-full"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveProject();
+              }}
+            />
+          </div>
+          <DialogFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)} className="flex-1">
+              انصراف
+            </Button>
+            <Button onClick={handleSaveProject} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Save size={16} className="ml-1" />
+              {currentProjectId ? "به‌روزرسانی" : "ذخیره"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
