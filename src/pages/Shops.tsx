@@ -93,46 +93,21 @@ const Shops = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      
-      const fromP = profilePage * PAGE_SIZE;
-      const toP = fromP + PAGE_SIZE - 1;
-      
-      const fromPr = productPage * PAGE_SIZE;
-      const toPr = fromPr + PAGE_SIZE - 1;
-
-      let profileQuery = supabase
-        .from("public_profiles")
-        .select("id, brand_name, description, city, phone, website, contact_name, contact_published, contact_published_at, profile_categories(category_id)", { count: 'exact' });
-
-      if (verifiedOnly) profileQuery = profileQuery.eq("contact_published", true);
-      if (city !== ALL) profileQuery = profileQuery.eq("city", city);
-      if (search) profileQuery = profileQuery.ilike("brand_name", `%${search}%`);
-
-      const { data: profs, count: profCount } = await profileQuery
-        .order("brand_name")
-        .range(fromP, toP);
-
-      let productQuery = supabase
-        .from("products")
-        .select("id, name, description, price, image_url, is_active, category_id, profile_id, attributes, profiles(brand_name, city)", { count: 'exact' })
-        .eq("is_active", true);
-
-      if (city !== ALL) productQuery = productQuery.eq("profiles.city", city);
-      if (category !== ALL) productQuery = productQuery.eq("category_id", category);
-      if (search) productQuery = productQuery.ilike("name", `%${search}%`);
-      if (minPrice !== undefined) productQuery = productQuery.gte("price", minPrice);
-      if (maxPrice !== undefined) productQuery = productQuery.lte("price", maxPrice);
-      if (color !== ALL) productQuery = productQuery.eq("attributes->>color", color);
-      if (material !== ALL) productQuery = productQuery.eq("attributes->>material", material);
-
-      const { data: prods, count: prodCount } = await productQuery
-        .order("created_at", { ascending: false })
-        .range(fromPr, toPr);
-
-      setProfiles((profs as unknown as Profile[]) ?? []);
-      setTotalProfiles(profCount ?? 0);
-      setProducts((prods as unknown as Product[]) ?? []);
-      setTotalProducts(prodCount ?? 0);
+      const [cats, profs, prods] = await Promise.all([
+        supabase.from("producer_categories").select("id, name, slug").order("name"),
+        supabase
+          .from("public_profiles")
+          .select("id, brand_name, description, city, phone, website, contact_name, contact_published, contact_published_at, profile_categories(category_id)")
+          .order("brand_name"),
+        supabase
+          .from("products")
+          .select("id, name, description, price, image_url, is_active, category_id, profile_id, profiles(brand_name, city)")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false }),
+      ]);
+      setCategories((cats.data as Category[]) ?? []);
+      setProfiles((profs.data as unknown as Profile[]) ?? []);
+      setProducts((prods.data as unknown as Product[]) ?? []);
       setLoading(false);
     };
 
